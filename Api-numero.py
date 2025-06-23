@@ -57,7 +57,7 @@ def banner():
 def validar_numero(numero):
     """Valida e limpa o número"""
     numero = re.sub(r'[^0-9]', '', numero)
-    return (len(numero) in [10, 11], numero[:2], numero
+    return (len(numero) in [10, 11], numero[:2], numero)
 
 def consultar_api(nome_api, params):
     """Faz a requisição à API"""
