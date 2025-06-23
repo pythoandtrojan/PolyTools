@@ -1,271 +1,197 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import os
-import sys
 import json
-import re
-import subprocess
+import requests
 from datetime import datetime
 from colorama import Fore, Style, init
 import exifread
 from PIL import Image, ExifTags
+import subprocess
 
-
+# Configuração de cores
 init(autoreset=True)
 VERDE = Fore.GREEN
 VERMELHO = Fore.RED
 AMARELO = Fore.YELLOW
 AZUL = Fore.BLUE
-CIANO = Fore.CYAN
-NEGRITO = Style.BRIGHT
 RESET = Style.RESET_ALL
 
-class TermuxWifiMetaTool:
+class LiteGeoMetaTool:
     def __init__(self):
         self.results = {}
-
+    
     def banner(self):
-        """Exibe banner da ferramenta"""
         os.system('clear')
-        print(f"""
-{VERDE}{NEGRITO}
-   ▄████  ██▓     ██▓ ███▄    █   ██████ 
-  ██▒ ▀█▒▓██▒    ▓██▒ ██ ▀█   █ ▒██    ▒ 
- ▒██░▄▄▄░▒██░    ▒██▒▓██  ▀█ ██▒░ ▓██▄   
- ░▓█  ██▓▒██░    ░██░▓██▒  ▐▌██▒  ▒   ██▒
- ░▒▓███▀▒░██████▒░██░▒██░   ▓██░▒██████▒▒
-  ░▒   ▒ ░ ▒░▓  ░░▓  ░ ▒░   ▒ ▒ ▒ ▒▓▒ ▒ ░
-   ░   ░ ░ ░ ▒  ░ ▒ ░░ ░░   ░ ▒░░ ░▒  ░ ░
- ░ ░   ░   ░ ░    ▒ ░   ░   ░ ░ ░  ░  ░  
-       ░     ░  ░ ░           ░       ░  
-{RESET}
-{CIANO}{NEGRITO}   TERMUX WiFi & METADADOS TOOL
-   Versão Simplificada para Termux
-{RESET}
-{AMARELO}   Recursos: Varredura WiFi e Análise de Metadados
-   Otimizado para Android/Termux
-{RESET}""")
+        print(f"""{VERDE}
+   █▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀█
+   █ TERMUX LITE - Geoloc & Metadata █
+   █▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄█
+   {RESET}Versão sem root e sem Termux:API
+   {AMARELO}Recursos disponíveis:
+   • Geolocalização por IP público
+   • Análise de metadados de arquivos
+   • WiFi básico (apenas info da rede conectada)
+        {RESET}""")
 
-    def scan_wifi_networks(self):
-        """Varredura de redes WiFi no Termux"""
-        print(f"\n{CIANO}[+] Varrendo redes WiFi próximas...{RESET}")
-        
+    def get_network_info(self):
+        """Obtém informações básicas da rede sem root"""
         try:
-          
-            result = subprocess.run(['termux-wifi-scaninfo'], 
-                                  capture_output=True, 
-                                  text=True,
-                                  timeout=30)
+            # IP público
+            ip = requests.get('https://api.ipify.org').text
             
-            if result.returncode == 0:
-                wifi_data = json.loads(result.stdout)
-                print(f"{VERDE}[+] Encontradas {len(wifi_data)} redes WiFi{RESET}")
-                return wifi_data
-            else:
-                print(f"{VERMELHO}[!] Erro ao escanear WiFi: {result.stderr}{RESET}")
-                return []
-                
+            # Rede conectada (apenas informações básicas)
+            wifi_info = {}
+            try:
+                result = subprocess.run(['ip', 'addr'], capture_output=True, text=True)
+                interfaces = [line.split()[1].strip(':') 
+                            for line in result.stdout.splitlines() 
+                            if 'mtu' in line]
+                wifi_info['interfaces'] = interfaces
+            except:
+                pass
+            
+            return {
+                'ip_publico': ip,
+                'rede': wifi_info
+            }
         except Exception as e:
-            print(f"{VERMELHO}[!] Falha na varredura WiFi: {e}{RESET}")
-            return []
+            print(f"{VERMELHO}[!] Erro ao obter info de rede: {e}{RESET}")
+            return None
 
     def extract_metadata(self, file_path):
-        """Extrai metadados de arquivos no Termux"""
-        print(f"\n{CIANO}[+] Extraindo metadados de: {file_path}{RESET}")
+        """Extrai metadados de arquivos"""
+        print(f"\n{CIANO}[+] Analisando: {file_path}{RESET}")
         
         metadata = {
-            "file": os.path.basename(file_path),
-            "path": file_path,
-            "size": os.path.getsize(file_path),
-            "modified": datetime.fromtimestamp(os.path.getmtime(file_path)).isoformat()
+            'arquivo': os.path.basename(file_path),
+            'tamanho': os.path.getsize(file_path),
+            'modificado': datetime.fromtimestamp(os.path.getmtime(file_path)).isoformat()
         }
-        
+
         try:
-            
+            # Para imagens
             if file_path.lower().endswith(('.jpg', '.jpeg', '.png')):
                 with open(file_path, 'rb') as f:
                     tags = exifread.process_file(f)
-                    for tag in tags.keys():
-                        if tag not in ('JPEGThumbnail', 'TIFFThumbnail', 'Filename', 'EXIF MakerNote'):
+                    for tag in tags:
+                        if tag not in ('JPEGThumbnail', 'TIFFThumbnail'):
                             metadata[str(tag)] = str(tags[tag])
                 
-                
-                gps_data = self.extract_gps(file_path)
-                if gps_data:
-                    metadata["gps"] = gps_data
-                    print(f"{VERDE}[+] Coordenadas GPS encontradas{RESET}")
-            
-            print(f"{VERDE}[+] {len(metadata)} metadados extraídos{RESET}")
-            return metadata
-            
+                # Extrai GPS se existir
+                gps = self._extract_gps_coords(file_path)
+                if gps:
+                    metadata['gps'] = gps
         except Exception as e:
-            print(f"{VERMELHO}[!] Erro ao extrair metadados: {e}{RESET}")
-            return None
+            print(f"{AMARELO}[!] Erro nos metadados: {e}{RESET}")
 
-    def extract_gps(self, image_path):
-        """Extrai coordenadas GPS de imagens no Termux"""
+        return metadata
+
+    def _extract_gps_coords(self, image_path):
+        """Tenta extrair coordenadas GPS de uma imagem"""
         try:
             img = Image.open(image_path)
-            exif_data = img._getexif()
+            exif = {
+                ExifTags.TAGS[k]: v
+                for k, v in img._getexif().items()
+                if k in ExifTags.TAGS
+            }
             
-            if not exif_data:
-                return None
-                
-            gps_info = {}
-            for tag, value in exif_data.items():
-                decoded = ExifTags.TAGS.get(tag, tag)
-                if decoded == "GPSInfo":
-                    for t in value:
-                        sub_decoded = ExifTags.GPSTAGS.get(t, t)
-                        gps_info[sub_decoded] = value[t]
-            
-            if not gps_info:
-                return None
-                
-            lat = self.convert_gps(gps_info.get("GPSLatitude"), gps_info.get("GPSLatitudeRef"))
-            lon = self.convert_gps(gps_info.get("GPSLongitude"), gps_info.get("GPSLongitudeRef"))
-            
-            if lat and lon:
-                return {
-                    "latitude": lat,
-                    "longitude": lon,
-                    "altitude": gps_info.get("GPSAltitude"),
-                    "timestamp": gps_info.get("GPSTimeStamp")
+            if 'GPSInfo' in exif:
+                gps_info = {
+                    ExifTags.GPSTAGS.get(k, k): v
+                    for k, v in exif['GPSInfo'].items()
                 }
-        except Exception as e:
-            print(f"{AMARELO}[!] Erro ao extrair GPS: {e}{RESET}")
-            return None
-
-    def convert_gps(self, coord, ref):
-        """Converte coordenadas GPS EXIF para decimal"""
-        try:
-            if not coord or not ref:
-                return None
                 
-            degrees = coord[0][0] / coord[0][1]
-            minutes = coord[1][0] / coord[1][1]
-            seconds = coord[2][0] / coord[2][1]
-            
-            decimal = degrees + (minutes / 60.0) + (seconds / 3600.0)
-            if ref in ['S', 'W']:
-                decimal = -decimal
+                lat = self._convert_gps(gps_info.get('GPSLatitude'), gps_info.get('GPSLatitudeRef'))
+                lon = self._convert_gps(gps_info.get('GPSLongitude'), gps_info.get('GPSLongitudeRef'))
                 
-            return decimal
+                if lat and lon:
+                    return {'latitude': lat, 'longitude': lon}
         except:
             return None
 
-    def show_results(self):
-        """Exibe resultados formatados"""
-        print(f"\n{CIANO}{NEGRITO}=== RESULTADOS ==={RESET}")
-        
-        
-        if "wifi" in self.results:
-            print(f"\n{VERDE}{NEGRITO}● REDES WIFI DETECTADAS{RESET}")
-            for i, network in enumerate(self.results["wifi"], 1):
-                print(f"  {AZUL}↳ Rede {i}: {network.get('ssid', 'Oculto')}{RESET}")
-                print(f"    {AMARELO}BSSID: {network.get('bssid', '?')}")
-                print(f"    {AMARELO}Sinal: {network.get('rssi', '?')} dBm")
-                print(f"    {AMARELO}Frequência: {network.get('frequency_mhz', '?')} MHz")
-                print(f"    {AMARELO}Canal: {network.get('channel_width', '?')}")
-        
-        
-        if "metadata" in self.results:
-            print(f"\n{MAGENTA}{NEGRITO}● METADADOS DE ARQUIVO{RESET}")
-            meta = self.results["metadata"]
-            print(f"  {MAGENTA}↳ Arquivo: {meta.get('file')}{RESET}")
-            print(f"  {MAGENTA}↳ Tamanho: {meta.get('size')} bytes{RESET}")
-            print(f"  {MAGENTA}↳ Modificado: {meta.get('modified')}{RESET}")
-            
-            if "gps" in meta:
-                gps = meta["gps"]
-                print(f"  {VERDE}↳ Coordenadas GPS:{RESET}")
-                print(f"    {AMARELO}Latitude: {gps.get('latitude')}")
-                print(f"    {AMARELO}Longitude: {gps.get('longitude')}")
-                if gps.get("altitude"):
-                    print(f"    {AMARELO}Altitude: {gps.get('altitude')}")
+    def _convert_gps(self, coord, ref):
+        """Converte coordenadas GPS para decimal"""
+        try:
+            decimal = coord[0] + (coord[1]/60) + (coord[2]/3600)
+            if ref in ['S', 'W']:
+                decimal = -decimal
+            return round(decimal, 6)
+        except:
+            return None
 
-    def save_report(self, filename=None):
-        """Salva relatório completo"""
-        if not self.results:
-            print(f"{VERMELHO}[!] Nenhum resultado para salvar{RESET}")
-            return
-            
-        if not filename:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"termux_report_{timestamp}.json"
-        
-        with open(filename, 'w') as f:
-            json.dump(self.results, f, indent=4)
-        
-        print(f"{VERDE}[+] Relatório salvo como {filename}{RESET}")
-        return filename
-
-    def interactive_menu(self):
+    def show_menu(self):
         """Menu interativo simplificado"""
         self.banner()
-        
         while True:
-            print(f"\n{CIANO}{NEGRITO}MENU PRINCIPAL{RESET}")
-            print(f"  {VERDE}1{RESET} - Escanear redes WiFi")
-            print(f"  {VERDE}2{RESET} - Extrair metadados de arquivo")
-            print(f"  {VERDE}3{RESET} - Exibir resultados")
-            print(f"  {VERDE}4{RESET} - Salvar relatório")
-            print(f"  {VERDE}5{RESET} - Sair")
+            print(f"\n{VERDE}Menu Principal{RESET}")
+            print("1. Ver minha localização aproximada (IP)")
+            print("2. Analisar metadados de arquivo")
+            print("3. Ver informações da rede")
+            print("4. Sair")
             
-            choice = input(f"\n{AMARELO}[?] Selecione uma opção: {RESET}").strip()
+            opcao = input(f"{AMARELO}> {RESET}").strip()
             
-            if choice == "1":
-                wifi_data = self.scan_wifi_networks()
-                if wifi_data:
-                    self.results["wifi"] = wifi_data
-            
-            elif choice == "2":
-                file_path = input(f"{AMARELO}[?] Caminho do arquivo: {RESET}").strip()
-                if os.path.exists(file_path):
-                    meta = self.extract_metadata(file_path)
-                    if meta:
-                        self.results["metadata"] = meta
-                else:
-                    print(f"{VERMELHO}[!] Arquivo não encontrado{RESET}")
-            
-            elif choice == "3":
-                self.show_results()
-            
-            elif choice == "4":
-                if self.results:
-                    filename = input(f"{AMARELO}[?] Nome do arquivo (vazio para padrão): {RESET}").strip()
-                    self.save_report(filename if filename else None)
-                else:
-                    print(f"{VERMELHO}[!] Nenhum resultado para salvar{RESET}")
-            
-            elif choice == "5":
-                print(f"{VERDE}[+] Saindo...{RESET}")
+            if opcao == "1":
+                self._handle_ip_location()
+            elif opcao == "2":
+                self._handle_metadata()
+            elif opcao == "3":
+                self._handle_network_info()
+            elif opcao == "4":
                 break
-            
             else:
-                print(f"{VERMELHO}[!] Opção inválida{RESET}")
+                print(f"{VERMELHO}Opção inválida{RESET}")
 
-def main():
-    
-    try:
-        subprocess.run(['termux-wifi-scaninfo'], 
-                      capture_output=True, 
-                      check=True)
-    except:
-        print(f"{VERMELHO}[!] Termux:API não instalado ou não configurado!")
-        print(f"[!] Instale com: pkg install termux-api{RESET}")
-        return
-    
-    tool = TermuxWifiMetaTool()
-    tool.interactive_menu()
+    def _handle_ip_location(self):
+        """Mostra localização pelo IP"""
+        print(f"\n{VERDE}[+] Detectando localização aproximada...{RESET}")
+        try:
+            response = requests.get('http://ip-api.com/json/')
+            data = response.json()
+            
+            if data['status'] == 'success':
+                print(f"{AZUL}País: {data['country']}")
+                print(f"Região: {data['regionName']}")
+                print(f"Cidade: {data['city']}")
+                print(f"Provedor: {data['isp']}")
+                print(f"Coordenadas: {data['lat']}, {data['lon']}{RESET}")
+            else:
+                print(f"{VERMELHO}Não foi possível determinar a localização{RESET}")
+        except Exception as e:
+            print(f"{VERMELHO}Erro: {e}{RESET}")
+
+    def _handle_metadata(self):
+        """Lida com análise de metadados"""
+        arquivo = input(f"{AMARELO}[?] Caminho do arquivo: {RESET}").strip()
+        if os.path.exists(arquivo):
+            meta = self.extract_metadata(arquivo)
+            print(f"\n{VERDE}Metadados encontrados:{RESET}")
+            for k, v in meta.items():
+                print(f"{AZUL}{k}: {v}{RESET}")
+        else:
+            print(f"{VERMELHO}Arquivo não encontrado{RESET}")
+
+    def _handle_network_info(self):
+        """Mostra informações básicas de rede"""
+        info = self.get_network_info()
+        if info:
+            print(f"\n{VERDE}Informações de rede:{RESET}")
+            print(f"{AZUL}IP Público: {info['ip_publico']}")
+            if 'rede' in info and 'interfaces' in info['rede']:
+                print(f"Interfaces: {', '.join(info['rede']['interfaces'])}")
+        else:
+            print(f"{VERMELHO}Não foi possível obter informações{RESET}")
 
 if __name__ == "__main__":
-    # Verifica dependências básicas
+    # Verifica e instala dependências básicas
     try:
         import exifread
         from PIL import Image
     except ImportError:
-        print(f"{VERMELHO}[!] Instalando dependências...{RESET}")
-        os.system("pkg install python -y && pip install exifread Pillow colorama")
+        print(f"{AMARELO}[!] Instalando dependências...{RESET}")
+        os.system("pip install exifread Pillow requests colorama --quiet")
     
-    main()
+    tool = LiteGeoMetaTool()
+    tool.show_menu()
