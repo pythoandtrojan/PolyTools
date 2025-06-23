@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 import os
 import sys
@@ -14,7 +13,6 @@ from concurrent.futures import ThreadPoolExecutor
 
 init(autoreset=True)
 
-# Configurações de cores
 VERDE = Fore.GREEN
 VERMELHO = Fore.RED
 AMARELO = Fore.YELLOW
@@ -25,7 +23,6 @@ BRANCO = Fore.WHITE
 NEGRITO = Style.BRIGHT
 RESET = Style.RESET_ALL
 
-# Limite de threads para consultas paralelas
 MAX_THREADS = 10
 
 def banner():
