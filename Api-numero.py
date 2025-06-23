@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 import requests
 import json
@@ -8,6 +9,7 @@ from colorama import Fore, Style, init
 
 init(autoreset=True)
 
+# Configurações
 VERDE = Fore.GREEN
 VERMELHO = Fore.RED
 AMARELO = Fore.YELLOW
@@ -16,24 +18,28 @@ CIANO = Fore.CYAN
 NEGRITO = Style.BRIGHT
 RESET = Style.RESET_ALL
 
+# APIs atualizadas
 APIS = {
+    "BrasilAPI (DDD)": {
+        "url": "https://brasilapi.com.br/api/ddd/v1/{ddd}",
+        "campos": {
+            "estado": "state",
+            "cidades": "cities"
+        },
+        "method": "GET"
+    },
     "Intelbrás WebFone": {
         "url": "https://webfone.intelbras.com.br/consultanumero?numero=55{numero}",
         "campos": {
             "operadora": "operadora",
             "cidade": "cidade",
-            "uf": "uf",
-            "tipo": "tipo"
-        }
-    },
-    "Twilio Lookup (Demo)": {
-        "url": "https://lookups.twilio.com/v1/PhoneNumbers/+55{numero}",
-        "auth": ("ACXXXXXXXXXXXXXXXX", "your_auth_token"),  # Substitua por credenciais demo
-        "campos": {
-            "operadora": "carrier.name",
-            "tipo": "carrier.type",
-            "país": "country_code"
-        }
+            "uf": "uf"
+        },
+        "headers": {
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        },
+        "method": "GET",
+        "timeout": 5
     }
 }
 
@@ -47,43 +53,48 @@ def banner():
   ╚██████╔╝██║     ███████║██║  ██║   ██║   
    ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝   ╚═╝   
 {RESET}
-{VERDE}{NEGRITO}   CONSULTA AVANÇADA DE TELEFONE
-   Versão 2.0 - Dados Combinados
-{RESET}
-{AMARELO}   APIs: Intelbrás + Twilio (demo)
-   Limites: Gratuitos com restrições
+{VERDE}{NEGRITO}   CONSULTA DE TELEFONE - VERSÃO 3.0
+   APIs: BrasilAPI (DDD) + Intelbrás WebFone
 {RESET}""")
 
 def validar_numero(numero):
-    """Remove formatação e valida DDD"""
+    """Valida e limpa o número"""
     numero = re.sub(r'[^0-9]', '', numero)
-    return len(numero) in [10, 11]  # Com ou sem 9º dígito
+    return (len(numero) in [10, 11], numero[:2], numero
 
-def consultar_api(nome_api, numero):
-    """Consulta uma API específica"""
+def consultar_api(nome_api, params):
+    """Faz a requisição à API"""
     config = APIS[nome_api]
     try:
-        url = config["url"].format(numero=numero)
-        auth = config.get("auth")
+        url = config["url"].format(**params)
+        kwargs = {
+            "headers": config.get("headers", {}),
+            "timeout": config.get("timeout", 3)
+        }
         
-        response = requests.get(
-            url,
-            auth=auth if auth else None,
-            timeout=10
-        )
-        
+        if config["method"] == "GET":
+            response = requests.get(url, **kwargs)
+        else:
+            response = requests.post(url, **kwargs)
+            
         if response.status_code == 200:
             return response.json()
         else:
-            print(f"{VERMELHO}[!] {nome_api}: Erro {response.status_code}{RESET}")
+            print(f"{VERMELHO}[!] {nome_api} - Status: {response.status_code}{RESET}")
             return None
             
+    except requests.exceptions.Timeout:
+        print(f"{AMARELO}[!] {nome_api} - Timeout{RESET}")
+        return None
     except Exception as e:
-        print(f"{VERMELHO}[!] {nome_api}: Falha na conexão{RESET}")
+        print(f"{VERMELHO}[!] {nome_api} - Erro: {str(e)}{RESET}")
         return None
 
-def extrair_dados(api_name, dados):
-    """Extrai campos relevantes da resposta"""
+def processar_dados(api_name, dados):
+    """Processa a resposta da API"""
+    if not dados:
+        return None
+        
     campos = APIS[api_name]["campos"]
     resultado = {}
     
@@ -92,71 +103,62 @@ def extrair_dados(api_name, dados):
             valor = dados
             for parte in caminho.split('.'):
                 valor = valor.get(parte, {})
-            
+                
             if valor:
                 resultado[campo] = valor
         except:
             continue
-    
-    return resultado
-
-def mostrar_resultado(consolidado):
-    """Exibe os dados consolidados"""
-    print(f"\n{CIANO}{NEGRITO}=== DADOS CONSOLIDADOS ==={RESET}")
-    
-    categorias = {
-        "Localização": ["cidade", "uf", "país"],
-        "Operadora": ["operadora", "tipo"],
-    }
-    
-    for categoria, campos in categorias.items():
-        print(f"\n{AZUL}{NEGRITO}[ {categoria.upper()} ]{RESET}")
-        for campo in campos:
-            if campo in consolidado:
-                print(f"{AMARELO}{campo.capitalize()}:{RESET} {consolidado[campo]}")
-
-def salvar_resultado(dados, numero):
-    """Salva em JSON"""
-    filename = f"telefone_{numero}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-    with open(filename, 'w') as f:
-        json.dump(dados, f, indent=2, ensure_ascii=False)
-    print(f"{VERDE}[+] Dados salvos em {filename}{RESET}")
+            
+    return resultado if resultado else None
 
 def main():
     banner()
     
     while True:
-        numero = input(f"\n{AMARELO}Digite o número (DDD + número): {RESET}").strip()
+        entrada = input(f"\n{AMARELO}Digite o número (DDD + número) ou 'sair': {RESET}").strip()
         
-        if not validar_numero(numero):
-            print(f"{VERMELHO}[!] Número inválido. Use DDD + 8 ou 9 dígitos{RESET}")
-            continue
-        
-        numero_limpo = re.sub(r'[^0-9]', '', numero)
-        consolidado = {}
-        
-        print(f"\n{VERDE}[*] Consultando APIs...{RESET}")
-        
-        for api_name in APIS:
-            print(f"{AZUL}[>] {api_name}{RESET}", end=' ', flush=True)
-            dados = consultar_api(api_name, numero_limpo)
-            
-            if dados:
-                extraidos = extrair_dados(api_name, dados)
-                consolidado.update(extraidos)
-                print(f"{VERDE}✓{RESET}")
-            else:
-                print(f"{VERMELHO}✗{RESET}")
-        
-        if consolidado:
-            mostrar_resultado(consolidado)
-            if input(f"\n{AMARELO}Salvar resultados? (s/n): {RESET}").lower() == 's':
-                salvar_resultado(consolidado, numero_limpo)
-        else:
-            print(f"{VERMELHO}[!] Nenhum dado obtido{RESET}")
-        
-        if input(f"\n{AMARELO}Nova consulta? (s/n): {RESET}").lower() != 's':
+        if entrada.lower() == 'sair':
             break
+            
+        valido, ddd, numero = validar_numero(entrada)
+        if not valido:
+            print(f"{VERMELHO}[!] Número inválido. Formato esperado: DDD + 8 ou 9 dígitos{RESET}")
+            continue
+            
+        consolidado = {}
+        print(f"\n{VERDE}[*] Consultando APIs para DDD {ddd}...{RESET}")
+        
+        # Consulta BrasilAPI (DDD)
+        params = {"ddd": ddd}
+        dados = consultar_api("BrasilAPI (DDD)", params)
+        if dados:
+            processado = processar_dados("BrasilAPI (DDD)", dados)
+            if processado:
+                consolidado.update(processado)
+                print(f"{AZUL}[+] BrasilAPI: Dados de DDD obtidos{RESET}")
+        
+        # Consulta Intelbrás (número completo)
+        params = {"numero": numero}
+        dados = consultar_api("Intelbrás WebFone", params)
+        if dados:
+            processado = processar_dados("Intelbrás WebFone", dados)
+            if processado:
+                consolidado.update(processado)
+                print(f"{AZUL}[+] Intelbrás: Dados de operadora obtidos{RESET}")
+        
+        # Exibe resultados
+        if consolidado:
+            print(f"\n{CIANO}{NEGRITO}=== RESULTADOS ==={RESET}")
+            for chave, valor in consolidado.items():
+                print(f"{AMARELO}{chave.title()}:{RESET} {valor}")
+            
+            if input(f"\n{AMARELO}Salvar resultados? (s/n): {RESET}").lower() == 's':
+                filename = f"tel_{numero}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+                with open(filename, 'w') as f:
+                    json.dump(consolidado, f, indent=2)
+                print(f"{VERDE}[+] Salvo em {filename}{RESET}")
+        else:
+            print(f"{VERMELHO}[!] Nenhum dado obtido das APIs{RESET}")
 
 if __name__ == "__main__":
     main()
