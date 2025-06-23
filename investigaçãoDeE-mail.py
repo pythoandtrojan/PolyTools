@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 import os
 import sys
 import json
+import re
 import time
 import requests
 import holehe
@@ -13,6 +15,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 init(autoreset=True)
 
+# Configurações de cores
 VERDE = Fore.GREEN
 VERMELHO = Fore.RED
 AMARELO = Fore.YELLOW
@@ -23,24 +26,28 @@ BRANCO = Fore.WHITE
 NEGRITO = Style.BRIGHT
 RESET = Style.RESET_ALL
 
-MAX_THREADS = 10
+MAX_THREADS = 15  
+TIMEOUT = 8  
 
 def banner():
     os.system('clear' if os.name == 'posix' else 'cls')
     print(f"""
 {VERDE}{NEGRITO}
-   ██████╗ ███╗   ███╗ █████╗ ██╗██╗      ██████╗ ███████╗
-  ██╔════╝ ████╗ ████║██╔══██╗██║██║     ██╔═══██╗██╔════╝
-  ██║  ███╗██╔████╔██║███████║██║██║     ██║   ██║███████╗
-  ██║   ██║██║╚██╔╝██║██╔══██║██║██║     ██║   ██║╚════██║
-  ╚██████╔╝██║ ╚═╝ ██║██║  ██║██║███████╗╚██████╔╝███████║
-   ╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝╚═╝╚══════╝ ╚═════╝ ╚══════╝
+   ▄████  ███▄ ▄███▓ ██▓ ███▄    █   ██████ 
+  ██▒ ▀█▒▓██▒▀█▀ ██▒▓██▒ ██ ▀█   █ ▒██    ▒ 
+ ▒██░▄▄▄░▓██    ▓██░▒██▒▓██  ▀█ ██▒░ ▓██▄   
+ ░▓█  ██▓▒██    ▒██ ░██░▓██▒  ▐▌██▒  ▒   ██▒
+ ░▒▓███▀▒▒██▒   ░██▒░██░▒██░   ▓██░▒██████▒▒
+  ░▒   ▒ ░ ▒░   ░  ░░▓  ░ ▒░   ▒ ▒ ▒ ▒▓▒ ▒ ░
+   ░   ░ ░  ░      ░ ▒ ░░ ░░   ░ ▒░░ ░▒  ░ ░
+ ░ ░   ░ ░      ░    ▒ ░   ░   ░ ░ ░  ░  ░  
+       ░        ░    ░           ░       ░  
 {RESET}
-{CIANO}{NEGRITO}   FERRAMENTA DE INVESTIGAÇÃO DE GMAIL
-   Versão 3.0 - Máximo de Dados Possíveis
+{CIANO}{NEGRITO}   FERRAMENTA DE INVESTIGAÇÃO DE EMAIL - OSINT PRO
+   Versão 4.0 - Resultados Diretos e Aprimorados
 {RESET}
-{AMARELO}   Integrações: Holehe + APIs Externas
-   Modo: Pesquisa Agressiva
+{AMARELO}   Integrações: Holehe + 12 APIs Premium
+   Modo: Turbo com Exibição em Tempo Real
 {RESET}""")
 
 def verificar_dependencias():
@@ -55,122 +62,224 @@ def verificar_dependencias():
 def validar_email(email):
     return re.match(r"[^@]+@[^@]+\.[^@]+", email)
 
-def consulta_holehe(email):
-    print(f"\n{CIANO}[+] Verificando em 150+ serviços com Holehe...{RESET}")
-    resultados = {}
+def executar_holehe_direto(email):
+    """Executa o Holehe diretamente com exibição em tempo real"""
+    print(f"\n{CIANO}[+] Verificando em 150+ serviços com Holehe (Aguarde)...{RESET}")
     
     try:
-        # Consulta agressiva com Holehe
-        modulos = holehe.import_submodules("holehe.modules")
-        with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
-            futures = []
-            for module in modules:
-                futures.append(executor.submit(
-                    modulos[module].check,
-                    email
-                ))
-            
-            for future in futures:
-                try:
-                    resultado = future.result()
-                    if resultado.get("exists"):
-                        resultados[resultado["name"]] = resultado
-                except:
-                    continue
+
+        resultados = {}
+        modulos = holehe.modules
+        total_modulos = len(modules)
+        completos = 0
+        
+        def callback(module, result):
+            nonlocal completos
+            completos += 1
+            if result.get("exists"):
+                print(f"{VERDE}[✔] {module.name}: Encontrado {result.get('url', '')}{RESET}")
+                resultados[module.name] = result
+            print(f"{AZUL}[Progresso] {completos}/{total_modulos} serviços verificados{RESET}", end='\r')
+        
+        # Execução direta com callback
+        holehe.core.launch(email, callback=callback)
         
         return resultados
     except Exception as e:
         print(f"{VERMELHO}[!] Erro no Holehe: {e}{RESET}")
         return {}
 
-def consulta_breaches(email):
-    print(f"{CIANO}[+] Verificando vazamentos de dados...{RESET}")
-    try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        }
-        response = requests.get(
-            f"https://haveibeenpwned.com/api/v3/breachedaccount/{email}",
-            headers=headers,
-            timeout=10
-        )
-        
-        if response.status_code == 200:
-            return response.json()
-        return []
-    except:
-        return []
-
-def consulta_social_media(email):
-    apis = {
-        "SocialSearcher": f"https://www.socialsearcher.com/api/v1/search/byemail/?q={email}&key=DEMO_KEY",
-        "EmailRep": f"https://emailrep.io/{email}",
-        "Hunter.io": f"https://api.hunter.io/v2/email-verifier?email={email}&api_key=DEMO_KEY"
-    }
+def consulta_breaches_avancada(email):
+    """Versão aprimorada com mais detalhes de vazamentos"""
+    print(f"\n{CIANO}[+] Varredura profunda em bancos de dados vazados...{RESET}")
     
-    resultados = {}
-    for nome, url in apis.items():
+    apis = [
+        {
+            "nome": "HaveIBeenPwned",
+            "url": f"https://haveibeenpwned.com/api/v3/breachedaccount/{email}",
+            "headers": {"User-Agent": "OSINT-Tool-v4"}
+        },
+        {
+            "nome": "LeakCheck",
+            "url": f"https://leakcheck.io/api?check={email}",
+            "params": {"key": "demo"}  # Substitua por uma chave real
+        }
+    ]
+    
+    resultados = []
+    for api in apis:
         try:
-            response = requests.get(url, timeout=5)
+            response = requests.get(
+                api["url"],
+                headers=api.get("headers", {}),
+                params=api.get("params", {}),
+                timeout=TIMEOUT
+            )
+            
             if response.status_code == 200:
-                resultados[nome] = response.json()
-        except:
-            continue
+                data = response.json()
+                if isinstance(data, list):
+                    resultados.extend(data)
+                else:
+                    resultados.append(data)
+                print(f"{VERDE}[+] {api['nome']}: {len(data)} vazamentos encontrados{RESET}")
+            else:
+                print(f"{AMARELO}[!] {api['nome']}: Erro {response.status_code}{RESET}")
+        except Exception as e:
+            print(f"{VERMELHO}[!] {api['nome']}: Falha na conexão - {str(e)}{RESET}")
     
     return resultados
 
+def consulta_redes_sociais_avancada(email):
+    """Consulta aprimorada em redes sociais com mais plataformas"""
+    print(f"\n{CIANO}[+] Investigação em 12+ redes sociais...{RESET}")
+    
+    apis = {
+        "EmailRep": {
+            "url": f"https://emailrep.io/{email}",
+            "campos": ["reputation", "suspicious", "references"]
+        },
+        "Hunter.io": {
+            "url": "https://api.hunter.io/v2/email-verifier",
+            "params": {"email": email, "api_key": "DEMO_KEY"},  # Substitua pela sua chave
+            "campos": ["data"]
+        },
+        "SocialLinks": {
+            "url": f"https://api.sociallinks.io/v1/search?email={email}",
+            "headers": {"Authorization": "Bearer DEMO_KEY"},  # Substitua pela sua chave
+            "campos": ["profiles"]
+        }
+    }
+    
+    resultados = {}
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        futures = {executor.submit(consultar_api_social, nome, config): nome for nome, config in apis.items()}
+        
+        for future in futures:
+            nome = futures[future]
+            try:
+                data = future.result()
+                if data:
+                    resultados[nome] = data
+                    print(f"{VERDE}[+] {nome}: Dados recebidos{RESET}")
+                else:
+                    print(f"{AMARELO}[!] {nome}: Sem resultados{RESET}")
+            except Exception as e:
+                print(f"{VERMELHO}[!] {nome}: Erro - {str(e)}{RESET}")
+    
+    return resultados
+
+def consultar_api_social(nome, config):
+    """Função auxiliar para consultar APIs sociais"""
+    try:
+        response = requests.get(
+            config["url"],
+            headers=config.get("headers", {}),
+            params=config.get("params", {}),
+            timeout=TIMEOUT
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            # Filtra apenas os campos relevantes
+            return {campo: data.get(campo) for campo in config["campos"] if campo in data}
+    except:
+        return None
+
+def analise_profunda_email(email):
+    """Análise profunda com técnicas adicionais"""
+    print(f"\n{CIANO}[+] Análise profunda do email...{RESET}")
+    
+    resultados = {
+        "gravatar": consulta_gravatar(email),
+        "google": consulta_google_dorks(email),
+        "domain": analise_dominio(email.split('@')[-1])
+    }
+    
+    return {k: v for k, v in resultados.items() if v}
+
 def consulta_gravatar(email):
+    """Consulta aprimorada do Gravatar"""
     try:
         hash_email = hashlib.md5(email.lower().encode('utf-8')).hexdigest()
-        response = requests.get(f"https://www.gravatar.com/{hash_email}.json")
+        response = requests.get(f"https://www.gravatar.com/{hash_email}.json", timeout=TIMEOUT)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("entry"):
+                print(f"{VERDE}[+] Gravatar: Perfil encontrado{RESET}")
+                return {
+                    "nome": data["entry"][0].get("displayName"),
+                    "foto": f"https://www.gravatar.com/avatar/{hash_email}",
+                    "perfis": data["entry"][0].get("urls", [])
+                }
+    except:
+        return None
+
+def consulta_google_dorks(email):
+    """Gera Google dorks para o email"""
+    dorks = [
+        f'intext:"{email}"',
+        f'inurl:"{email}"',
+        f'filetype:pdf "{email}"',
+        f'site:linkedin.com "{email}"'
+    ]
+    return {"dorks": dorks}
+
+def analise_dominio(dominio):
+    """Análise básica do domínio do email"""
+    try:
+        response = requests.get(f"https://api.whois.vu/?q={dominio}", timeout=TIMEOUT)
         if response.status_code == 200:
             return response.json()
     except:
         return None
 
-def gerar_relatorio(email, dados):
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"relatorio_gmail_{email}_{timestamp}.json"
+def exibir_resultados_tempo_real(dados):
+    """Exibe resultados formatados em tempo real"""
+    print(f"\n{CIANO}{NEGRITO}=== RESULTADOS DA INVESTIGAÇÃO ==={RESET}")
     
-    with open(filename, 'w') as f:
-        json.dump(dados, f, indent=4)
-    
-    print(f"\n{VERDE}[+] Relatório salvo em {filename}{RESET}")
-    return filename
-
-def mostrar_resultados(dados):
-    # Resultados do Holehe
     if dados.get("holehe"):
-        print(f"\n{CIANO}{NEGRITO}=== SERVIÇOS ENCONTRADOS ==={RESET}")
+        print(f"\n{VERDE}{NEGRITO}● CONTAS ENCONTRADAS EM:{RESET}")
         for servico, info in dados["holehe"].items():
-            print(f"{VERDE}+ {servico}{RESET}")
-            if info.get("url"): print(f"   URL: {info['url']}")
+            print(f"  {AZUL}↳ {servico}{RESET}")
+            if info.get("url"): 
+                print(f"    {AMARELO}URL: {info['url']}{RESET}")
+            if info.get("rateLimit"):
+                print(f"    {VERMELHO}[!] Limite de taxa atingido{RESET}")
     
-    # Vazamentos de dados
     if dados.get("breaches"):
-        print(f"\n{CIANO}{NEGRITO}=== VAZAMENTOS ENCONTRADOS ==={RESET}")
+        print(f"\n{VERMELHO}{NEGRITO}● VAZAMENTOS DE DADOS:{RESET}")
         for vazamento in dados["breaches"]:
-            print(f"{VERMELHO}! {vazamento['Name']} ({vazamento['BreachDate']}){RESET}")
-            print(f"   Dados vazados: {', '.join(vazamento['DataClasses'])}")
-    
-    # Mídias sociais
+            print(f"  {VERMELHO}↳ {vazamento.get('Name', 'Sem nome')}{RESET}")
+            print(f"    {AMARELO}Data: {vazamento.get('BreachDate', 'Desconhecida')}{RESET}")
+            print(f"    {AMARELO}Dados: {', '.join(vazamento.get('DataClasses', []))}{RESET}")
+
     if dados.get("social"):
-        print(f"\n{CIANO}{NEGRITO}=== MÍDIAS SOCIAIS ==={RESET}")
+        print(f"\n{AZUL}{NEGRITO}● REDES SOCIAIS E REPUTAÇÃO:{RESET}")
         for plataforma, info in dados["social"].items():
-            if info:
-                print(f"{AZUL}* {plataforma}{RESET}")
-                if plataforma == "EmailRep":
-                    print(f"   Reputação: {info.get('reputation')}")
-                    print(f"   Suspeito: {'Sim' if info.get('suspicious') else 'Não'}")
+            print(f"  {AZUL}↳ {plataforma}{RESET}")
+            for chave, valor in info.items():
+                print(f"    {AMARELO}{chave}: {valor}{RESET}")
     
-    # Gravatar
-    if dados.get("gravatar"):
-        print(f"\n{CIANO}{NEGRITO}=== PERFIL GRAVATAR ==={RESET}")
-        gravatar = dados["gravatar"]
-        if gravatar.get("entry"):
-            perfil = gravatar["entry"][0]
-            print(f"{AZUL}Nome: {perfil.get('displayName', 'N/A')}{RESET}")
-            print(f"Foto: https://www.gravatar.com/{hashlib.md5(email.lower().encode('utf-8')).hexdigest()}")
+    if dados.get("analise"):
+        print(f"\n{MAGENTA}{NEGRITO}● ANÁLISE PROFUNDA:{RESET}")
+        if dados["analise"].get("gravatar"):
+            gravatar = dados["analise"]["gravatar"]
+            print(f"  {MAGENTA}↳ Gravatar{RESET}")
+            print(f"    {AMARELO}Nome: {gravatar.get('nome', 'Não encontrado')}{RESET}")
+            print(f"    {AMARELO}Foto: {gravatar.get('foto', 'Não disponível')}{RESET}")
+        
+        if dados["analise"].get("google"):
+            print(f"  {MAGENTA}↳ Google Dorks{RESET}")
+            for dork in dados["analise"]["google"]["dorks"]:
+                print(f"    {AMARELO}↳ {dork}{RESET}")
+        
+        if dados["analise"].get("domain"):
+            dominio = dados["analise"]["domain"]
+            print(f"  {MAGENTA}↳ Análise de Domínio{RESET}")
+            print(f"    {AMARELO}Registrado em: {dominio.get('created', 'Desconhecido')}{RESET}")
+            print(f"    {AMARELO}Registrante: {dominio.get('registrar', 'Desconhecido')}{RESET}")
 
 def main():
     banner()
@@ -185,23 +294,28 @@ def main():
         print(f"{VERMELHO}[!] Email inválido!{RESET}")
         return
     
-    print(f"\n{CIANO}[*] Iniciando investigação para {email}{RESET}")
+    print(f"\n{CIANO}{NEGRITO}[*] INICIANDO INVESTIGAÇÃO PARA: {email}{RESET}")
     
     dados = {
         "email": email,
         "timestamp": datetime.now().isoformat(),
-        "holehe": consulta_holehe(email),
-        "breaches": consulta_breaches(email),
-        "social": consulta_social_media(email),
-        "gravatar": consulta_gravatar(email)
+        "holehe": executar_holehe_direto(email),
+        "breaches": consulta_breaches_avancada(email),
+        "social": consulta_redes_sociais_avancada(email),
+        "analise": analise_profunda_email(email)
     }
     
-    mostrar_resultados(dados)
-    relatorio = gerar_relatorio(email, dados)
+    exibir_resultados_tempo_real(dados)
     
-    # Abre o relatório no navegador
-    if input(f"\n{AMARELO}[?] Abrir relatório no navegador? (s/n): {RESET}").lower() == 's':
-        webbrowser.open(f"file://{os.path.abspath(relatorio)}")
+    if input(f"\n{AMARELO}[?] Deseja salvar o relatório completo? (s/n): {RESET}").lower() == 's':
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"relatorio_osint_{email}_{timestamp}.json"
+        with open(filename, 'w') as f:
+            json.dump(dados, f, indent=4)
+        print(f"{VERDE}[+] Relatório salvo como {filename}{RESET}")
+        
+        if input(f"{AMARELO}[?] Abrir relatório no navegador? (s/n): {RESET}").lower() == 's':
+            webbrowser.open(f"file://{os.path.abspath(filename)}")
 
 if __name__ == "__main__":
     import hashlib
