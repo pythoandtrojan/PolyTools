@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 import requests
 import json
@@ -9,7 +8,6 @@ from colorama import Fore, Style, init
 
 init(autoreset=True)
 
-# Configurações
 VERDE = Fore.GREEN
 VERMELHO = Fore.RED
 AMARELO = Fore.YELLOW
@@ -18,7 +16,6 @@ CIANO = Fore.CYAN
 NEGRITO = Style.BRIGHT
 RESET = Style.RESET_ALL
 
-# APIs atualizadas
 APIS = {
     "BrasilAPI (DDD)": {
         "url": "https://brasilapi.com.br/api/ddd/v1/{ddd}",
@@ -128,7 +125,6 @@ def main():
         consolidado = {}
         print(f"\n{VERDE}[*] Consultando APIs para DDD {ddd}...{RESET}")
         
-        # Consulta BrasilAPI (DDD)
         params = {"ddd": ddd}
         dados = consultar_api("BrasilAPI (DDD)", params)
         if dados:
@@ -137,7 +133,7 @@ def main():
                 consolidado.update(processado)
                 print(f"{AZUL}[+] BrasilAPI: Dados de DDD obtidos{RESET}")
         
-        # Consulta Intelbrás (número completo)
+        
         params = {"numero": numero}
         dados = consultar_api("Intelbrás WebFone", params)
         if dados:
@@ -146,7 +142,7 @@ def main():
                 consolidado.update(processado)
                 print(f"{AZUL}[+] Intelbrás: Dados de operadora obtidos{RESET}")
         
-        # Exibe resultados
+        
         if consolidado:
             print(f"\n{CIANO}{NEGRITO}=== RESULTADOS ==={RESET}")
             for chave, valor in consolidado.items():
