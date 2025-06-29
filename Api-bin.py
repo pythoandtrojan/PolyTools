@@ -391,11 +391,7 @@ utilizando múltiplas APIs públicas com fallback automático para máxima preci
 6. BIN Lookup (nova API)
 
 {Fore.YELLOW}DESENVOLVIDO POR:{Fore.WHITE}
-Seu Nome/Apelido
-
-{Fore.YELLOW}CONTATO:{Fore.WHITE}
-seu@email.com
-@seuusuario (Twitter/GitHub)
+erik/malwer
 
 Pressione Enter para voltar...{Style.RESET_ALL}""")
     input()
