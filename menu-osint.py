@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 import os
 import sys
@@ -9,15 +8,14 @@ import platform
 from colorama import Fore, Back, Style, init
 from datetime import datetime
 
-# Inicializa colorama
+
 init(autoreset=True)
 
-# Configurações
+
 PASTA_FERRAMENTAS = "OSINT"
-ESPERA_ENTER = 2  # segundos
+ESPERA_ENTER = 2  
 VERSAO = "2.0"
 
-# Banner elaborado com símbolos de quadrados
 BANNER = f"""
 {Fore.RED}╔════════════════════════════════════════════════════════════╗
 {Fore.YELLOW}║██████╗ ███████╗██╗  ██╗██╗███╗   ██╗████████╗███████╗{Fore.GREEN}║
