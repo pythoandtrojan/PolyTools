@@ -4,14 +4,10 @@
 import os
 import sys
 import time
-import random
 import subprocess
 from rich.console import Console
 from rich.panel import Panel
-from rich.progress import Progress
 from rich.table import Table
-from rich.text import Text
-from rich.columns import Columns
 import webbrowser
 
 console = Console()
@@ -19,14 +15,14 @@ console = Console()
 class Banners:
     @staticmethod
     def main_menu():
-        return """
+        return """[bold red]
         ███╗   ███╗███████╗███╗   ██╗██╗   ██╗    ██╗  ██╗ █████╗  ██████╗██╗  ██╗███████╗██████╗ 
         ████╗ ████║██╔════╝████╗  ██║██║   ██║    ██║  ██║██╔══██╗██╔════╝██║ ██╔╝██╔════╝██╔══██╗
         ██╔████╔██║█████╗  ██╔██╗ ██║██║   ██║    ███████║███████║██║     █████╔╝ █████╗  ██████╔╝
         ██║╚██╔╝██║██╔══╝  ██║╚██╗██║██║   ██║    ██╔══██║██╔══██║██║     ██╔═██╗ ██╔══╝  ██╔══██╗
         ██║ ╚═╝ ██║███████╗██║ ╚████║╚██████╔╝    ██║  ██║██║  ██║╚██████╗██║  ██╗███████╗██║  ██║
         ╚═╝     ╚═╝╚══════╝╚═╝  ╚═══╝ ╚═════╝     ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
-        """
+        [/bold red]"""
 
     @staticmethod
     def osint():
@@ -64,7 +60,7 @@ class HackerMenu:
                 "rg.py": "Consulta dados de RG",
                 "telefone.py": "Busca por números de telefone"
             },
-            "MALWARE": {
+            "malwer": {  # Corrigido para corresponder ao nome da pasta
                 "c2.py": "Command and Control server",
                 "malwer.py": "Ferramentas de malware",
                 "dependencias.py": "Instalador de dependências"
@@ -85,7 +81,7 @@ class HackerMenu:
         table.add_column("Descrição", style="yellow")
 
         table.add_row("1", "OSINT", "Ferramentas de coleta de informações")
-        table.add_row("2", "MALWARE", "Ferramentas ofensivas")
+        table.add_row("2", "MALWER", "Ferramentas ofensivas")  # Corrigido para MALWER
         table.add_row("0", "SAIR", "Sair do sistema")
 
         console.print(table)
@@ -99,7 +95,7 @@ class HackerMenu:
             
             if category == "OSINT":
                 console.print(Panel.fit(Banners.osint(), style="bold green"))
-            elif category == "MALWARE":
+            elif category == "malwer":  # Corrigido para malwer
                 console.print(Panel.fit(Banners.malware(), style="bold red"))
             
             console.print(f"\n[bold]{category} TOOLS[/bold]\n")
@@ -133,14 +129,38 @@ class HackerMenu:
         console.print(f"[bold yellow]Executando {tool_name}...[/bold yellow]\n")
         
         try:
-            # Simulação de execução - substitua pelo código real
+            # Verifica se o arquivo existe
+            script_path = os.path.join(category, tool_name)
+            if not os.path.exists(script_path):
+                console.print(f"[bold red]Erro: Arquivo {script_path} não encontrado![/bold red]")
+                console.input("\nPressione Enter para continuar...")
+                return
+            
+            # Executa o script
             if tool_name.endswith('.py'):
-                result = subprocess.run(['python3', f"{category}/{tool_name}"], 
-                                      capture_output=True, text=True)
-                console.print(Panel.fit(result.stdout or "Execução concluída sem saída",
-                                      title=f"[bold]{tool_name}[/bold]"))
+                # Usamos sys.executable para garantir que usará o mesmo interpretador Python
+                process = subprocess.Popen(
+                    [sys.executable, script_path],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    stdin=subprocess.PIPE,
+                    text=True
+                )
+                
+                # Mostra a saída em tempo real
+                while True:
+                    output = process.stdout.readline()
+                    if output == '' and process.poll() is not None:
+                        break
+                    if output:
+                        console.print(output.strip())
+                
+                # Verifica se houve erro
+                if process.returncode != 0:
+                    console.print(f"[bold red]Erro ao executar o script (código {process.returncode})[/bold red]")
             else:
                 console.print("[bold red]Arquivo não é um script Python![/bold red]")
+        
         except Exception as e:
             console.print(f"[bold red]Erro ao executar: {str(e)}[/bold red]")
         
@@ -153,7 +173,7 @@ class HackerMenu:
             if choice == "1":
                 self.show_category_menu("OSINT")
             elif choice == "2":
-                self.show_category_menu("MALWARE")
+                self.show_category_menu("malwer")  # Corrigido para malwer
             elif choice == "0":
                 console.print("[bold red]Saindo do sistema...[/bold red]")
                 time.sleep(1)
