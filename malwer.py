@@ -1522,7 +1522,7 @@ _verificar_tempo_execucao()
         time.sleep(1)
     
     def _sair(self):
-        """Exibe mensagem de saída estilizada"""
+
         console.print(Panel.fit(
             "[blink bold red]⚠️ ATENÇÃO: USO ILEGAL DESTA FERRAMENTA É CRIME! ⚠️[/blink bold red]",
             border_style="red"
