@@ -1262,7 +1262,7 @@ def {''.join(random.choices('abcdefghijklmnopqrstuvwxyz', k=9))}(y):
         payload_cifrado = cifra_aes.encrypt(payload.encode('utf-8'))
         
         # Aplica XOR adicional
-        payload_xor = bytes([payload_cifrado[i] ^ chave_xor[i % len(chave_xor)] for i in range(len(payload_cifrado)))
+        payload_xor = bytes([payload_cifrado[i] ^ chave_xor[i % len(chave_xor)] for i in range(len(payload_cifrado))])
         
         return f"""# Payload criptografado com AES+XOR
 from cryptography.fernet import Fernet
