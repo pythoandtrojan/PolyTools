@@ -56,7 +56,7 @@ class HackerMenu:
             "OSINT": {
                 "BuscaDeSites.py": "Busca informações em sites",
                 "Geolocalização-Metadados.py": "Extrai metadados de geolocalização",
-                "Leaked-Databases .py: "Consulta bancos de dados vazados",
+                "Leaked-Databases.py: "Consulta bancos de dados vazados",
                 "busca-usuario.py": "Busca por usuários em redes sociais",
                 "cep.py": "Consulta informações por CEP",
                 "cnpj.py": "Consulta dados de CNPJ",
