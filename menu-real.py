@@ -8,6 +8,8 @@ import subprocess
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
+from rich.text import Text
+from rich.progress import Progress
 import webbrowser
 
 console = Console()
@@ -40,6 +42,14 @@ class Banners:
         01010100 01101000 01100101 00100000 01100100 01100001 01110010 01101011 01101110 01100101 01110011 01110011 00100000 01101001 01110011 00100000 01110100 01100001 01101011 01101001 01101110 01100111 00100000 01101111 01110110 01100101 01110010
         """
 
+    @staticmethod
+    def scanner():
+        return """
+        01010011 01000011 01000001 01001110 01001110 01001001 01001110 01000111 00100000 01010000 01001111 01010010 01010100 01010011
+        01001001 00100111 01101101 00100000 01110111 01100001 01110100 01100011 01101000 01101001 01101110 01100111 00100000 01111001 01101111 01110101
+        01011001 01101111 01110101 00100000 01100011 01100001 01101110 00100111 01110100 00100000 01101000 01101001 01100100 01100101
+        """
+
 class HackerMenu:
     def __init__(self):
         self.tools = {
@@ -60,10 +70,14 @@ class HackerMenu:
                 "rg.py": "Consulta dados de RG",
                 "telefone.py": "Busca por números de telefone"
             },
-            "malwer": {  # Corrigido para corresponder ao nome da pasta
+            "malwer": {
                 "c2.py": "Command and Control server",
                 "malwer.py": "Ferramentas de malware",
                 "dependencias.py": "Instalador de dependências"
+            },
+            "scanner": {
+                "scanner.py": "Ferramenta de varredura de portas e redes",
+                "vulnerabilidade.py": "Scanner de vulnerabilidades"
             }
         }
 
@@ -81,7 +95,8 @@ class HackerMenu:
         table.add_column("Descrição", style="yellow")
 
         table.add_row("1", "OSINT", "Ferramentas de coleta de informações")
-        table.add_row("2", "MALWER", "Ferramentas ofensivas")  # Corrigido para MALWER
+        table.add_row("2", "MALWER", "Ferramentas ofensivas")
+        table.add_row("3", "SCANNER", "Ferramentas de varredura")  # Nova opção
         table.add_row("0", "SAIR", "Sair do sistema")
 
         console.print(table)
@@ -95,8 +110,10 @@ class HackerMenu:
             
             if category == "OSINT":
                 console.print(Panel.fit(Banners.osint(), style="bold green"))
-            elif category == "malwer":  # Corrigido para malwer
+            elif category == "malwer":
                 console.print(Panel.fit(Banners.malware(), style="bold red"))
+            elif category == "scanner":
+                console.print(Panel.fit(Banners.scanner(), style="bold blue"))
             
             console.print(f"\n[bold]{category} TOOLS[/bold]\n")
             
@@ -136,24 +153,25 @@ class HackerMenu:
                 console.input("\nPressione Enter para continuar...")
                 return
             
-            # Executa o script
+            # Configura o ambiente para execução interativa
+            env = os.environ.copy()
+            env['PYTHONUNBUFFERED'] = '1'  # Para evitar buffering da saída
+            
+            # Executa o script de forma interativa
             if tool_name.endswith('.py'):
                 # Usamos sys.executable para garantir que usará o mesmo interpretador Python
                 process = subprocess.Popen(
                     [sys.executable, script_path],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    stdin=subprocess.PIPE,
-                    text=True
+                    stdin=sys.stdin,
+                    stdout=sys.stdout,
+                    stderr=sys.stderr,
+                    env=env,
+                    bufsize=1,
+                    universal_newlines=True
                 )
                 
-                # Mostra a saída em tempo real
-                while True:
-                    output = process.stdout.readline()
-                    if output == '' and process.poll() is not None:
-                        break
-                    if output:
-                        console.print(output.strip())
+                # Aguarda o processo terminar
+                process.wait()
                 
                 # Verifica se houve erro
                 if process.returncode != 0:
@@ -173,7 +191,9 @@ class HackerMenu:
             if choice == "1":
                 self.show_category_menu("OSINT")
             elif choice == "2":
-                self.show_category_menu("malwer")  # Corrigido para malwer
+                self.show_category_menu("malwer")
+            elif choice == "3":
+                self.show_category_menu("scanner")  # Nova categoria
             elif choice == "0":
                 console.print("[bold red]Saindo do sistema...[/bold red]")
                 time.sleep(1)
