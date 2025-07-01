@@ -49,6 +49,14 @@ class Banners:
         01001001 00100111 01101101 00100000 01110111 01100001 01110100 01100011 01101000 01101001 01101110 01100111 00100000 01111001 01101111 01110101
         01011001 01101111 01110101 00100000 01100011 01100001 01101110 00100111 01110100 00100000 01101000 01101001 01100100 01100101
         """
+        
+    @staticmethod
+    def brute_force():
+        return """
+        01000010 01010010 01010101 01010100 01000101 00100000 01000110 01001111 01010010 01000011 01000101
+        01000011 01010010 01000001 01000011 01001011 01001001 01001110 01000111 00100000 01010000 01000001 01010011 01010011 01010111 01001111 01010010 01000100 01010011
+        01010100 01001000 01000101 00100000 01000010 01010010 01010101 01010100 01000101 00100000 01010011 01001000 01000001 01001100 01001100 00100000 01010010 01000101 01001001 01000111 01001110
+        """
 
 class HackerMenu:
     def __init__(self):
@@ -56,7 +64,7 @@ class HackerMenu:
             "OSINT": {
                 "BuscaDeSites.py": "Busca informações em sites",
                 "Geolocalização-Metadados.py": "Extrai metadados de geolocalização",
-                "Leaked-Databases.py: "Consulta bancos de dados vazados",
+                "Leaked-Databases.py": "Consulta bancos de dados vazados",
                 "busca-usuario.py": "Busca por usuários em redes sociais",
                 "cep.py": "Consulta informações por CEP",
                 "cnpj.py": "Consulta dados de CNPJ",
@@ -78,6 +86,11 @@ class HackerMenu:
             "scanner": {
                 "scanner.py": "Ferramenta de varredura de portas e redes",
                 "vulnerabilidade.py": "Scanner de vulnerabilidades"
+            },
+            "brute": {
+                "dicionário-ataque.py": "Ataque de dicionário a senhas",
+                "hash-cracker.c": "Quebrador de hashes em C",
+                "puro.py": "Força bruta pura"
             }
         }
 
@@ -96,7 +109,8 @@ class HackerMenu:
 
         table.add_row("1", "OSINT", "Ferramentas de coleta de informações")
         table.add_row("2", "MALWER", "Ferramentas ofensivas")
-        table.add_row("3", "SCANNER", "Ferramentas de varredura")  # Nova opção
+        table.add_row("3", "SCANNER", "Ferramentas de varredura")
+        table.add_row("4", "FORÇA BRUTA", "Ataques de força bruta")  # Nova opção
         table.add_row("0", "SAIR", "Sair do sistema")
 
         console.print(table)
@@ -114,6 +128,8 @@ class HackerMenu:
                 console.print(Panel.fit(Banners.malware(), style="bold red"))
             elif category == "scanner":
                 console.print(Panel.fit(Banners.scanner(), style="bold blue"))
+            elif category == "brute":
+                console.print(Panel.fit(Banners.brute_force(), style="bold magenta"))
             
             console.print(f"\n[bold]{category} TOOLS[/bold]\n")
             
@@ -141,6 +157,30 @@ class HackerMenu:
                 console.print("[bold red]Opção inválida![/bold red]")
                 time.sleep(1)
 
+    def compile_c_file(self, file_path):
+        """Compila um arquivo .c antes de executar"""
+        try:
+            output_file = file_path[:-2]  # Remove a extensão .c
+            console.print(f"[bold yellow]Compilando {file_path}...[/bold yellow]")
+            
+            result = subprocess.run(
+                ["gcc", file_path, "-o", output_file],
+                stderr=subprocess.PIPE,
+                universal_newlines=True
+            )
+            
+            if result.returncode != 0:
+                console.print(f"[bold red]Erro na compilação:[/bold red]")
+                console.print(result.stderr)
+                return None
+                
+            console.print(f"[bold green]Compilação bem-sucedida! Arquivo gerado: {output_file}[/bold green]")
+            return output_file
+            
+        except Exception as e:
+            console.print(f"[bold red]Erro ao compilar: {str(e)}[/bold red]")
+            return None
+
     def run_tool(self, category, tool_name):
         self.clear_screen()
         console.print(f"[bold yellow]Executando {tool_name}...[/bold yellow]\n")
@@ -155,11 +195,27 @@ class HackerMenu:
             
             # Configura o ambiente para execução interativa
             env = os.environ.copy()
-            env['PYTHONUNBUFFERED'] = '1'  # Para evitar buffering da saída
+            env['PYTHONUNBUFFERED'] = '1'
             
-            # Executa o script de forma interativa
-            if tool_name.endswith('.py'):
-                # Usamos sys.executable para garantir que usará o mesmo interpretador Python
+            # Tratamento especial para arquivos C
+            if tool_name.endswith('.c'):
+                compiled_path = self.compile_c_file(script_path)
+                if not compiled_path:
+                    console.input("\nPressione Enter para continuar...")
+                    return
+                
+                # Executa o binário compilado
+                process = subprocess.Popen(
+                    [f"./{compiled_path}"],
+                    stdin=sys.stdin,
+                    stdout=sys.stdout,
+                    stderr=sys.stderr,
+                    env=env,
+                    bufsize=1,
+                    universal_newlines=True
+                )
+            elif tool_name.endswith('.py'):
+                # Executa scripts Python
                 process = subprocess.Popen(
                     [sys.executable, script_path],
                     stdin=sys.stdin,
@@ -169,15 +225,16 @@ class HackerMenu:
                     bufsize=1,
                     universal_newlines=True
                 )
-                
-                # Aguarda o processo terminar
-                process.wait()
-                
-                # Verifica se houve erro
-                if process.returncode != 0:
-                    console.print(f"[bold red]Erro ao executar o script (código {process.returncode})[/bold red]")
             else:
-                console.print("[bold red]Arquivo não é um script Python![/bold red]")
+                console.print("[bold red]Tipo de arquivo não suportado![/bold red]")
+                console.input("\nPressione Enter para continuar...")
+                return
+                
+            # Aguarda o processo terminar
+            process.wait()
+            
+            if process.returncode != 0:
+                console.print(f"[bold red]Erro ao executar (código {process.returncode})[/bold red]")
         
         except Exception as e:
             console.print(f"[bold red]Erro ao executar: {str(e)}[/bold red]")
@@ -193,7 +250,9 @@ class HackerMenu:
             elif choice == "2":
                 self.show_category_menu("malwer")
             elif choice == "3":
-                self.show_category_menu("scanner")  # Nova categoria
+                self.show_category_menu("scanner")
+            elif choice == "4":  # Nova opção para força bruta
+                self.show_category_menu("brute")
             elif choice == "0":
                 console.print("[bold red]Saindo do sistema...[/bold red]")
                 time.sleep(1)
