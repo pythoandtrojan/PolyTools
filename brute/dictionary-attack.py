@@ -29,7 +29,7 @@ from rich.layout import Layout
 from urllib.parse import urlparse
 from concurrent.futures import ThreadPoolExecutor
 
-# Ignorar warnings de SSL
+
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 
