@@ -40,12 +40,8 @@ BIBLIOTECAS_PIP_TERMUX = [
     "pyfiglet",       
     "tqdm",             
     "dnspython",       
-    "pandas",          
-    "geoip2",           
-    "socialscan",     
-    "phonenumbers",    
-    "pyopenssl",       
-    "urllib3"          
+            
+   
 ]
 
 
