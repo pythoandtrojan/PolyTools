@@ -57,6 +57,14 @@ class Banners:
         01000011 01010010 01000001 01000011 01001011 01001001 01001110 01000111 00100000 01010000 01000001 01010011 01010011 01010111 01001111 01010010 01000100 01010011
         01010100 01001000 01000101 00100000 01000010 01010010 01010101 01010100 01000101 00100000 01010011 01001000 01000001 01001100 01001100 00100000 01010010 01000101 01001001 01000111 01001110
         """
+        
+    @staticmethod
+    def sql_inject():
+        return """
+        01010011 01010001 01001100 00100000 01001001 01001110 01001010 01000101 01000011 01010100 01001001 01001111 01001110
+        01000100 01000001 01000100 01001111 01010011 00100000 01010011 01000001 01001110 01000111 01010010 01000001 01000100 01001111 01010011
+        01010000 01000001 01010011 01010011 01010111 01001111 01010010 01000100 01010011 00100000 01000101 01001101 00100000 01010000 01001100 01000001 01001001 01001110 01010100 01000101 01011000 01010100
+        """
 
 class HackerMenu:
     def __init__(self):
@@ -76,10 +84,12 @@ class HackerMenu:
                 "pais.py": "Consulta informações de países",
                 "rastreador-bitcoin.py": "Rastreia transações Bitcoin",
                 "rg.py": "Consulta dados de RG",
-                "telefone.py": "Busca por números de telefone"
+                "telefone.py": "Busca por números de telefone",
+                "bin.py": "Consulta informações de BIN (cartões)",
+                "placa.py": "Consulta informações de placas de veículos"
             },
             "malwer": {
-                "c2.py": "Command and Control server",
+                "c2.py": "Servidor de Comando e Controle",
                 "malwer.py": "Ferramentas de malware",
                 "dependencias.py": "Instalador de dependências"
             },
@@ -88,9 +98,13 @@ class HackerMenu:
                 "vulnerabilidade.py": "Scanner de vulnerabilidades"
             },
             "brute": {
-                "dicionário-ataque.py": "Ataque de dicionário a senhas",
+                "dictionary-attack.py": "Ataque de dicionário a senhas",
                 "hash-cracker.c": "Quebrador de hashes em C",
                 "puro.py": "Força bruta pura"
+            },
+            "sql-inject": {
+                "sqlmap.py": "Ferramenta automatizada de SQL injection",
+                "sql-inject.py": "Ferramenta manual de SQL injection"
             }
         }
 
@@ -110,7 +124,8 @@ class HackerMenu:
         table.add_row("1", "OSINT", "Ferramentas de coleta de informações")
         table.add_row("2", "MALWER", "Ferramentas ofensivas")
         table.add_row("3", "SCANNER", "Ferramentas de varredura")
-        table.add_row("4", "FORÇA BRUTA", "Ataques de força bruta")  # Nova opção
+        table.add_row("4", "FORÇA BRUTA", "Ataques de força bruta")
+        table.add_row("5", "SQL INJECTION", "Injeção de SQL em bancos de dados")
         table.add_row("0", "SAIR", "Sair do sistema")
 
         console.print(table)
@@ -130,6 +145,8 @@ class HackerMenu:
                 console.print(Panel.fit(Banners.scanner(), style="bold blue"))
             elif category == "brute":
                 console.print(Panel.fit(Banners.brute_force(), style="bold magenta"))
+            elif category == "sql-inject":
+                console.print(Panel.fit(Banners.sql_inject(), style="bold cyan"))
             
             console.print(f"\n[bold]{category} TOOLS[/bold]\n")
             
@@ -158,9 +175,9 @@ class HackerMenu:
                 time.sleep(1)
 
     def compile_c_file(self, file_path):
-        """Compila um arquivo .c antes de executar"""
+     
         try:
-            output_file = file_path[:-2]  # Remove a extensão .c
+            output_file = file_path[:-2]  
             console.print(f"[bold yellow]Compilando {file_path}...[/bold yellow]")
             
             result = subprocess.run(
@@ -186,25 +203,24 @@ class HackerMenu:
         console.print(f"[bold yellow]Executando {tool_name}...[/bold yellow]\n")
         
         try:
-            # Verifica se o arquivo existe
+         
             script_path = os.path.join(category, tool_name)
             if not os.path.exists(script_path):
                 console.print(f"[bold red]Erro: Arquivo {script_path} não encontrado![/bold red]")
                 console.input("\nPressione Enter para continuar...")
                 return
-            
-            # Configura o ambiente para execução interativa
+        
             env = os.environ.copy()
             env['PYTHONUNBUFFERED'] = '1'
             
-            # Tratamento especial para arquivos C
+     
             if tool_name.endswith('.c'):
                 compiled_path = self.compile_c_file(script_path)
                 if not compiled_path:
                     console.input("\nPressione Enter para continuar...")
                     return
                 
-                # Executa o binário compilado
+         
                 process = subprocess.Popen(
                     [f"./{compiled_path}"],
                     stdin=sys.stdin,
@@ -215,7 +231,7 @@ class HackerMenu:
                     universal_newlines=True
                 )
             elif tool_name.endswith('.py'):
-                # Executa scripts Python
+           
                 process = subprocess.Popen(
                     [sys.executable, script_path],
                     stdin=sys.stdin,
@@ -230,7 +246,7 @@ class HackerMenu:
                 console.input("\nPressione Enter para continuar...")
                 return
                 
-            # Aguarda o processo terminar
+     
             process.wait()
             
             if process.returncode != 0:
@@ -251,8 +267,10 @@ class HackerMenu:
                 self.show_category_menu("malwer")
             elif choice == "3":
                 self.show_category_menu("scanner")
-            elif choice == "4":  # Nova opção para força bruta
+            elif choice == "4":
                 self.show_category_menu("brute")
+            elif choice == "5":
+                self.show_category_menu("sql-inject")
             elif choice == "0":
                 console.print("[bold red]Saindo do sistema...[/bold red]")
                 time.sleep(1)
