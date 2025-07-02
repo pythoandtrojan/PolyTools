@@ -1,6 +1,6 @@
 def atualizacao():
     print(f"""
-{Fore.CYAN + Style.BRIGHT}📢 ATUALIZAÇÃO - NOVA VERSÃO DISPONÍVEL{Style.RESET_ALL}
+{Fore.CYAN + Style.BRIGHT}📢 ATUALIZAÇÃO - VERSÃO 2.5.0 - 02/07/2025{Style.RESET_ALL}
 
 {Fore.GREEN + Style.BRIGHT}🆕 FUNCIONALIDADES ADICIONADAS:{Style.RESET_ALL}
 
@@ -9,6 +9,7 @@ def atualizacao():
   • Dados organizados (Proprietário, Endereço, Operadora etc)
   • Exibe tempo de resposta e status da requisição
   • Aviso automático sobre reinício diário da API às 12h
+  • [EM FABRICAÇÃO] telefone.py com consulta em múltiplas bases simultâneas
 
 {Fore.YELLOW}👤 CONSULTA POR NOME:{Style.RESET_ALL}
   • API {Fore.WHITE}nome_completo2{Style.RESET_ALL} funcionando com SSL ignorado
@@ -19,12 +20,30 @@ def atualizacao():
   • Código reestruturado e otimizado
   • Agora permite escolher rede social alvo
   • Usa {Fore.WHITE}WhoStillUses (whostillits){Style.RESET_ALL} para verificar usuários reais
+  • Novo módulo de quebra de hash em C para maior performance
+
+{Fore.YELLOW}🛠️ NOVAS CLASSES DE SEGURANÇA ainda nao empregado:{Style.RESET_ALL}
+  • SQLma - Ferramenta avançada para SQL Injection
+  • XSS Hunter - Detecta vulnerabilidades Cross-Site Scripting
+  • [EM BREVE] Malware em Assembly para análise forense
+
+{Fore.YELLOW}📄 possiveis NOVOS MÓDULOS DE CONSULTA:{Style.RESET_ALL}
+  • api-placa.py - Consulta informações de veículos
+  • cpf.py - Busca completa por CPF
+  • scanner.py - Varredura automatizada de vulnerabilidades
 
 {Fore.BLUE}⚙️ MELHORIAS GERAIS:{Style.RESET_ALL}
   • Interface mais limpa e colorida no terminal
-  • Banner com data e hora de execução
-  • Menu principal com opções organizadas
+  • Banner dinâmico que recebe arquivos prontos
+  • Menu principal com opções reorganizadas
   • Exibição por categorias e contagem de campos
+  • Sistema de logs aprimorado para auditoria
+
+{Fore.MAGENTA}🚀 MELHORIAS FUTURAS PREVISTAS:{Style.RESET_ALL}
+  • Integração com API de inteligência artificial
+  • Módulo de reconhecimento facial
+  • Scanner de deep web automatizado
+  • Suporte a consultas em blockchains
 
 {Fore.GREEN + Style.BRIGHT}📦 COMO INSTALAR E USAR:{Style.RESET_ALL}
 
@@ -38,7 +57,10 @@ def atualizacao():
 {Fore.YELLOW}3. Execute o menu principal:{Style.RESET_ALL}
   {Fore.CYAN}$ python3 menu-real.py{Style.RESET_ALL}
 
-{Fore.RED}⚠️ DICA:{Style.RESET_ALL} A API de telefone reinicia às 12h. Se der erro 400/502, tente após esse horário.
+{Fore.RED}⚠️ ATENÇÃO:{Style.RESET_ALL}
+• A API de telefone reinicia às 12h. Se der erro 400/502, tente após esse horário.
+• O módulo de quebra de hash requer compilação prévia (gcc -O3 hasher.c -o hasher)
 
-{Fore.GREEN}✅ Ferramenta pronta para uso profissional em OSINT, Força Bruta e Coleta de Dados.{Style.RESET_ALL}
+{Fore.GREEN}✅ Ferramenta atualizada para uso profissional em OSINT, Pentest, Forense e Coleta de Dados.{Style.RESET_ALL}
+{Fore.YELLOW}🔥 NOVO: Suporte a operações sigilosas e modo stealth disponível na versão PRO.{Style.RESET_ALL}
 """)
