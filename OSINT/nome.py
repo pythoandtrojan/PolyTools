@@ -8,11 +8,11 @@ import json
 from datetime import datetime
 from colorama import Fore, Style, init
 
-
+# Configurações iniciais
 init(autoreset=True)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-
+# Cores
 VERDE = Fore.GREEN
 VERMELHO = Fore.RED
 AMARELO = Fore.YELLOW
@@ -23,7 +23,7 @@ BRANCO = Fore.WHITE
 NEGRITO = Style.BRIGHT
 RESET = Style.RESET_ALL
 
-
+# Configurações da API
 API_URL = "https://api.encrypt.wtf/new/api.php"
 TOKEN = "ifindy"
 BASE = "nome_completo2"
@@ -43,12 +43,11 @@ def banner():
 {RESET}""")
 
 def consultar_api(nome):
-   
+    """Consulta a API exatamente como no primeiro script"""
     query = urllib.parse.quote(nome)
     url = f"{API_URL}?token={TOKEN}&base={BASE}&query={query}"
 
-    print(f"{AMARELO}[*] Consultando API direta para: {nome}{RESET}")
-    print(f"{AZUL}[*] URL: {url}{RESET}")
+    print(f"{AMARELO}[*] Consultando API para: {nome}{RESET}")
 
     headers = {
         "User-Agent": "Mozilla/5.0",
@@ -57,85 +56,101 @@ def consultar_api(nome):
 
     try:
         resposta = requests.get(url, headers=headers, timeout=15, verify=False)
-        print(f"{AZUL}[*] Status HTTP: {resposta.status_code}{RESET}")
-
+        
         if resposta.status_code == 200:
             try:
                 dados = resposta.json()
-                print(f"{VERDE}[+] Dados recebidos com sucesso!{RESET}")
-                return dados
+                # Verifica se a resposta contém a estrutura esperada
+                if isinstance(dados, dict) and 'DADOSCPF' in dados:
+                    return [dados]  # Retorna como lista de 1 item para padronização
+                elif isinstance(dados, list):
+                    return dados[:10]  # Limita a 10 resultados
+                return [dados] if dados else []
             except ValueError:
-                print(f"{VERMELHO}[!] Resposta não é JSON. Conteúdo bruto:{RESET}")
-                print(resposta.text[:500])
+                print(f"{VERMELHO}[!] Resposta não é JSON válido{RESET}")
                 return None
         else:
-            print(f"{VERMELHO}[!] Erro na API: {resposta.status_code}{RESET}")
+            print(f"{VERMELHO}[!] Erro HTTP {resposta.status_code}{RESET}")
             return None
             
     except requests.exceptions.Timeout:
-        print(f"{VERMELHO}[!] Tempo de consulta excedido (15s){RESET}")
-        return None
-    except requests.exceptions.SSLError:
-        print(f"{VERMELHO}[!] Erro de SSL mesmo com verificação ignorada{RESET}")
+        print(f"{VERMELHO}[!] Tempo de consulta excedido{RESET}")
         return None
     except requests.exceptions.RequestException as e:
         print(f"{VERMELHO}[!] Erro na requisição: {e}{RESET}")
         return None
 
-def mostrar_resultados(dados):
-    """Exibe todos os resultados detalhadamente"""
-    if not dados:
+def mostrar_resultados(resultados):
+    """Exibe os resultados de forma organizada"""
+    if not resultados:
         print(f"{VERMELHO}[!] Nenhum dado encontrado{RESET}")
         return
 
-    print(f"\n{CIANO}{NEGRITO}=== DADOS COMPLETOS ==={RESET}")
-    
- 
-    categorias = {
-        'Pessoal': ['nome', 'nome_completo', 'cpf', 'rg', 'data_nascimento', 'idade', 'mae', 'pai'],
-        'Contato': ['telefone', 'celular', 'email'],
-        'Endereço': ['endereco', 'numero', 'complemento', 'bairro', 'cidade', 'estado', 'cep'],
-        'Outros': []
-    }
+    print(f"\n{VERDE}{NEGRITO}=== RESULTADOS ENCONTRADOS ==={RESET}")
+    print(f"{AMARELO}Total de registros: {len(resultados)}{RESET}\n")
 
-    for categoria, campos in categorias.items():
-        print(f"\n{VERDE}{NEGRITO}=== {categoria.upper()} ==={RESET}")
-        encontrados = False
+    for i, pessoa in enumerate(resultados, 1):
+        print(f"{CIANO}{NEGRITO}--- Pessoa {i} ---{RESET}")
         
-        for campo in campos:
-            if campo in dados:
-                print(f"{AZUL}{campo.upper():<20}:{RESET} {dados[campo]}")
-                encontrados = True
+        # Dados básicos
+        dados_cpf = pessoa.get('DADOSCPF', {})
+        print(f"{AZUL}Nome:{RESET} {VERDE}{dados_cpf.get('NOME', 'N/A')}{RESET}")
+        print(f"{AZUL}CPF:{RESET} {dados_cpf.get('CPF', 'N/A')}")
+        print(f"{AZUL}Nascimento:{RESET} {dados_cpf.get('NASC', 'N/A')}")
+        print(f"{AZUL}Mãe:{RESET} {dados_cpf.get('NOME_MAE', 'N/A')}")
+        print(f"{AZUL}Pai:{RESET} {dados_cpf.get('NOME_PAI', 'N/A')}")
         
-     
-        if categoria == 'Outros':
-            for chave, valor in dados.items():
-                if not any(chave in cat for cat in categorias.values()):
-                    print(f"{AZUL}{chave.upper():<20}:{RESET} {valor}")
-                    encontrados = True
+        # Endereços
+        enderecos = pessoa.get('DROP', [])
+        if enderecos:
+            print(f"\n{AZUL}Endereços:{RESET}")
+            for end in enderecos:
+                print(f"  {end.get('LOGR_TIPO', '')} {end.get('LOGR_NOME', '')}, {end.get('LOGR_NUMERO', '')}")
+                print(f"  {end.get('BAIRRO', '')} - {end.get('CIDADE', '')}/{end.get('UF', '')}")
+                print(f"  CEP: {end.get('CEP', '')}\n")
         
-        if not encontrados and categoria != 'Outros':
-            print(f"{AMARELO}Nenhum dado desta categoria encontrado{RESET}")
+        # Telefones (se houver estrutura separada)
+        telefones = pessoa.get('TELEFONE', {})
+        if telefones and isinstance(telefones, dict):
+            print(f"{AZUL}Telefone:{RESET} {telefones.get('NUMERO', 'N/A')}")
+        
+        print("\n" + "-"*50 + "\n")
 
-def salvar_resultado(dados, formato='json'):
-  
-    if not dados:
+def salvar_resultado(resultados, formato='json'):
+    """Salva os resultados em arquivo"""
+    if not resultados:
         return False
 
-    nome = dados.get('nome', dados.get('name', 'sem_nome')).replace(' ', '_')[:30]
+    nome = resultados[0].get('DADOSCPF', {}).get('NOME', 'consulta').replace(' ', '_')[:30]
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"consulta_{nome}_{timestamp}.{formato}"
 
     try:
         with open(filename, 'w', encoding='utf-8') as f:
             if formato == 'json':
-                json.dump(dados, f, indent=2, ensure_ascii=False)
+                json.dump(resultados, f, indent=2, ensure_ascii=False)
             else:
-                f.write(f"=== DADOS DA CONSULTA ===\n")
-                f.write(f"DATA: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n\n")
+                f.write(f"=== RESULTADOS DA CONSULTA ===\n")
+                f.write(f"DATA: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
+                f.write(f"TERMO BUSCADO: {nome}\n")
+                f.write(f"TOTAL DE REGISTROS: {len(resultados)}\n\n")
                 
-                for chave, valor in dados.items():
-                    f.write(f"{chave.upper():<20}: {valor}\n")
+                for i, pessoa in enumerate(resultados, 1):
+                    dados_cpf = pessoa.get('DADOSCPF', {})
+                    f.write(f"\n--- Pessoa {i} ---\n")
+                    f.write(f"Nome: {dados_cpf.get('NOME', 'N/A')}\n")
+                    f.write(f"CPF: {dados_cpf.get('CPF', 'N/A')}\n")
+                    f.write(f"Nascimento: {dados_cpf.get('NASC', 'N/A')}\n")
+                    f.write(f"Mãe: {dados_cpf.get('NOME_MAE', 'N/A')}\n")
+                    f.write(f"Pai: {dados_cpf.get('NOME_PAI', 'N/A')}\n")
+                    
+                    enderecos = pessoa.get('DROP', [])
+                    if enderecos:
+                        f.write("\nEndereços:\n")
+                        for end in enderecos:
+                            f.write(f"  {end.get('LOGR_TIPO', '')} {end.get('LOGR_NOME', '')}, {end.get('LOGR_NUMERO', '')}\n")
+                            f.write(f"  {end.get('BAIRRO', '')} - {end.get('CIDADE', '')}/{end.get('UF', '')}\n")
+                            f.write(f"  CEP: {end.get('CEP', '')}\n\n")
 
         print(f"{VERDE}[+] Arquivo salvo: {filename}{RESET}")
         return True
@@ -144,7 +159,7 @@ def salvar_resultado(dados, formato='json'):
         return False
 
 def main():
-  
+    """Função principal"""
     try:
         while True:
             banner()
@@ -163,17 +178,17 @@ def main():
                     input(f"{AMARELO}Pressione Enter para continuar...{RESET}")
                     continue
                 
-                dados = consultar_api(nome)
-                mostrar_resultados(dados)
+                resultados = consultar_api(nome)
+                mostrar_resultados(resultados)
                 
-                if dados:
+                if resultados:
                     op = input(f"\n{CIANO}Salvar resultados? (S/N): {RESET}").lower()
                     if op.startswith('s'):
                         fmt = input(f"{CIANO}Formato (JSON/TXT): {RESET}").lower()
                         if fmt.startswith('j'):
-                            salvar_resultado(dados, 'json')
+                            salvar_resultado(resultados, 'json')
                         else:
-                            salvar_resultado(dados, 'txt')
+                            salvar_resultado(resultados, 'txt')
                 
                 input(f"\n{AMARELO}Pressione Enter para continuar...{RESET}")
             
