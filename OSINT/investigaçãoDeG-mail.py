@@ -47,7 +47,7 @@ def rate_limit(calls_per_second: int):
     return decorator
 
 class Config:
-    """Configurações otimizadas para Termux e investigações avançadas"""
+   
     TIMEOUT = 15
     MAX_WORKERS = 3 if "com.termux" in os.getcwd() else 5
     CACHE_TTL = 3600  
@@ -113,7 +113,6 @@ class TermuxUtils:
             logging.info(f"{Fore.GREEN}[✓] Todas as dependências necessárias estão instaladas.{Style.RESET_ALL}")
 
 class CacheManager:
-    """Gerenciamento de cache em disco para Termux"""
     
     def __init__(self):
         os.makedirs(Config.CACHE_DIR, exist_ok=True)
@@ -126,13 +125,12 @@ class CacheManager:
         self.cache.set(key, value, expire=ttl)
 
 class GmailInvestigator:
-    """Investigador avançado para contas Gmail, com padronização de respostas."""
-    
+  
     def __init__(self):
         self.cache = CacheManager()
 
     def _is_api_configured(self, api_name: str) -> bool:
-        """Verifica se a chave de API para um serviço está configurada."""
+      
         key_name = f'{api_name.upper()}_API_KEY'
         api_key = Config.API_KEYS.get(key_name)
         if api_key and api_key != f'YOUR_{api_name.upper()}_API_KEY':
@@ -143,7 +141,7 @@ class GmailInvestigator:
     @lru_cache(maxsize=128)
     @rate_limit(calls_per_second=0.5) 
     def check_google_leaks(self, email: str) -> Dict:
-        """Verifica vazamentos de senha usando Google Password Checkup."""
+      
         cache_key = f"leak_google_{hashlib.md5(email.encode()).hexdigest()}"
         cached = self.cache.get(cache_key)
         if cached:
@@ -259,7 +257,7 @@ class GmailInvestigator:
 
     @rate_limit(calls_per_second=0.5) 
     def _check_snusbase(self, email: str) -> Dict:
-        """Verifica vazamentos usando Snusbase."""
+      
         cache_key = f"snusbase_{hashlib.md5(email.encode()).hexdigest()}"
         cached = self.cache.get(cache_key)
         if cached:
@@ -297,12 +295,7 @@ class GmailInvestigator:
 
     @rate_limit(calls_per_second=0.2)
     def _check_telegram_account(self, email: str) -> Dict:
-        """
-        Verifica a possível associação de um email a uma conta Telegram.
-        AVISO: Esta é uma verificação NÃO OFICIAL e instável.
-        Pode resultar em falsos positivos/negativos e ser bloqueada pelo Telegram a qualquer momento.
-        Se a precisão for crítica, considere desabilitar ou remover.
-        """
+       
         logging.warning(f"{Fore.YELLOW}[Telegram Check] Esta é uma verificação NÃO OFICIAL e instável. Use com extrema cautela.{Style.RESET_ALL}")
         cache_key = f"telegram_{hashlib.md5(email.encode()).hexdigest()}"
         cached = self.cache.get(cache_key)
@@ -378,9 +371,9 @@ class GmailInvestigator:
             logging.error(f"{Fore.RED}[LeakCheck Error] Erro inesperado para {email}: {e}{Style.RESET_ALL}")
             return {'found': False, 'data': {}, 'error': f'Unexpected error: {e}'}
 
-    @rate_limit(calls_per_second=1) # Limite para Hunter.io
+    @rate_limit(calls_per_second=1) 
     def _check_hunter_io(self, email: str) -> Dict:
-        """Verifica email profissional e reputação usando Hunter.io."""
+       
         if not self._is_api_configured('hunter'):
             return {'found': False, 'data': {}, 'error': 'API key not configured'}
 
@@ -423,7 +416,7 @@ class GmailInvestigator:
 
     @rate_limit(calls_per_second=0.5) 
     def _check_emailrep(self, email: str) -> Dict:
-        """Verifica reputação do email usando EmailRep.io."""
+      
         cache_key = f"emailrep_{hashlib.md5(email.encode()).hexdigest()}"
         cached = self.cache.get(cache_key)
         if cached:
@@ -463,7 +456,7 @@ class GmailInvestigator:
 
     @rate_limit(calls_per_second=1) 
     def _check_gravatar(self, email: str) -> Dict:
-        """Verifica se o email tem um perfil Gravatar."""
+     
         email_hash = hashlib.md5(email.lower().encode('utf-8')).hexdigest()
         gravatar_url = f"https://www.gravatar.com/avatar/{email_hash}?d=404"
         
@@ -492,7 +485,7 @@ class GmailInvestigator:
 
     @rate_limit(calls_per_second=0.2) 
     def _check_dehashed(self, email: str) -> Dict:
-        """Verifica vazamentos usando Dehashed.com (requer API Key)."""
+      
         if not self._is_api_configured('dehashed'):
             return {'found': False, 'data': {}, 'error': 'API key not configured'}
 
@@ -543,7 +536,7 @@ class GmailInvestigator:
 
     @rate_limit(calls_per_second=0.2) 
     def _check_leaklookup(self, email: str) -> Dict:
-        """Verifica vazamentos usando Leak-Lookup.com (requer API Key)."""
+      
         if not self._is_api_configured('leaklookup'):
             return {'found': False, 'data': {}, 'error': 'API key not configured'}
 
@@ -591,22 +584,22 @@ class GmailInvestigator:
 
  
     def _check_socialblade(self, email: str) -> Dict:
-        """(Implementação futura) Verifica contas em plataformas de streaming via Social Blade."""
+     
         logging.info(f"{Fore.YELLOW}[SocialBlade] Implementação futura. Requer pesquisa e entendimento da API.{Style.RESET_ALL}")
         return {'found': False, 'data': {}, 'error': 'Not implemented'}
 
     def _check_ipqualityscore(self, email: str) -> Dict:
-        """(Implementação futura) Analisa reputação do email e risco de fraude."""
+      
         logging.info(f"{Fore.YELLOW}[IPQualityScore] Implementação futura. Requer chave de API e entendimento da API.{Style.RESET_ALL}")
         return {'found': False, 'data': {}, 'error': 'Not implemented'}
 
     def _check_twitter(self, email: str) -> Dict:
-        """(Implementação futura) Verifica associação com conta do Twitter (requer API Twitter dev)."""
+       
         logging.info(f"{Fore.YELLOW}[Twitter API] Implementação futura. Requer conta de desenvolvedor Twitter.{Style.RESET_ALL}")
         return {'found': False, 'data': {}, 'error': 'Not implemented'}
 
     def find_related_accounts(self, email: str) -> List[str]:
-        """Gera variações comuns do username e domínios comuns para pesquisa manual."""
+     
         username = email.split('@')[0]
 
         variations = [
@@ -627,12 +620,7 @@ class ForensicAnalyzer:
     
     @staticmethod
     def estimate_account_age(email: str) -> Optional[int]:
-        """
-        Estimativa da idade da conta baseada em pesquisa web (experimental e não confiável).
-        Requer a biblioteca 'google' (pip install google), que é uma wrapper não oficial.
-        Pode ser bloqueada pelo Google e retornar resultados imprecisos.
-        Recomendado manter comentado ou usar apenas para fins de experimentação.
-        """
+      
         logging.warning(f"{Fore.YELLOW}[ForensicAnalyzer] Estimativa de idade da conta é experimental e pode ser imprecisa/bloqueada.{Style.RESET_ALL}")
         try:
             from googlesearch import search
@@ -666,11 +654,11 @@ class ForensicAnalyzer:
             return None
 
 class RiskAssessor:
-    """Avaliação avançada de riscos com pesos dinâmicos."""
+  
     
     @staticmethod
     def calculate_risk(leaks: Dict, breaches: Dict) -> Dict:
-        """Calcula score de risco com pesos dinâmicos baseados nos resultados das APIs."""
+      
         score = 0
         details = []
         
@@ -908,7 +896,7 @@ class ReportGenerator:
 
     @staticmethod
     def save_json_report(report: Dict, filename: str):
-        """Salva relatório completo em JSON."""
+     
         try:
             with open(filename, 'w', encoding='utf-8') as f:
                 json.dump(report, f, indent=2, ensure_ascii=False)
@@ -959,4 +947,4 @@ def main():
         sys.exit(1)
 
 if __name__ == "__main__":
-    main() oque vc acha desse codigo seja extremamente chato e sinsero e pra termux
+    main() 
