@@ -1,0 +1,44 @@
+def atualizacao():
+    print(f"""
+{Fore.CYAN + Style.BRIGHT}📢 ATUALIZAÇÃO - NOVA VERSÃO DISPONÍVEL{Style.RESET_ALL}
+
+{Fore.GREEN + Style.BRIGHT}🆕 FUNCIONALIDADES ADICIONADAS:{Style.RESET_ALL}
+
+{Fore.YELLOW}📞 CONSULTA POR TELEFONE:{Style.RESET_ALL}
+  • Nova API direta: {Fore.WHITE}encrypt.wtf?base=telefone2{Style.RESET_ALL}
+  • Dados organizados (Proprietário, Endereço, Operadora etc)
+  • Exibe tempo de resposta e status da requisição
+  • Aviso automático sobre reinício diário da API às 12h
+
+{Fore.YELLOW}👤 CONSULTA POR NOME:{Style.RESET_ALL}
+  • API {Fore.WHITE}nome_completo2{Style.RESET_ALL} funcionando com SSL ignorado
+  • Resultados exibidos por pessoa (organizados)
+  • Dados salvos automaticamente em arquivo .json
+
+{Fore.YELLOW}🔐 MÓDULO DE FORÇA BRUTA:{Style.RESET_ALL}
+  • Código reestruturado e otimizado
+  • Agora permite escolher rede social alvo
+  • Usa {Fore.WHITE}WhoStillUses (whostillits){Style.RESET_ALL} para verificar usuários reais
+
+{Fore.BLUE}⚙️ MELHORIAS GERAIS:{Style.RESET_ALL}
+  • Interface mais limpa e colorida no terminal
+  • Banner com data e hora de execução
+  • Menu principal com opções organizadas
+  • Exibição por categorias e contagem de campos
+
+{Fore.GREEN + Style.BRIGHT}📦 COMO INSTALAR E USAR:{Style.RESET_ALL}
+
+{Fore.YELLOW}1. Dê permissão de execução:{Style.RESET_ALL}
+  {Fore.CYAN}$ chmod +x install-malwer.py install-osint.py menu-real.py{Style.RESET_ALL}
+
+{Fore.YELLOW}2. Instale as dependências:{Style.RESET_ALL}
+  {Fore.CYAN}$ python3 install-malwer.py{Style.RESET_ALL}
+  {Fore.CYAN}$ python3 install-osint.py{Style.RESET_ALL}
+
+{Fore.YELLOW}3. Execute o menu principal:{Style.RESET_ALL}
+  {Fore.CYAN}$ python3 menu-real.py{Style.RESET_ALL}
+
+{Fore.RED}⚠️ DICA:{Style.RESET_ALL} A API de telefone reinicia às 12h. Se der erro 400/502, tente após esse horário.
+
+{Fore.GREEN}✅ Ferramenta pronta para uso profissional em OSINT, Força Bruta e Coleta de Dados.{Style.RESET_ALL}
+""")
