@@ -38,11 +38,11 @@ def banner():
    ██║ ╚████║╚██████╔╝██║ ╚═╝ ██║███████╗
    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝
 {RESET}
-{CIANO}{NEGRITO}   CONSULTA DE PESSOAS - API AVANÇADA
+{CIANO}{NEGRITO}   CONSULTA DE PESSOAS - DADOS ORGANIZADOS
 {RESET}""")
 
 def consultar_api(nome):
-    """Faz a consulta à API exatamente como no exemplo original"""
+    """Faz a consulta à API"""
     query = urllib.parse.quote(nome)
     url = f"{API_URL}?token={TOKEN}&base={BASE}&query={query}"
 
@@ -57,11 +57,10 @@ def consultar_api(nome):
         if resposta.status_code == 200:
             try:
                 dados = resposta.json()
-                # Verifica se é uma lista de pessoas ou um único registro
                 if isinstance(dados, list):
-                    return dados[:10]  # Retorna no máximo 10 pessoas
+                    return dados
                 elif isinstance(dados, dict):
-                    return [dados]  # Coloca em uma lista para padronizar
+                    return [dados]
                 return []
             except ValueError:
                 print(f"{VERMELHO}[!] Resposta não é JSON válido{RESET}")
@@ -77,74 +76,110 @@ def consultar_api(nome):
         print(f"{VERMELHO}[!] Erro na requisição: {e}{RESET}")
         return None
 
-def formatar_dados(pessoa):
-    """Organiza os dados de uma pessoa em categorias"""
-    categorias = {
-        'Identificação': ['nome', 'nome_completo', 'cpf', 'rg', 'data_nascimento'],
-        'Filiação': ['mae', 'pai'],
-        'Contato': ['telefone', 'celular', 'email'],
+def filtrar_dados(pessoas):
+    """Menu de filtros para os resultados"""
+    while True:
+        print(f"\n{VERDE}{NEGRITO}=== FILTROS DISPONÍVEIS ==={RESET}")
+        print(f"{AZUL}[1]{RESET} Filtrar por CPF")
+        print(f"{AZUL}[2]{RESET} Filtrar por Cidade")
+        print(f"{AZUL}[3]{RESET} Filtrar por Idade")
+        print(f"{AZUL}[4]{RESET} Limpar filtros")
+        print(f"{AZUL}[5]{RESET} Voltar")
+        
+        opcao = input(f"\n{CIANO}Escolha um filtro: {RESET}").strip()
+        
+        if opcao == '1':
+            cpf = input(f"{CIANO}Digite o CPF: {RESET}").strip()
+            pessoas = [p for p in pessoas if 'cpf' in p and str(p['cpf']) == cpf]
+            print(f"{VERDE}[+] Filtrado por CPF: {len(pessoas)} resultado(s){RESET}")
+            
+        elif opcao == '2':
+            cidade = input(f"{CIANO}Digite a cidade: {RESET}").strip().lower()
+            pessoas = [p for p in pessoas if 'cidade' in p and cidade in p['cidade'].lower()]
+            print(f"{VERDE}[+] Filtrado por cidade: {len(pessoas)} resultado(s){RESET}")
+            
+        elif opcao == '3':
+            try:
+                idade_min = int(input(f"{CIANO}Idade mínima: {RESET}").strip())
+                idade_max = int(input(f"{CIANO}Idade máxima: {RESET}").strip())
+                pessoas = [p for p in pessoas if 'data_nascimento' in p and 
+                          idade_min <= calcular_idade(p['data_nascimento']) <= idade_max]
+                print(f"{VERDE}[+] Filtrado por idade ({idade_min}-{idade_max}): {len(pessoas)} resultado(s){RESET}")
+            except:
+                print(f"{VERMELHO}[!] Idades inválidas{RESET}")
+                
+        elif opcao == '4':
+            return None  # Sinaliza para recarregar
+            
+        elif opcao == '5':
+            return pessoas
+            
+        else:
+            print(f"{VERMELHO}[!] Opção inválida{RESET}")
+            
+        if not pessoas:
+            print(f"{VERMELHO}[!] Nenhum resultado com esses filtros{RESET}")
+            return []
+
+def calcular_idade(data_nasc):
+    """Calcula idade a partir da data de nascimento"""
+    from datetime import datetime
+    try:
+        nasc = datetime.strptime(data_nasc, '%Y-%m-%d')
+        hoje = datetime.now()
+        return (hoje - nasc).days // 365
+    except:
+        return 0
+
+def mostrar_detalhes_pessoa(pessoa):
+    """Mostra TODOS os dados de uma pessoa de forma super organizada"""
+    print(f"\n{CIANO}{NEGRITO}=== DADOS COMPLETOS ==={RESET}")
+    
+    # Organiza em grupos lógicos
+    grupos = {
+        'Identificação': ['nome', 'nome_completo', 'cpf', 'rg', 'data_nascimento', 'idade', 'sexo'],
+        'Filiação': ['mae', 'pai', 'conjuge'],
+        'Contatos': ['telefone', 'celular', 'email'],
         'Endereço': ['endereco', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'estado', 'cep'],
-        'Documentos': ['titulo_eleitor', 'pis', 'ctps'],
-        'Outros': []  # Campos não categorizados
+        'Documentos': ['titulo_eleitor', 'pis', 'ctps', 'cnh'],
+        'Financeiro': ['renda', 'profissao', 'empresa'],
+        'Outros': []
     }
     
-    dados_formatados = {}
-    for categoria, campos in categorias.items():
-        dados_categoria = {}
+    for grupo, campos in grupos.items():
+        print(f"\n{VERDE}{NEGRITO}» {grupo.upper()}{RESET}")
+        encontrou = False
+        
         for campo in campos:
-            if campo in pessoa:
-                dados_categoria[campo] = pessoa[campo]
-        if dados_categoria:
-            dados_formatados[categoria] = dados_categoria
-    
-    # Adiciona campos não categorizados
-    outros = {}
-    for chave, valor in pessoa.items():
-        if not any(chave in cat for cat in categorias.values()):
-            outros[chave] = valor
-    if outros:
-        dados_formatados['Outros'] = outros
-    
-    return dados_formatados
+            if campo in pessoa and pessoa[campo]:
+                print(f"{AZUL}  {campo.replace('_', ' ').title():<20}:{RESET} {pessoa[campo]}")
+                encontrou = True
+                
+        # Mostra campos não categorizados
+        if grupo == 'Outros':
+            for chave, valor in pessoa.items():
+                if not any(chave in g for g in grupos.values()) and valor:
+                    print(f"{AZUL}  {chave.replace('_', ' ').title():<20}:{RESET} {valor}")
+                    encontrou = True
+                    
+        if not encontrou:
+            print(f"{AMARELO}  Nenhum dado disponível{RESET}")
 
-def mostrar_pessoa(pessoa, numero):
-    """Mostra os dados de uma pessoa de forma organizada"""
-    dados = formatar_dados(pessoa)
-    
-    print(f"\n{CIANO}{NEGRITO}=== PESSOA {numero} ==={RESET}")
-    
-    for categoria, campos in dados.items():
-        print(f"\n{VERDE}{NEGRITO}» {categoria.upper()}{RESET}")
-        for chave, valor in campos.items():
-            print(f"{AZUL}  {chave.replace('_', ' ').title():<20}:{RESET} {valor}")
-
-def mostrar_resultados(pessoas):
-    """Mostra até 10 pessoas com dados organizados"""
-    if not pessoas:
-        print(f"\n{VERMELHO}[!] Nenhum dado encontrado{RESET}")
-        return
-    
-    print(f"\n{VERDE}{NEGRITO}=== RESULTADOS ENCONTRADOS ==={RESET}")
-    print(f"{AMARELO}Total de registros: {len(pessoas)}{RESET}")
-    
-    for i, pessoa in enumerate(pessoas, 1):
-        mostrar_pessoa(pessoa, i)
-        if i >= 10:  # Limita a 10 pessoas
-            break
-    
-    if len(pessoas) > 10:
-        print(f"\n{AMARELO}[!] Mostrando apenas os primeiros 10 resultados de {len(pessoas)}{RESET}")
+def menu_principal():
+    """Exibe o menu principal"""
+    banner()
+    print(f"\n{AMARELO}{NEGRITO}MENU PRINCIPAL{RESET}")
+    print(f"{VERDE}[1]{RESET} Consultar por Nome")
+    print(f"{VERDE}[2]{RESET} Sair")
+    return input(f"\n{CIANO}Selecione uma opção: {RESET}").strip()
 
 def main():
     """Função principal"""
+    dados_originais = None
+    
     try:
         while True:
-            banner()
-            print(f"\n{AMARELO}{NEGRITO}MENU PRINCIPAL{RESET}")
-            print(f"{VERDE}[1]{RESET} Consultar por Nome")
-            print(f"{VERDE}[2]{RESET} Sair")
-            
-            opcao = input(f"\n{CIANO}Selecione uma opção: {RESET}").strip()
+            opcao = menu_principal()
             
             if opcao == '1':
                 banner()
@@ -155,15 +190,41 @@ def main():
                     input(f"{AMARELO}Pressione Enter para continuar...{RESET}")
                     continue
                 
-                pessoas = consultar_api(nome)
-                mostrar_resultados(pessoas if pessoas else [])
+                dados_originais = consultar_api(nome)
                 
-                input(f"\n{AMARELO}Pressione Enter para continuar...{RESET}")
+                if not dados_originais:
+                    input(f"{AMARELO}Pressione Enter para continuar...{RESET}")
+                    continue
+                
+                pessoas = dados_originais.copy()
+                
+                while True:
+                    resultado_filtro = filtrar_dados(pessoas)
+                    
+                    if resultado_filtro is None:  # Limpar filtros
+                        pessoas = dados_originais.copy()
+                        continue
+                    elif not resultado_filtro:  # Voltar ao menu
+                        break
+                        
+                    pessoas = resultado_filtro
+                    
+                    print(f"\n{VERDE}{NEGRITO}=== RESULTADOS ==={RESET}")
+                    print(f"{AMARELO}Total encontrado: {len(pessoas)}{RESET}")
+                    
+                    for i, pessoa in enumerate(pessoas, 1):
+                        print(f"\n{CIANO}{NEGRITO}--- Pessoa {i}/{len(pessoas)} ---{RESET}")
+                        mostrar_detalhes_pessoa(pessoa)
+                        
+                        if i % 3 == 0:  # Mostra 3 por vez
+                            op = input(f"\n{CIANO}Continuar? (S/N): {RESET}").strip().lower()
+                            if op != 's':
+                                break
             
             elif opcao == '2':
                 print(f"\n{VERDE}[+] Saindo...{RESET}")
                 break
-            
+                
             else:
                 print(f"{VERMELHO}[!] Opção inválida{RESET}")
                 input(f"{AMARELO}Pressione Enter para continuar...{RESET}")
