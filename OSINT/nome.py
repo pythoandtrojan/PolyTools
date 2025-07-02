@@ -3,27 +3,32 @@
 import requests
 import urllib.parse
 import urllib3
+import os
+import json
+from datetime import datetime
 from colorama import Fore, Style, init
 
-# Configurações iniciais
 init(autoreset=True)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# Cores
+
 VERDE = Fore.GREEN
 VERMELHO = Fore.RED
 AMARELO = Fore.YELLOW
 AZUL = Fore.BLUE
+MAGENTA = Fore.MAGENTA
 CIANO = Fore.CYAN
+BRANCO = Fore.WHITE
 NEGRITO = Style.BRIGHT
 RESET = Style.RESET_ALL
 
-# Configurações da API
+
 API_URL = "https://api.encrypt.wtf/new/api.php"
 TOKEN = "ifindy"
 BASE = "nome_completo2"
 
 def banner():
+    os.system('clear' if os.name == 'posix' else 'cls')
     print(f"""
 {VERDE}{NEGRITO}
    ███╗   ██╗ ██████╗ ███╗   ███╗███████╗
@@ -33,11 +38,11 @@ def banner():
    ██║ ╚████║╚██████╔╝██║ ╚═╝ ██║███████╗
    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝
 {RESET}
-{CIANO}{NEGRITO}   CONSULTA DE PESSOAS - DADOS COMPLETOS
+{CIANO}{NEGRITO}   CONSULTA POR NOME - API DIRETA
 {RESET}""")
 
 def consultar_api(nome):
-    """Faz a consulta à API de forma segura"""
+ 
     query = urllib.parse.quote(nome)
     url = f"{API_URL}?token={TOKEN}&base={BASE}&query={query}"
 
@@ -46,105 +51,93 @@ def consultar_api(nome):
         "Accept": "*/*"
     }
 
+    print(f"\n{AMARELO}[*] Fazendo consulta à API...{RESET}")
+    print(f"{AZUL}[*] URL: {url}{RESET}")
+
     try:
-        resposta = requests.get(url, headers=headers, timeout=20, verify=False)
-        
+        resposta = requests.get(url, headers=headers, timeout=15, verify=False)
+        print(f"{AZUL}[*] Status HTTP: {resposta.status_code}{RESET}")
+
         if resposta.status_code == 200:
             try:
-                return resposta.json()
-            except ValueError:
+                dados = resposta.json()
+                print(f"{VERDE}[+] Dados recebidos com sucesso!{RESET}")
+                return dados
+            except json.JSONDecodeError:
                 print(f"{VERMELHO}[!] Resposta não é JSON válido{RESET}")
-                print(f"Conteúdo bruto: {resposta.text[:200]}...")
+                print(f"{AZUL}[*] Conteúdo bruto:{RESET}\n{resposta.text[:500]}")
                 return None
         else:
-            print(f"{VERMELHO}[!] Erro HTTP {resposta.status_code}{RESET}")
+            print(f"{VERMELHO}[!] Erro na API: {resposta.status_code}{RESET}")
             return None
-            
+
+    except requests.exceptions.SSLError:
+        print(f"{VERMELHO}[!] Erro de SSL - Continuando mesmo assim{RESET}")
+        return None
     except requests.exceptions.Timeout:
-        print(f"{VERMELHO}[!] Tempo de consulta excedido{RESET}")
+        print(f"{VERMELHO}[!] Tempo de espera esgotado (15s){RESET}")
         return None
     except Exception as e:
-        print(f"{VERMELHO}[!] Erro na requisição: {str(e)}{RESET}")
+        print(f"{VERMELHO}[!] Erro inesperado: {e}{RESET}")
         return None
 
-def mostrar_dados_organizados(dados):
-    """Mostra TODOS os dados de forma organizada e categorizada"""
+def mostrar_resultados(dados):
+
     if not dados:
-        print(f"{VERMELHO}[!] Nenhum dado para exibir{RESET}")
+        print(f"{VERMELHO}[!] Nenhum dado encontrado{RESET}")
         return
 
-    # Se for uma lista de pessoas, mostra uma por uma
-    if isinstance(dados, list):
-        for i, pessoa in enumerate(dados, 1):
-            print(f"\n{CIANO}{NEGRITO}=== PESSOA {i} ==={RESET}")
-            mostrar_pessoa_organizada(pessoa)
-            print("-"*50)
+    print(f"\n{VERDE}{NEGRITO}=== DADOS ENCONTRADOS ==={RESET}")
+    
+    # Exibe exatamente como no seu exemplo funcional
+    if isinstance(dados, dict):
+        for chave, valor in dados.items():
+            print(f"  - {chave}: {valor}")
+    elif isinstance(dados, list):
+        for i, item in enumerate(dados, 1):
+            print(f"\n{CIANO}{NEGRITO}--- Pessoa {i} ---{RESET}")
+            for chave, valor in item.items():
+                print(f"  - {chave}: {valor}")
     else:
-        mostrar_pessoa_organizada(dados)
-
-def mostrar_pessoa_organizada(pessoa):
-    """Organiza e exibe os dados de uma pessoa"""
-    if not isinstance(pessoa, dict):
-        print(f"{VERMELHO}[!] Dados inválidos{RESET}")
-        return
-
-    # Categorias para organização
-    categorias = {
-        'Identificação': ['nome', 'nome_completo', 'cpf', 'rg', 'data_nascimento', 'idade', 'sexo'],
-        'Filiação': ['mae', 'pai'],
-        'Contato': ['telefone', 'celular', 'email'],
-        'Endereço': ['endereco', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'estado', 'cep'],
-        'Documentos': ['titulo_eleitor', 'pis', 'ctps', 'cnh'],
-        'Outros': []  # Campos não categorizados
-    }
-
-    # Processa cada categoria
-    for categoria, campos in categorias.items():
-        print(f"\n{VERDE}{NEGRITO}» {categoria.upper()}{RESET}")
-        dados_exibidos = False
-        
-        for campo in campos:
-            if campo in pessoa and pessoa[campo]:
-                print(f"{AZUL}  {campo.replace('_', ' ').title():<20}:{RESET} {pessoa[campo]}")
-                dados_exibidos = True
-        
-        # Mostra campos não categorizados
-        if categoria == 'Outros':
-            outros_dados = False
-            for chave, valor in pessoa.items():
-                if chave not in sum(categorias.values(), []) and valor:
-                    print(f"{AZUL}  {chave.replace('_', ' ').title():<20}:{RESET} {valor}")
-                    outros_dados = True
-                    dados_exibidos = True
-            
-            if not outros_dados:
-                print(f"{AMARELO}  Nenhum outro dado disponível{RESET}")
-                dados_exibidos = True
-        
-        if not dados_exibidos:
-            print(f"{AMARELO}  Nenhum dado disponível{RESET}")
+        print(f"{AMARELO}[*] Tipo de resposta inesperado:{RESET}")
+        print(dados)
 
 def main():
-    banner()
+
+    try:
+        while True:
+            banner()
+            print(f"\n{AMARELO}{NEGRITO}MENU PRINCIPAL{RESET}")
+            print(f"{VERDE}[1]{RESET} Consultar por Nome")
+            print(f"{VERDE}[2]{RESET} Sair")
+            
+            opcao = input(f"\n{CIANO}Selecione uma opção: {RESET}").strip()
+            
+            if opcao == '1':
+                banner()
+                nome = input(f"\n{CIANO}Digite o nome completo: {RESET}").strip()
+                
+                if not nome or len(nome.split()) < 2:
+                    print(f"{VERMELHO}[!] Digite um nome completo válido{RESET}")
+                    input(f"{AMARELO}Pressione Enter para continuar...{RESET}")
+                    continue
+                
+                dados = consultar_api(nome)
+                mostrar_resultados(dados)
+                
+                input(f"\n{AMARELO}Pressione Enter para continuar...{RESET}")
+            
+            elif opcao == '2':
+                print(f"\n{VERDE}[+] Saindo...{RESET}")
+                break
+            
+            else:
+                print(f"{VERMELHO}[!] Opção inválida{RESET}")
+                input(f"{AMARELO}Pressione Enter para continuar...{RESET}")
     
-    while True:
-        nome = input(f"\n{CIANO}Digite o nome completo (ou 'sair' para encerrar): {RESET}").strip()
-        
-        if nome.lower() == 'sair':
-            print(f"\n{VERDE}[+] Encerrando...{RESET}")
-            break
-            
-        if len(nome.split()) < 2:
-            print(f"{VERMELHO}[!] Digite um nome completo válido{RESET}")
-            continue
-            
-        dados = consultar_api(nome)
-        
-        if dados:
-            print(f"\n{VERDE}{NEGRITO}=== RESULTADOS ENCONTRADOS ==={RESET}")
-            mostrar_dados_organizados(dados)
-        else:
-            print(f"{VERMELHO}[!] Nenhum dado encontrado{RESET}")
+    except KeyboardInterrupt:
+        print(f"\n{VERMELHO}[!] Programa interrompido{RESET}")
+        exit()
 
 if __name__ == "__main__":
     main()
