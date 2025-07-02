@@ -4,7 +4,6 @@ import requests
 import urllib.parse
 import urllib3
 import os
-import json
 from datetime import datetime
 from colorama import Fore, Style, init
 
@@ -23,7 +22,7 @@ BRANCO = Fore.WHITE
 NEGRITO = Style.BRIGHT
 RESET = Style.RESET_ALL
 
-# Configurações da API (exatamente como no seu primeiro script)
+# Configurações da API
 API_URL = "https://api.encrypt.wtf/new/api.php"
 TOKEN = "ifindy"
 BASE = "nome_completo2"
@@ -39,11 +38,11 @@ def banner():
    ██║ ╚████║╚██████╔╝██║ ╚═╝ ██║███████╗
    ╚═╝  ╚═══╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝
 {RESET}
-{CIANO}{NEGRITO}   CONSULTA POR NOME - API DIRETA
+{CIANO}{NEGRITO}   CONSULTA DE PESSOAS - API AVANÇADA
 {RESET}""")
 
-def consultar_api_direta(nome):
-    """Consulta a API exatamente como no seu primeiro script original"""
+def consultar_api(nome):
+    """Faz a consulta à API exatamente como no exemplo original"""
     query = urllib.parse.quote(nome)
     url = f"{API_URL}?token={TOKEN}&base={BASE}&query={query}"
 
@@ -52,82 +51,89 @@ def consultar_api_direta(nome):
         "Accept": "*/*"
     }
 
-    print(f"\n{AMARELO}[*] Fazendo consulta direta à API...{RESET}")
-    print(f"{AZUL}[*] URL: {url}{RESET}")
-
     try:
-        # Desativa verificação SSL e aumenta timeout
-        resposta = requests.get(url, headers=headers, timeout=30, verify=False)
-        
-        print(f"{AZUL}[*] Status HTTP: {resposta.status_code}{RESET}")
+        resposta = requests.get(url, headers=headers, timeout=15, verify=False)
         
         if resposta.status_code == 200:
             try:
                 dados = resposta.json()
-                print(f"{VERDE}[+] Dados recebidos com sucesso!{RESET}")
-                return dados
-            except json.JSONDecodeError:
-                print(f"{VERMELHO}[!] A resposta não é um JSON válido{RESET}")
-                print(f"{AZUL}[*] Conteúdo bruto:{RESET}\n{resposta.text[:500]}...")
+                # Verifica se é uma lista de pessoas ou um único registro
+                if isinstance(dados, list):
+                    return dados[:10]  # Retorna no máximo 10 pessoas
+                elif isinstance(dados, dict):
+                    return [dados]  # Coloca em uma lista para padronizar
+                return []
+            except ValueError:
+                print(f"{VERMELHO}[!] Resposta não é JSON válido{RESET}")
                 return None
         else:
-            print(f"{VERMELHO}[!] Erro na API: {resposta.status_code}{RESET}")
+            print(f"{VERMELHO}[!] Erro HTTP {resposta.status_code}{RESET}")
             return None
             
-    except requests.exceptions.SSLError:
-        print(f"{VERMELHO}[!] Erro de SSL - Continuando mesmo assim{RESET}")
-        try:
-            resposta = requests.get(url, headers=headers, timeout=30, verify=False)
-            return resposta.json() if resposta.status_code == 200 else None
-        except Exception as e:
-            print(f"{VERMELHO}[!] Falha na requisição: {e}{RESET}")
-            return None
     except requests.exceptions.Timeout:
-        print(f"{VERMELHO}[!] Tempo de espera esgotado (30s){RESET}")
+        print(f"{VERMELHO}[!] Tempo de consulta excedido{RESET}")
         return None
-    except Exception as e:
-        print(f"{VERMELHO}[!] Erro inesperado: {e}{RESET}")
+    except requests.exceptions.RequestException as e:
+        print(f"{VERMELHO}[!] Erro na requisição: {e}{RESET}")
         return None
 
-def mostrar_resultados(dados):
-    """Exibe os resultados de forma organizada"""
-    if not dados:
-        print(f"{VERMELHO}[!] Nenhum dado encontrado{RESET}")
-        return
-
-    print(f"\n{VERDE}{NEGRITO}=== DADOS ENCONTRADOS ==={RESET}")
+def formatar_dados(pessoa):
+    """Organiza os dados de uma pessoa em categorias"""
+    categorias = {
+        'Identificação': ['nome', 'nome_completo', 'cpf', 'rg', 'data_nascimento'],
+        'Filiação': ['mae', 'pai'],
+        'Contato': ['telefone', 'celular', 'email'],
+        'Endereço': ['endereco', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'estado', 'cep'],
+        'Documentos': ['titulo_eleitor', 'pis', 'ctps'],
+        'Outros': []  # Campos não categorizados
+    }
     
-    # Se for uma lista de resultados
-    if isinstance(dados, list):
-        print(f"{AMARELO}[*] Total de registros: {len(dados)}{RESET}\n")
-        for i, item in enumerate(dados[:5], 1):  # Mostra apenas os 5 primeiros
-            print(f"{CIANO}{NEGRITO}--- Resultado {i} ---{RESET}")
-            for chave, valor in item.items():
-                print(f"{AZUL}{chave}:{RESET} {valor}")
-            print()
-        if len(dados) > 5:
-            print(f"{AMARELO}[*] Mostrando 5 de {len(dados)} resultados{RESET}")
-    else:
-        # Se for um único dicionário
-        for chave, valor in dados.items():
-            # Mostra de forma organizada se for um dicionário aninhado
-            if isinstance(valor, dict):
-                print(f"\n{CIANO}{NEGRITO}--- {chave} ---{RESET}")
-                for sub_chave, sub_valor in valor.items():
-                    print(f"{AZUL}{sub_chave}:{RESET} {sub_valor}")
-            elif isinstance(valor, list):
-                print(f"\n{CIANO}{NEGRITO}--- {chave} ({len(valor)} itens) ---{RESET}")
-                for item in valor[:3]:  # Mostra apenas os 3 primeiros
-                    if isinstance(item, dict):
-                        for k, v in item.items():
-                            print(f"{AZUL}{k}:{RESET} {v}")
-                        print()
-                    else:
-                        print(item)
-                if len(valor) > 3:
-                    print(f"{AMARELO}[...] {len(valor)-3} itens não mostrados{RESET}")
-            else:
-                print(f"{AZUL}{chave}:{RESET} {valor}")
+    dados_formatados = {}
+    for categoria, campos in categorias.items():
+        dados_categoria = {}
+        for campo in campos:
+            if campo in pessoa:
+                dados_categoria[campo] = pessoa[campo]
+        if dados_categoria:
+            dados_formatados[categoria] = dados_categoria
+    
+    # Adiciona campos não categorizados
+    outros = {}
+    for chave, valor in pessoa.items():
+        if not any(chave in cat for cat in categorias.values()):
+            outros[chave] = valor
+    if outros:
+        dados_formatados['Outros'] = outros
+    
+    return dados_formatados
+
+def mostrar_pessoa(pessoa, numero):
+    """Mostra os dados de uma pessoa de forma organizada"""
+    dados = formatar_dados(pessoa)
+    
+    print(f"\n{CIANO}{NEGRITO}=== PESSOA {numero} ==={RESET}")
+    
+    for categoria, campos in dados.items():
+        print(f"\n{VERDE}{NEGRITO}» {categoria.upper()}{RESET}")
+        for chave, valor in campos.items():
+            print(f"{AZUL}  {chave.replace('_', ' ').title():<20}:{RESET} {valor}")
+
+def mostrar_resultados(pessoas):
+    """Mostra até 10 pessoas com dados organizados"""
+    if not pessoas:
+        print(f"\n{VERMELHO}[!] Nenhum dado encontrado{RESET}")
+        return
+    
+    print(f"\n{VERDE}{NEGRITO}=== RESULTADOS ENCONTRADOS ==={RESET}")
+    print(f"{AMARELO}Total de registros: {len(pessoas)}{RESET}")
+    
+    for i, pessoa in enumerate(pessoas, 1):
+        mostrar_pessoa(pessoa, i)
+        if i >= 10:  # Limita a 10 pessoas
+            break
+    
+    if len(pessoas) > 10:
+        print(f"\n{AMARELO}[!] Mostrando apenas os primeiros 10 resultados de {len(pessoas)}{RESET}")
 
 def main():
     """Função principal"""
@@ -149,8 +155,8 @@ def main():
                     input(f"{AMARELO}Pressione Enter para continuar...{RESET}")
                     continue
                 
-                dados = consultar_api_direta(nome)
-                mostrar_resultados(dados)
+                pessoas = consultar_api(nome)
+                mostrar_resultados(pessoas if pessoas else [])
                 
                 input(f"\n{AMARELO}Pressione Enter para continuar...{RESET}")
             
