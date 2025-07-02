@@ -20,9 +20,10 @@ BRANCO = Fore.WHITE
 NEGRITO = Style.BRIGHT
 RESET = Style.RESET_ALL
 
-# Configurações da API
-API_URL = "https://777apisss.vercel.app/consulta/telefone2/"
-API_KEY = "firminoh7778"
+# Configurações da API DIRETA (ignorando intermediário com problema)
+API_URL = "https://api.encrypt.wtf/new/api.php"
+TOKEN = "ifindy"
+BASE = "telefone2"  # Base específica para consulta por telefone
 
 def banner():
     print(f"""
@@ -34,29 +35,30 @@ def banner():
   ╚██████╔╝██║     ███████║██║  ██║   ██║   
    ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝   ╚═╝   
 {RESET}
-{VERDE}{NEGRITO}   CONSULTA POR TELEFONE - API AVANÇADA
+{VERDE}{NEGRITO}   CONSULTA POR TELEFONE - DIRETO NA FONTE
 {RESET}""")
 
 def formatar_telefone(numero):
-    """Formata o número de telefone para exibição"""
+    """Formata o número para exibição amigável"""
     if len(numero) == 11:
         return f"({numero[:2]}) {numero[2:7]}-{numero[7:]}"
     return numero
 
-def consultar_api(telefone):
-    """Faz a consulta à API de telefone"""
+def consultar_direto(telefone):
+    """Consulta DIRETAMENTE a API principal, ignorando SSL"""
     query = urllib.parse.quote(telefone)
-    url = f"{API_URL}?query={query}&apikey={API_KEY}"
+    url = f"{API_URL}?token={TOKEN}&base={BASE}&query={query}"
 
     headers = {
         "User-Agent": "Mozilla/5.0",
         "Accept": "*/*"
     }
 
-    print(f"\n{AMARELO}[*] Consultando telefone: {formatar_telefone(telefone)}{RESET}")
-    
+    print(f"\n{AMARELO}[*] Consultando DIRETAMENTE a API...{RESET}")
+    print(f"{AZUL}[*] URL: {url}{RESET}")
+
     try:
-        resposta = requests.get(url, headers=headers, timeout=15, verify=False)
+        resposta = requests.get(url, headers=headers, timeout=20, verify=False)
         print(f"{AZUL}[*] Status HTTP: {resposta.status_code}{RESET}")
 
         if resposta.status_code == 200:
@@ -73,68 +75,69 @@ def consultar_api(telefone):
             return None
             
     except requests.exceptions.Timeout:
-        print(f"{VERMELHO}[!] Tempo de espera esgotado (15s){RESET}")
+        print(f"{VERMELHO}[!] Tempo de espera esgotado (20s){RESET}")
         return None
-    except requests.exceptions.RequestException as e:
-        print(f"{VERMELHO}[!] Erro na requisição: {e}{RESET}")
+    except Exception as e:
+        print(f"{VERMELHO}[!] Erro inesperado: {str(e)}{RESET}")
         return None
 
 def mostrar_resultados(dados):
-    """Mostra os resultados de forma organizada"""
+    """Mostra todos os dados de forma organizada"""
     if not dados:
-        print(f"{VERMELHO}[!] Nenhum dado encontrado{RESET}")
+        print(f"{VERMELHO}[!] Nenhum dado para exibir{RESET}")
         return
 
-    print(f"\n{VERDE}{NEGRITO}=== DADOS ENCONTRADOS ==={RESET}")
+    print(f"\n{VERDE}{NEGRITO}=== DADOS COMPLETOS ==={RESET}")
     
-    # Organiza os dados em categorias
+    # Categorias para melhor organização
     categorias = {
-        'Telefone': ['numero', 'telefone', 'celular'],
-        'Proprietário': ['nome', 'cpf', 'data_nascimento'],
-        'Endereço': ['endereco', 'cidade', 'estado', 'cep'],
-        'Operadora': ['operadora', 'tipo_linha'],
+        'Telefone': ['numero', 'telefone', 'celular', 'ddd'],
+        'Proprietário': ['nome', 'nome_completo', 'cpf', 'rg', 'data_nascimento'],
+        'Endereço': ['endereco', 'logradouro', 'numero', 'bairro', 'cidade', 'estado', 'cep'],
+        'Operadora': ['operadora', 'tipo_linha', 'porte'],
+        'Documentos': ['titulo_eleitor', 'pis', 'ctps'],
         'Outros': []
     }
-    
+
     for categoria, campos in categorias.items():
         print(f"\n{CIANO}{NEGRITO}» {categoria.upper()}{RESET}")
-        encontrou = False
+        dados_exibidos = False
         
         for campo in campos:
             if campo in dados and dados[campo]:
                 print(f"{AZUL}  {campo.replace('_', ' ').title():<20}:{RESET} {dados[campo]}")
-                encontrou = True
-                
-        # Mostra campos não categorizados
+                dados_exibidos = True
+        
+        # Campos não categorizados
         if categoria == 'Outros':
             outros_dados = False
             for chave, valor in dados.items():
-                if chave not in sum(categorias.values(), []) and valor:
+                if not any(chave in cat for cat in categorias.values()) and valor:
                     print(f"{AZUL}  {chave.replace('_', ' ').title():<20}:{RESET} {valor}")
                     outros_dados = True
-                    encontrou = True
+                    dados_exibidos = True
             
             if not outros_dados:
                 print(f"{AMARELO}  Nenhum outro dado disponível{RESET}")
         
-        if not encontrou and categoria != 'Outros':
-            print(f"{AMARELO}  Nenhum dado disponível{RESET}")
+        if not dados_exibidos and categoria != 'Outros':
+            print(f"{AMARELO}  Nenhum dado nesta categoria{RESET}")
 
 def main():
     banner()
     
     while True:
-        telefone = input(f"\n{CIANO}Digite o telefone (com DDD, sem formatação) ou 'sair': {RESET}").strip()
+        telefone = input(f"\n{CIANO}Digite o telefone com DDD (ex: 11987654321) ou 'sair': {RESET}").strip()
         
         if telefone.lower() == 'sair':
             print(f"\n{VERDE}[+] Encerrando...{RESET}")
             break
             
-        if not telefone.isdigit() or len(telefone) < 10:
-            print(f"{VERMELHO}[!] Telefone inválido. Use apenas números com DDD (ex: 11987654321){RESET}")
+        if not telefone.isdigit() or len(telefone) < 10 or len(telefone) > 11:
+            print(f"{VERMELHO}[!] Formato inválido. Use 10 ou 11 dígitos (com DDD){RESET}")
             continue
             
-        dados = consultar_api(telefone)
+        dados = consultar_direto(telefone)
         mostrar_resultados(dados)
 
 if __name__ == "__main__":
