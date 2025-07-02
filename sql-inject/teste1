@@ -1,0 +1,57 @@
+import requests
+import urllib.parse
+import time
+
+def puxar_dados_nome(nome, tentativas=5):
+    base_url = "https://777apisss.vercel.app/nome/completo2/"
+    api_key = "firminoh7778"
+    query = urllib.parse.quote(nome)
+    url = f"{base_url}?query={query}&apikey={api_key}"
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                      "(KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+        "Accept": "*/*",
+        "Connection": "keep-alive"
+    }
+
+    for tentativa in range(1, tentativas + 1):
+        print(f"\n🔁 Tentativa {tentativa}/{tentativas} - Buscando: {nome}")
+        try:
+            resposta = requests.get(url, headers=headers, timeout=15)
+            print(f"📡 Status HTTP: {resposta.status_code}")
+
+            # Força encoding correto
+            resposta.encoding = resposta.apparent_encoding
+
+            # Se for JSON válido
+            try:
+                dados = resposta.json()
+                print("✅ JSON recebido:")
+                for chave, valor in dados.items():
+                    print(f"  - {chave}: {valor}")
+                return
+            except Exception:
+                print("⚠️ Não veio JSON. Mostrando texto cru:")
+                print(resposta.text[:1000])  # Mostra até 1000 caracteres
+
+        except requests.exceptions.Timeout:
+            print("⏰ Timeout! A API demorou demais pra responder.")
+        except requests.exceptions.ConnectionError:
+            print("🔌 Erro de conexão. Verifique sua internet ou a API.")
+        except Exception as e:
+            print(f"❌ Erro inesperado: {e}")
+
+        time.sleep(2)  # Aguarda antes da próxima tentativa
+
+    print("❗ Todas as tentativas falharam.")
+
+if __name__ == "__main__":
+    try:
+        nome = input("📝 Digite o nome completo para busca: ").strip()
+        if nome:
+            puxar_dados_nome(nome)
+        else:
+            print("⚠️ Nome inválido.")
+    except KeyboardInterrupt:
+        print("\n❌ Encerrado pelo usuário.")
