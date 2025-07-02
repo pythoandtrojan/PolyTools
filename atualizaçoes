@@ -1,66 +1,84 @@
+from colorama import Fore, Style, init
+init(autoreset=True)
+
 def atualizacao():
-    print(f"""
-{Fore.CYAN + Style.BRIGHT}📢 ATUALIZAÇÃO - VERSÃO 2.5.0 - 02/07/2025{Style.RESET_ALL}
+    print()
+    print(Fore.CYAN + Style.BRIGHT + "📢 ATUALIZAÇÃO - VERSÃO 2.5.0 - 02/07/2025" + Style.RESET_ALL)
+    print()
 
-{Fore.GREEN + Style.BRIGHT}🆕 FUNCIONALIDADES ADICIONADAS:{Style.RESET_ALL}
+    print(Fore.GREEN + Style.BRIGHT + "🆕 FUNCIONALIDADES ADICIONADAS:" + Style.RESET_ALL)
+    print()
 
-{Fore.YELLOW}📞 CONSULTA POR TELEFONE:{Style.RESET_ALL}
-  • Nova API direta: {Fore.WHITE}encrypt.wtf?base=telefone2{Style.RESET_ALL}
-  • Dados organizados (Proprietário, Endereço, Operadora etc)
-  • Exibe tempo de resposta e status da requisição
-  • Aviso automático sobre reinício diário da API às 12h
-  • [EM FABRICAÇÃO] telefone.py com consulta em múltiplas bases simultâneas
+    print(Fore.YELLOW + "📞 CONSULTA POR TELEFONE:" + Style.RESET_ALL)
+    print("  • Nova API direta:", Fore.WHITE + "encrypt.wtf?base=telefone2" + Style.RESET_ALL)
+    print("  • Dados organizados (Proprietário, Endereço, Operadora etc)")
+    print("  • Exibe tempo de resposta e status da requisição")
+    print("  • Aviso automático sobre reinício diário da API às 12h")
+    print("  • [EM FABRICAÇÃO] telefone.py com consulta em múltiplas bases simultâneas")
+    print()
 
-{Fore.YELLOW}👤 CONSULTA POR NOME:{Style.RESET_ALL}
-  • API {Fore.WHITE}nome_completo2{Style.RESET_ALL} funcionando com SSL ignorado
-  • Resultados exibidos por pessoa (organizados)
-  • Dados salvos automaticamente em arquivo .json
+    print(Fore.YELLOW + "👤 CONSULTA POR NOME:" + Style.RESET_ALL)
+    print("  • API", Fore.WHITE + "nome_completo2", Style.RESET_ALL, "funcionando com SSL ignorado")
+    print("  • Resultados exibidos por pessoa (organizados)")
+    print("  • Dados salvos automaticamente em arquivo .json")
+    print()
 
-{Fore.YELLOW}🔐 MÓDULO DE FORÇA BRUTA:{Style.RESET_ALL}
-  • Código reestruturado e otimizado
-  • Agora permite escolher rede social alvo
-  • Usa {Fore.WHITE}WhoStillUses (whostillits){Style.RESET_ALL} para verificar usuários reais
-  • Novo módulo de quebra de hash em C para maior performance
+    print(Fore.YELLOW + "🔐 MÓDULO DE FORÇA BRUTA:" + Style.RESET_ALL)
+    print("  • Código reestruturado e otimizado")
+    print("  • Agora permite escolher rede social alvo")
+    print("  • Usa", Fore.WHITE + "WhoStillUses (whostillits)" + Style.RESET_ALL, "para verificar usuários reais")
+    print("  • Novo módulo de quebra de hash em C para maior performance")
+    print()
 
-{Fore.YELLOW}🛠️ NOVAS CLASSES DE SEGURANÇA ainda nao empregado:{Style.RESET_ALL}
-  • SQLma - Ferramenta avançada para SQL Injection
-  • XSS Hunter - Detecta vulnerabilidades Cross-Site Scripting
-  • [EM BREVE] Malware em Assembly para análise forense
+    print(Fore.YELLOW + "🛠️ NOVAS CLASSES DE SEGURANÇA ainda não empregadas:" + Style.RESET_ALL)
+    print("  • SQLma - Ferramenta avançada para SQL Injection")
+    print("  • XSS Hunter - Detecta vulnerabilidades Cross-Site Scripting")
+    print("  • [EM BREVE] Malware em Assembly para análise forense")
+    print()
 
-{Fore.YELLOW}📄 possiveis NOVOS MÓDULOS DE CONSULTA:{Style.RESET_ALL}
-  • api-placa.py - Consulta informações de veículos
-  • cpf.py - Busca completa por CPF
-  • scanner.py - Varredura automatizada de vulnerabilidades
+    print(Fore.YELLOW + "📄 POSSÍVEIS NOVOS MÓDULOS DE CONSULTA:" + Style.RESET_ALL)
+    print("  • api-placa.py - Consulta informações de veículos")
+    print("  • cpf.py - Busca completa por CPF")
+    print("  • scanner.py - Varredura automatizada de vulnerabilidades")
+    print()
 
-{Fore.BLUE}⚙️ MELHORIAS GERAIS:{Style.RESET_ALL}
-  • Interface mais limpa e colorida no terminal
-  • Banner dinâmico que recebe arquivos prontos
-  • Menu principal com opções reorganizadas
-  • Exibição por categorias e contagem de campos
-  • Sistema de logs aprimorado para auditoria
+    print(Fore.BLUE + "⚙️ MELHORIAS GERAIS:" + Style.RESET_ALL)
+    print("  • Interface mais limpa e colorida no terminal")
+    print("  • Banner dinâmico que recebe arquivos prontos")
+    print("  • Menu principal com opções reorganizadas")
+    print("  • Exibição por categorias e contagem de campos")
+    print("  • Sistema de logs aprimorado para auditoria")
+    print()
 
-{Fore.MAGENTA}🚀 MELHORIAS FUTURAS PREVISTAS:{Style.RESET_ALL}
-  • Integração com API de inteligência artificial
-  • Módulo de reconhecimento facial
-  • Scanner de deep web automatizado
-  • Suporte a consultas em blockchains
+    print(Fore.MAGENTA + "🚀 MELHORIAS FUTURAS PREVISTAS:" + Style.RESET_ALL)
+    print("  • Integração com API de inteligência artificial")
+    print("  • Módulo de reconhecimento facial")
+    print("  • Scanner de deep web automatizado")
+    print("  • Suporte a consultas em blockchains")
+    print()
 
-{Fore.GREEN + Style.BRIGHT}📦 COMO INSTALAR E USAR:{Style.RESET_ALL}
+    print(Fore.GREEN + Style.BRIGHT + "📦 COMO INSTALAR E USAR:" + Style.RESET_ALL)
+    print()
 
-{Fore.YELLOW}1. Dê permissão de execução:{Style.RESET_ALL}
-  {Fore.CYAN}$ chmod +x install-malwer.py install-osint.py menu-real.py{Style.RESET_ALL}
+    print(Fore.YELLOW + "1. Dê permissão de execução:" + Style.RESET_ALL)
+    print("  " + Fore.CYAN + "$ chmod +x install-malwer.py install-osint.py menu-real.py" + Style.RESET_ALL)
+    print()
 
-{Fore.YELLOW}2. Instale as dependências:{Style.RESET_ALL}
-  {Fore.CYAN}$ python3 install-malwer.py{Style.RESET_ALL}
-  {Fore.CYAN}$ python3 install-osint.py{Style.RESET_ALL}
+    print(Fore.YELLOW + "2. Instale as dependências:" + Style.RESET_ALL)
+    print("  " + Fore.CYAN + "$ python3 install-malwer.py" + Style.RESET_ALL)
+    print("  " + Fore.CYAN + "$ python3 install-osint.py" + Style.RESET_ALL)
+    print()
 
-{Fore.YELLOW}3. Execute o menu principal:{Style.RESET_ALL}
-  {Fore.CYAN}$ python3 menu-real.py{Style.RESET_ALL}
+    print(Fore.YELLOW + "3. Execute o menu principal:" + Style.RESET_ALL)
+    print("  " + Fore.CYAN + "$ python3 menu-real.py" + Style.RESET_ALL)
+    print()
 
-{Fore.RED}⚠️ ATENÇÃO:{Style.RESET_ALL}
-• A API de telefone reinicia às 12h. Se der erro 400/502, tente após esse horário.
-• O módulo de quebra de hash requer compilação prévia (gcc -O3 hasher.c -o hasher)
+    print(Fore.RED + "⚠️ ATENÇÃO:" + Style.RESET_ALL)
+    print("• A API de telefone reinicia às 12h. Se der erro 400/502, tente após esse horário.")
+    print("• O módulo de quebra de hash requer compilação prévia:")
+    print("  " + Fore.CYAN + "$ gcc -O3 hasher.c -o hasher" + Style.RESET_ALL)
+    print()
 
-{Fore.GREEN}✅ Ferramenta atualizada para uso profissional em OSINT, Pentest, Forense e Coleta de Dados.{Style.RESET_ALL}
-{Fore.YELLOW}🔥 NOVO: Suporte a operações sigilosas e modo stealth disponível na versão PRO.{Style.RESET_ALL}
-""")
+    print(Fore.GREEN + "✅ Ferramenta atualizada para uso profissional em OSINT, Pentest, Forense e Coleta de Dados." + Style.RESET_ALL)
+    print(Fore.YELLOW + "🔥 NOVO: Suporte a operações sigilosas e modo stealth disponível na versão PRO." + Style.RESET_ALL)
+    print()
