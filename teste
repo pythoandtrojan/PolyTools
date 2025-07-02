@@ -1,26 +1,45 @@
+#!/usr/bin/env python3
+
 import requests
 import urllib.parse
 import urllib3
 
+# Ignora os avisos de SSL vencido
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-BASE_URL = "https://api.encrypt.wtf/new/api.php"
+# Configurações da API direta
+API_URL = "https://api.encrypt.wtf/new/api.php"
 TOKEN = "ifindy"
 BASE = "telefone2"
 
 def consultar_telefone(telefone):
     query = urllib.parse.quote(telefone)
-    url = f"{BASE_URL}?token={TOKEN}&base={BASE}&query={query}"
+    url = f"{API_URL}?token={TOKEN}&base={BASE}&query={query}"
 
-    print(f"🔍 Consultando API direta: {url}")
+    print(f"\n🔍 Consultando: {telefone}")
+    print(f"🌐 URL: {url}")
 
     try:
-        resp = requests.get(url, timeout=20, verify=False)
-        print(f"✅ Status: {resp.status_code}")
-        print(resp.json())
-    except Exception as e:
-        print(f"❌ Erro: {e}")
+        resposta = requests.get(url, timeout=15, verify=False)
+        print(f"✅ Status HTTP: {resposta.status_code}")
+
+        if resposta.status_code == 200:
+            try:
+                dados = resposta.json()
+                print("📦 Dados recebidos:")
+                for k, v in dados.items():
+                    print(f"  - {k}: {v}")
+            except Exception:
+                print("⚠️ Resposta não veio como JSON. Mostrando texto bruto:")
+                print(resposta.text[:500])
+        else:
+            print(f"❌ Erro na API: {resposta.status_code} - {resposta.text[:200]}")
+
+    except requests.exceptions.Timeout:
+        print("⏱️ Tempo de resposta excedido!")
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Erro de requisição: {e}")
 
 if __name__ == "__main__":
-    tel = input("Digite o telefone com DDD: ").strip()
-    consultar_telefone(tel)
+    telefone = input("📱 Digite o número com DDD (ex: 11987654321): ").strip()
+    consultar_telefone(telefone)
