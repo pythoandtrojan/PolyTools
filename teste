@@ -1,40 +1,26 @@
-#!/usr/bin/env python3
-
 import requests
 import urllib.parse
 import urllib3
 
-# Ignorar avisos de SSL
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-API_KEY = "firminoh7778"
-API_URL = "https://777apisss.vercel.app/consulta/telefone2/"
+BASE_URL = "https://api.encrypt.wtf/new/api.php"
+TOKEN = "ifindy"
+BASE = "telefone2"
 
-def puxar_telefone(telefone):
+def consultar_telefone(telefone):
     query = urllib.parse.quote(telefone)
-    url = f"{API_URL}?query={query}&apikey={API_KEY}"
+    url = f"{BASE_URL}?token={TOKEN}&base={BASE}&query={query}"
 
-    print(f"\n🔍 Consultando: {telefone}")
-    print(f"📡 URL: {url}")
+    print(f"🔍 Consultando API direta: {url}")
 
     try:
-        resposta = requests.get(url, timeout=15, verify=False)
-        print(f"✅ Status HTTP: {resposta.status_code}")
-
-        try:
-            dados = resposta.json()
-            print("📦 Dados recebidos:")
-            for k, v in dados.items():
-                print(f"  - {k}: {v}")
-        except Exception:
-            print("⚠️ Resposta não veio como JSON. Conteúdo bruto:")
-            print(resposta.text[:500])
-
-    except requests.exceptions.Timeout:
-        print("⏳ Tempo de resposta excedido!")
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Erro ao consultar: {e}")
+        resp = requests.get(url, timeout=20, verify=False)
+        print(f"✅ Status: {resp.status_code}")
+        print(resp.json())
+    except Exception as e:
+        print(f"❌ Erro: {e}")
 
 if __name__ == "__main__":
-    telefone = input("📱 Digite o número com DDD (ex: 11987654321): ").strip()
-    puxar_telefone(telefone)
+    tel = input("Digite o telefone com DDD: ").strip()
+    consultar_telefone(tel)
