@@ -10,13 +10,12 @@
 #include <unistd.h>
 #include <ctype.h>
 
-// Constantes e configurações
 #define MAX_WORD_LENGTH 1024
 #define MAX_HASH_LENGTH 128
 #define PROGRESS_BAR_WIDTH 50
-#define NUM_THREADS 8  // Aumentado para melhor desempenho
+#define NUM_THREADS 8 
 
-// Tipos de hash suportados
+
 typedef enum {
     HASH_MD5,
     HASH_SHA1,
@@ -26,7 +25,7 @@ typedef enum {
     HASH_UNKNOWN
 } HashType;
 
-// Estrutura para thread
+
 typedef struct {
     FILE *wordlist;
     const char *target_hash;
@@ -40,7 +39,7 @@ typedef struct {
     unsigned long total_words;
 } ThreadData;
 
-// Cores para o terminal
+
 #define RED     "\x1B[31m"
 #define GREEN   "\x1B[32m"
 #define YELLOW  "\x1B[33m"
@@ -50,7 +49,6 @@ typedef struct {
 #define RESET   "\x1B[0m"
 #define BOLD    "\x1B[1m"
 
-// Protótipos de funções
 void clear_screen();
 void show_banner();
 void dictionary_attack();
@@ -67,7 +65,7 @@ void convert_hash_to_string(const unsigned char *digest, HashType type, char *ou
 int is_valid_hash(const char *hash, HashType type);
 void save_result(const char *filename, const char *hash, const char *password, double time_spent, const char *hash_type);
 
-// Função principal
+
 int main() {
     int choice;
     
@@ -119,7 +117,6 @@ int main() {
     return 0;
 }
 
-// Implementação das funções
 
 void clear_screen() {
     system("clear || cls");
@@ -221,10 +218,10 @@ int is_valid_hash(const char *hash, HashType type) {
         default: return 0;
     }
     
-    // Verificar comprimento
+ 
     if (strlen(hash) != expected_length) return 0;
     
-    // Verificar se é hexadecimal
+
     for (int i = 0; i < expected_length; i++) {
         if (!isxdigit(hash[i])) return 0;
     }
@@ -270,10 +267,10 @@ void *thread_function(void *arg) {
     while (ftell(data->wordlist) < data->end_pos && !(*data->found)) {
         if (fgets(word, sizeof(word), data->wordlist) == NULL) break;
         
-        // Remover nova linha
+    
         word[strcspn(word, "\n\r")] = 0;
         
-        // Calcular hash
+   
         calculate_hash(word, data->hash_type, digest, strlen(word));
         convert_hash_to_string(digest, data->hash_type, hash_str);
         
@@ -295,8 +292,7 @@ void *thread_function(void *arg) {
             pthread_mutex_unlock(data->mutex);
         }
     }
-    
-    // Atualizar contador final
+  
     pthread_mutex_lock(data->mutex);
     *data->words_processed += local_words % 100;
     pthread_mutex_unlock(data->mutex);
@@ -314,8 +310,7 @@ void dictionary_attack() {
     char output_file[MAX_WORD_LENGTH] = {0};
     
     printf(BOLD "[+] ATAQUE POR DICIONÁRIO OTIMIZADO\n\n" RESET);
-    
-    // Obter entradas do usuário
+
     printf("Caminho para wordlist: ");
     if (scanf("%1023s", wordlist_path) != 1) {
         printf(RED "\n[!] Entrada inválida!\n" RESET);
@@ -334,7 +329,7 @@ void dictionary_attack() {
         return;
     }
     
-    // Limpar buffer
+
     while (getchar() != '\n');
     
     printf("Salvar resultados em (deixe em branco para não salvar): ");
@@ -347,7 +342,7 @@ void dictionary_attack() {
         return;
     }
     
-    // Validar o hash fornecido
+
     if (!is_valid_hash(hash_to_crack, hash_type)) {
         printf(RED "\n[!] Hash inválido para o tipo %s!\n" RESET, hash_type_str);
         print_hash_info(hash_type);
@@ -359,16 +354,14 @@ void dictionary_attack() {
         printf(RED "\n[!] Erro ao abrir wordlist: %s\n" RESET, wordlist_path);
         return;
     }
-    
-    // Contar linhas para progresso
+ 
     unsigned long total_words = count_lines(wordlist);
     if (total_words == 0) {
         printf(RED "\n[!] Wordlist vazia!\n" RESET);
         fclose(wordlist);
         return;
     }
-    
-    // Calcular tamanho do arquivo para divisão entre threads
+  
     fseek(wordlist, 0, SEEK_END);
     long file_size = ftell(wordlist);
     rewind(wordlist);
@@ -377,8 +370,7 @@ void dictionary_attack() {
     printf("[*] Tamanho da wordlist: %ld bytes\n", file_size);
     printf("[*] Número de palavras: %lu\n", total_words);
     printf("[*] Pressione Ctrl+C para parar\n\n");
-    
-    // Configuração das threads
+
     pthread_t threads[NUM_THREADS];
     ThreadData thread_data[NUM_THREADS];
     pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -387,7 +379,6 @@ void dictionary_attack() {
     unsigned long words_processed = 0;
     clock_t start = clock();
     
-    // Dividir trabalho entre threads
     for (int i = 0; i < NUM_THREADS; i++) {
         thread_data[i].wordlist = wordlist;
         thread_data[i].target_hash = hash_to_crack;
@@ -400,7 +391,7 @@ void dictionary_attack() {
         thread_data[i].words_processed = &words_processed;
         thread_data[i].total_words = total_words;
         
-        // Ajustar posição de início para começar no início de uma linha
+    
         if (i > 0) {
             fseek(wordlist, thread_data[i].start_pos, SEEK_SET);
             while (fgetc(wordlist) != '\n' && ftell(wordlist) < file_size);
@@ -410,7 +401,7 @@ void dictionary_attack() {
         pthread_create(&threads[i], NULL, thread_function, &thread_data[i]);
     }
     
-    // Exibir progresso
+
     while (!found && words_processed < total_words) {
         float progress = (float)words_processed / total_words;
         double elapsed = (double)(clock() - start) / CLOCKS_PER_SEC;
@@ -418,11 +409,11 @@ void dictionary_attack() {
         
         print_progress_bar(progress, speed);
         
-        // Verificar a cada 100ms
+ 
         usleep(100000);
     }
     
-    // Aguardar conclusão das threads
+ 
     for (int i = 0; i < NUM_THREADS; i++) {
         pthread_join(threads[i], NULL);
     }
@@ -432,7 +423,7 @@ void dictionary_attack() {
     clock_t end = clock();
     double time_spent = (double)(end - start) / CLOCKS_PER_SEC;
     
-    // Exibir resultados
+  
     if (found) {
         printf(GREEN "\n\n[+] SENHA ENCONTRADA: %s\n" RESET, result);
         
@@ -514,7 +505,7 @@ void brute_force_attack() {
         return;
     }
     
-    // Limpar buffer
+
     while (getchar() != '\n');
     
     printf("Salvar resultados em (deixe em branco para não salvar): ");
@@ -527,7 +518,7 @@ void brute_force_attack() {
         return;
     }
     
-    // Validar o hash fornecido
+  
     if (!is_valid_hash(hash_to_crack, hash_type)) {
         printf(RED "\n[!] Hash inválido para o tipo %s!\n" RESET, hash_type_str);
         print_hash_info(hash_type);
@@ -539,7 +530,7 @@ void brute_force_attack() {
     printf("[*] Conjunto de caracteres: %s\n", charset);
     printf("[*] Pressione Ctrl+C para parar\n\n");
     
-    // Implementação simplificada (versão completa teria geração de combinações)
+ 
     printf("Esta funcionalidade está em desenvolvimento.\n");
     printf("Implementação completa incluirá geração sistemática de todas as combinações possíveis.\n");
 }
@@ -598,7 +589,7 @@ void wordlist_generator() {
         return;
     }
     
-    // Limpar buffer
+
     while (getchar() != '\n');
     
     printf("Digite até 5 palavras base (uma por linha, deixe em branco para terminar):\n");
@@ -624,11 +615,11 @@ void wordlist_generator() {
         return;
     }
     
-    // Gerar combinações simples
+
     for (int i = 0; i < num_words; i++) {
         fprintf(out, "%s\n", base_words[i]);
         
-        // Adicionar variações com números
+     
         for (int j = 0; j < 100; j++) {
             fprintf(out, "%s%d\n", base_words[i], j);
             fprintf(out, "%s%d%d\n", base_words[i], j, j);
@@ -641,7 +632,7 @@ void wordlist_generator() {
         fprintf(out, "%s\n", upper);
     }
     
-    // Adicionar combinações de palavras
+ 
     if (num_words > 1) {
         for (int i = 0; i < num_words; i++) {
             for (int j = 0; j < num_words; j++) {
