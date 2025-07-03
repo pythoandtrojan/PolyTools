@@ -65,6 +65,14 @@ class Banners:
         01000100 01000001 01000100 01001111 01010011 00100000 01010011 01000001 01001110 01000111 01010010 01000001 01000100 01001111 01010011
         01010000 01000001 01010011 01010011 01010111 01001111 01010010 01000100 01010011 00100000 01000101 01001101 00100000 01010000 01001100 01000001 01001001 01001110 01010100 01000101 01011000 01010100
         """
+        
+    @staticmethod
+    def spam():
+        return """
+        01010011 01010000 01000001 01001101 00100000 01010100 01001111 01001111 01001100 01010011
+        01001001 00100000 01010111 01001001 01001100 01001100 00100000 01010011 01010000 01000001 01001101 00100000 01011001 01001111 01010101
+        01011001 01001111 01010101 00100000 01000011 01000001 01001110 00100111 01010100 00100000 01000101 01010011 01000011 01000001 01010000 01000101
+        """
 
 class HackerMenu:
     def __init__(self):
@@ -105,6 +113,13 @@ class HackerMenu:
             "sql-inject": {
                 "sqlmap.py": "Ferramenta automatizada de SQL injection",
                 "sql-inject.py": "Ferramenta manual de SQL injection"
+            },
+            "spam": {
+                "fim-link.py": "Ferramenta de spam por links",
+                "social-span.py": "Spam em redes sociais",
+                "span-gmail.py": "Spam por e-mail (Gmail)",
+                "span-sms.py": "Spam por SMS",
+                "trolar-amigo.py": "Ferramenta para trollar amigos"
             }
         }
 
@@ -126,6 +141,7 @@ class HackerMenu:
         table.add_row("3", "SCANNER", "Ferramentas de varredura")
         table.add_row("4", "FORÇA BRUTA", "Ataques de força bruta")
         table.add_row("5", "SQL INJECTION", "Injeção de SQL em bancos de dados")
+        table.add_row("6", "SPAM", "Ferramentas de envio em massa")
         table.add_row("0", "SAIR", "Sair do sistema")
 
         console.print(table)
@@ -147,6 +163,8 @@ class HackerMenu:
                 console.print(Panel.fit(Banners.brute_force(), style="bold magenta"))
             elif category == "sql-inject":
                 console.print(Panel.fit(Banners.sql_inject(), style="bold cyan"))
+            elif category == "spam":
+                console.print(Panel.fit(Banners.spam(), style="bold yellow"))
             
             console.print(f"\n[bold]{category} TOOLS[/bold]\n")
             
@@ -175,7 +193,6 @@ class HackerMenu:
                 time.sleep(1)
 
     def compile_c_file(self, file_path):
-     
         try:
             output_file = file_path[:-2]  
             console.print(f"[bold yellow]Compilando {file_path}...[/bold yellow]")
@@ -203,7 +220,6 @@ class HackerMenu:
         console.print(f"[bold yellow]Executando {tool_name}...[/bold yellow]\n")
         
         try:
-         
             script_path = os.path.join(category, tool_name)
             if not os.path.exists(script_path):
                 console.print(f"[bold red]Erro: Arquivo {script_path} não encontrado![/bold red]")
@@ -213,14 +229,12 @@ class HackerMenu:
             env = os.environ.copy()
             env['PYTHONUNBUFFERED'] = '1'
             
-     
             if tool_name.endswith('.c'):
                 compiled_path = self.compile_c_file(script_path)
                 if not compiled_path:
                     console.input("\nPressione Enter para continuar...")
                     return
                 
-         
                 process = subprocess.Popen(
                     [f"./{compiled_path}"],
                     stdin=sys.stdin,
@@ -231,7 +245,6 @@ class HackerMenu:
                     universal_newlines=True
                 )
             elif tool_name.endswith('.py'):
-           
                 process = subprocess.Popen(
                     [sys.executable, script_path],
                     stdin=sys.stdin,
@@ -246,7 +259,6 @@ class HackerMenu:
                 console.input("\nPressione Enter para continuar...")
                 return
                 
-     
             process.wait()
             
             if process.returncode != 0:
@@ -271,6 +283,8 @@ class HackerMenu:
                 self.show_category_menu("brute")
             elif choice == "5":
                 self.show_category_menu("sql-inject")
+            elif choice == "6":
+                self.show_category_menu("spam")
             elif choice == "0":
                 console.print("[bold red]Saindo do sistema...[/bold red]")
                 time.sleep(1)
