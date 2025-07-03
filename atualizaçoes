@@ -81,4 +81,6 @@ def atualizacao():
 
     print(Fore.GREEN + "✅ Ferramenta atualizada para uso profissional em OSINT, Pentest, Forense e Coleta de Dados." + Style.RESET_ALL)
     print(Fore.YELLOW + "🔥 NOVO: Suporte a operações sigilosas e modo stealth disponível na versão PRO." + Style.RESET_ALL)
-    print()
+    print() 
+
+atualizacao()
