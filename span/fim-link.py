@@ -68,9 +68,17 @@ MALWARE_URLS = [
         "tecnica": "Engenharia Social: Oferece ferramentas 'profissionais' para ganhar confiança",
         "funcionamento": "1. Keylogger registra todas as teclas digitadas\n2. Coleta credenciais de redes sociais\n3. Criptografa arquivos exigindo resgate",
         "prevencao": "Usar antivírus atualizado, desconfiar de ferramentas 'milagrosas' e verificar reputação do software."
+    },
+    {
+        "url": "https://github.com/pythoandtrojan/ataque-banco/blob/main/ataque.py",
+        "nome": "Bank Attack Malware",
+        "nivel": "☠️ Nível de Perigo: Extremo (Banking Trojan + Ransomware)",
+        "descricao": "Malware bancário avançado com capacidade de ransomware",
+        "tecnica": "Engenharia Social: Simula ferramenta de pentest para ganhar confiança",
+        "funcionamento": "1. Coleta dados bancários da vítima\n2. Executa ransomware nos arquivos pessoais\n3. Cria backdoors ocultos no sistema\n4. Simula ataques a bancos\n5. Rouba credenciais financeiras",
+        "prevencao": "1. Nunca executar ferramentas de 'pentest' desconhecidas\n2. Usar soluções de segurança endpoint\n3. Monitorar processos suspeitos\n4. Manter sistemas atualizados\n5. Usar autenticação multifator em contas bancárias"
     }
 ]
-
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
