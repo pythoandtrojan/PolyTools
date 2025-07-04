@@ -26,7 +26,6 @@ def criar_diretorio():
 def verificar_ferramenta(nome):
     """Verifica se uma ferramenta está instalada"""
     if nome in ['serveo', 'localtunnel']:
-        # Ferramentas que usam comandos do sistema
         try:
             if nome == 'serveo':
                 subprocess.run(['ssh', '-V'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
@@ -36,11 +35,10 @@ def verificar_ferramenta(nome):
         except:
             return False
     else:
-        # Ferramentas que estão em subdiretórios
         return os.path.exists(nome)
 
 def instalar_ferramenta(nome, url):
-    """Tenta instalar uma ferramenta específica com interação do usuário"""
+    """Tenta instalar uma ferramenta específica"""
     print(f"\n{colors.YELLOW}[*] Verificando {nome}...{colors.END}")
     
     if verificar_ferramenta(nome):
@@ -58,31 +56,34 @@ def instalar_ferramenta(nome, url):
         if 'git' in url:
             subprocess.run(['git', 'clone', url], check=True)
             print(f"{colors.GREEN}[+] {nome} instalado com sucesso via Git!{colors.END}")
+            return True
         elif 'npm' in url:
             subprocess.run(url.split(), check=True)
             print(f"{colors.GREEN}[+] {nome} instalado com sucesso via npm!{colors.END}")
+            return True
         else:
-            # Para arquivos zipados
-            arquivo_zip = f'{nome}.zip'
-            subprocess.run(['wget', url, '-O', arquivo_zip], check=True)
+            arquivo = url.split('/')[-1]
+            subprocess.run(['wget', url, '-O', arquivo], check=True)
             
-            # Extrai o arquivo baseado na extensão
-            if url.endswith('.zip'):
-                subprocess.run(['unzip', arquivo_zip], check=True)
-            elif url.endswith('.gz'):
-                subprocess.run(['tar', 'xvf', arquivo_zip], check=True)
-            elif url.endswith('.tar.gz'):
-                subprocess.run(['tar', 'xvfz', arquivo_zip], check=True)
+            if arquivo.endswith('.zip'):
+                subprocess.run(['unzip', arquivo], check=True)
+                os.remove(arquivo)
+            elif arquivo.endswith(('.tar.gz', '.gz')):
+                subprocess.run(['tar', 'xvf', arquivo], check=True)
+                os.remove(arquivo)
             
-            # Remove o arquivo baixado
-            os.remove(arquivo_zip)
-            
-            # Torna executável se for um binário
+            # Verifica se o arquivo baixado precisa de permissões de execução
             if nome in ['ngrok', 'cloudflared', 'chisel', 'rathole', 'inlets']:
-                os.chmod(nome, 0o755)
+                if os.path.exists(nome):
+                    os.chmod(nome, 0o755)
+                else:
+                    # Algumas ferramentas são extraídas em subdiretórios
+                    for root, dirs, files in os.walk('.'):
+                        if nome in files:
+                            os.chmod(os.path.join(root, nome), 0o755)
             
             print(f"{colors.GREEN}[+] {nome} instalado com sucesso!{colors.END}")
-        return True
+            return True
     except subprocess.CalledProcessError as e:
         print(f"{colors.RED}[-] Erro ao instalar {nome}: Comando falhou com código {e.returncode}{colors.END}")
     except Exception as e:
@@ -167,7 +168,7 @@ def menu_phishing():
             nome, url = ferramentas_phishing[escolha]
             if nome == 'Voltar':
                 return
-            if verificar_ferramenta(nome) or instalar_ferramenta(nome, url):
+            if instalar_ferramenta(nome, url):
                 executar_ferramenta(nome)
         else:
             print(f"\n{colors.RED}[-] Opção inválida! Tente novamente.{colors.END}")
@@ -211,7 +212,7 @@ def menu_tuneis():
             nome, url = ferramentas_tunel[escolha]
             if nome == 'Voltar':
                 return
-            if verificar_ferramenta(nome) or instalar_ferramenta(nome, url):
+            if instalar_ferramenta(nome, url):
                 executar_tunel(nome)
         else:
             print(f"\n{colors.RED}[-] Opção inválida! Tente novamente.{colors.END}")
@@ -221,42 +222,54 @@ def executar_ferramenta(nome):
     try:
         print(f"\n{colors.YELLOW}[*] Iniciando {nome}...{colors.END}")
         
+        # Verifica se a ferramenta existe
         if not verificar_ferramenta(nome):
             print(f"{colors.RED}[-] {nome} não está instalado.{colors.END}")
             time.sleep(2)
             return
         
-        os.chdir(nome)
+        # Verifica se é um diretório (ferramentas baixadas via git)
+        if os.path.isdir(nome):
+            os.chdir(nome)
         
+        # Executa a ferramenta específica
         if nome == 'SocialFish':
-            subprocess.run(['python3', 'SocialFish.py'])
+            subprocess.run(['python3', 'SocialFish.py'], check=True)
         elif nome == 'HiddenEye':
-            subprocess.run(['python3', 'HiddenEye.py'])
+            subprocess.run(['python3', 'HiddenEye.py'], check=True)
         elif nome == 'Zphisher':
-            subprocess.run(['bash', 'zphisher.sh'])
+            subprocess.run(['bash', 'zphisher.sh'], check=True)
         elif nome == 'BlackPhish':
-            subprocess.run(['python3', 'blackphish.py'])
+            subprocess.run(['python3', 'blackphish.py'], check=True)
         elif nome == 'PyPhisher':
-            subprocess.run(['python3', 'pyphisher.py'])
+            subprocess.run(['python3', 'pyphisher.py'], check=True)
         elif nome == 'ShellPhish':
-            subprocess.run(['bash', 'shellphish.sh'])
+            subprocess.run(['bash', 'shellphish.sh'], check=True)
         elif nome == 'nexphisher':
-            subprocess.run(['bash', 'nexphisher.sh'])
+            subprocess.run(['bash', 'nexphisher.sh'], check=True)
         elif nome == 'AnonPhisher':
-            subprocess.run(['python3', 'AnonPhisher.py'])
+            subprocess.run(['python3', 'AnonPhisher.py'], check=True)
         elif nome == 'Phishious':
-            subprocess.run(['python3', 'phishious.py'])
+            subprocess.run(['python3', 'phishious.py'], check=True)
         elif nome == 'ArtPhish':
-            subprocess.run(['python3', 'artphish.py'])
+            subprocess.run(['python3', 'artphish.py'], check=True)
         elif nome == 'PhishFleet':
-            subprocess.run(['python3', 'phishfleet.py'])
+            subprocess.run(['python3', 'phishfleet.py'], check=True)
         elif nome == 'PhishMon':
-            subprocess.run(['python3', 'phishmon.py'])
+            subprocess.run(['python3', 'phishmon.py'], check=True)
+        
+        # Volta ao diretório anterior se necessário
+        if os.path.isdir(nome):
+            os.chdir('..')
             
-        os.chdir('..')
+    except subprocess.CalledProcessError as e:
+        print(f"{colors.RED}[-] Erro ao executar {nome}: Comando falhou com código {e.returncode}{colors.END}")
+    except FileNotFoundError:
+        print(f"{colors.RED}[-] Arquivo principal não encontrado em {nome}. Verifique a instalação.{colors.END}")
     except Exception as e:
         print(f"{colors.RED}[-] Erro ao executar {nome}: {str(e)}{colors.END}")
-        time.sleep(2)
+    finally:
+        input(f"\n{colors.YELLOW}[!] Pressione Enter para continuar...{colors.END}")
 
 def executar_tunel(nome):
     try:
@@ -270,18 +283,30 @@ def executar_tunel(nome):
         porta = input(f"{colors.YELLOW}[?] Digite a porta para o túnel (ex: 8080): {colors.END}")
         
         if nome == 'ngrok':
+            if not os.path.exists('./ngrok'):
+                print(f"{colors.RED}[-] ngrok não encontrado no diretório atual.{colors.END}")
+                return
             subprocess.run(['./ngrok', 'http', porta])
         elif nome == 'serveo':
             subprocess.run(['ssh', '-o', 'StrictHostKeyChecking=no', '-R', '80:localhost:' + porta, 'serveo.net'])
         elif nome == 'localtunnel':
             subprocess.run(['lt', '--port', porta])
         elif nome == 'cloudflared':
+            if not os.path.exists('./cloudflared'):
+                print(f"{colors.RED}[-] cloudflared não encontrado no diretório atual.{colors.END}")
+                return
             subprocess.run(['./cloudflared', 'tunnel', '--url', 'http://localhost:' + porta])
         elif nome == 'bore':
+            if not os.path.exists('bore'):
+                print(f"{colors.RED}[-] Diretório bore não encontrado.{colors.END}")
+                return
             os.chdir('bore')
             subprocess.run(['cargo', 'run', '--', '--port', porta])
             os.chdir('..')
         elif nome == 'chisel':
+            if not os.path.exists('./chisel'):
+                print(f"{colors.RED}[-] chisel não encontrado no diretório atual.{colors.END}")
+                return
             modo = input(f"{colors.YELLOW}[?] Modo (server/client): {colors.END}")
             if modo == 'server':
                 subprocess.run(['./chisel', 'server', '--port', '8080'])
@@ -289,9 +314,15 @@ def executar_tunel(nome):
                 server = input(f"{colors.YELLOW}[?] Endereço do servidor (ex: 1.2.3.4:8080): {colors.END}")
                 subprocess.run(['./chisel', 'client', server, porta + ':localhost:' + porta])
         elif nome == 'rathole':
+            if not os.path.exists('./rathole'):
+                print(f"{colors.RED}[-] rathole não encontrado no diretório atual.{colors.END}")
+                return
             config = input(f"{colors.YELLOW}[?] Caminho para o arquivo de configuração: {colors.END}")
             subprocess.run(['./rathole', config])
         elif nome == 'inlets':
+            if not os.path.exists('./inlets'):
+                print(f"{colors.RED}[-] inlets não encontrado no diretório atual.{colors.END}")
+                return
             token = input(f"{colors.YELLOW}[?] Token de autenticação: {colors.END}")
             subprocess.run(['./inlets', 'server', '--token', token])
             
@@ -300,18 +331,18 @@ def executar_tunel(nome):
     except Exception as e:
         print(f"{colors.RED}[-] Erro ao executar {nome}: {str(e)}{colors.END}")
     finally:
-        time.sleep(2)
+        input(f"\n{colors.YELLOW}[!] Pressione Enter para continuar...{colors.END}")
 
 def main():
-    criar_diretorio()
-    menu_principal()
-
-if __name__ == '__main__':
     try:
-        main()
+        criar_diretorio()
+        menu_principal()
     except KeyboardInterrupt:
         print(f"\n{colors.RED}[!] Programa interrompido pelo usuário.{colors.END}")
         sys.exit(0)
     except Exception as e:
         print(f"\n{colors.RED}[!] Erro crítico: {str(e)}{colors.END}")
         sys.exit(1)
+
+if __name__ == '__main__':
+    main()
