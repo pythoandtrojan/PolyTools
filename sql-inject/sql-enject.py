@@ -16,7 +16,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from datetime import datetime
-import cv2
+from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 from pygments import highlight
 from pygments.lexers import SqlLexer, JsonLexer
@@ -460,18 +460,24 @@ class EliteScanner:
     
     def highlight_vulnerability(self, image_path, payload):
         try:
-            img = cv2.imread(image_path)
+            img = Image.open(image_path)
+            draw = ImageDraw.Draw(img)
             
             # Desenha retângulo vermelho
-            cv2.rectangle(img, (50, 50), (img.shape[1]-50, img.shape[0]-50), (0, 0, 255), 10)
+            draw.rectangle([50, 50, img.width-50, img.height-50], outline="red", width=10)
+            
+            try:
+                # Tenta carregar uma fonte, se não conseguir usa a padrão
+                font = ImageFont.truetype("arial.ttf", 30)
+            except:
+                font = ImageFont.load_default()
             
             # Adiciona texto
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            cv2.putText(img, f"VULNERABLE TO SQLi: {payload[:50]}...", 
-                       (100, 100), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
+            text = f"VULNERABLE TO SQLi: {payload[:50]}..."
+            draw.text((100, 100), text, fill="red", font=font)
             
             highlighted_path = image_path.replace(".png", "_highlighted.png")
-            cv2.imwrite(highlighted_path, img)
+            img.save(highlighted_path)
             return highlighted_path
         except Exception as e:
             self.terminal.print_status(f"Erro ao destacar vulnerabilidade: {e}", "error")
@@ -845,7 +851,7 @@ class EliteScanner:
         if self.db_type == 'MySQL':
             queries = [
                 ("Versão do MySQL", "extractvalue(1,concat(0x5c,@@version))"),
-                ("Usuário atual", "extractvalue(1,concat(0x5c,user()))"),
+                ("Usuário atual", "extractvalue(1,concat(0x5c,user()))",
                 ("Banco de dados atual", "extractvalue(1,concat(0x5c,database()))")
             ]
         elif self.db_type == 'MSSQL':
