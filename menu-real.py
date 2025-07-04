@@ -1,5 +1,4 @@
 #!/data/data/com.termux/files/usr/bin/python3
-# -*- coding: utf-8 -*-
 
 import os
 import sys
@@ -73,6 +72,14 @@ class Banners:
         01001001 00100000 01010111 01001001 01001100 01001100 00100000 01010011 01010000 01000001 01001101 00100000 01011001 01001111 01010101
         01011001 01001111 01010101 00100000 01000011 01000001 01001110 00100111 01010100 00100000 01000101 01010011 01000011 01000001 01010000 01000101
         """
+        
+    @staticmethod
+    def phishing():
+        return """
+        01010000 01001000 01001001 01010011 01001001 01001110 01000111 00100000 01010100 01001111 01001111 01001100 01010011
+        01011001 01001111 01010101 01010010 00100000 01000011 01010010 01000101 01000100 01000101 01001110 01010100 01001001 01000001 01001100 01010011 00100000 01000001 01010010 01000101 00100000 01001101 01001001 01001110 01000101
+        01010100 01010010 01010101 01010011 01010100 00100000 01001110 01001111 00100000 01001111 01001110 01000101
+        """
 
 class HackerMenu:
     def __init__(self):
@@ -119,7 +126,14 @@ class HackerMenu:
                 "social-span.py": "Spam em redes sociais",
                 "span-gmail.py": "Spam por e-mail (Gmail)",
                 "span-sms.py": "Spam por SMS",
-                "trolar-amigo.py": "Ferramenta para trollar amigos"
+                "trolar-amigo.py": "Ferramenta para trollar amigos",
+                "menu-phishing.py": "Menu de ferramentas de phishing",
+                "rede-val.py": "Validador de redes de phishing"
+            },
+            "phishing": {
+                "menu-phishing.py": "Menu completo de ferramentas de phishing",
+                "rede-val.py": "Validador de redes de phishing",
+                "site-clone.py": "Clonador de sites para phishing"
             }
         }
 
@@ -142,6 +156,7 @@ class HackerMenu:
         table.add_row("4", "FORÇA BRUTA", "Ataques de força bruta")
         table.add_row("5", "SQL INJECTION", "Injeção de SQL em bancos de dados")
         table.add_row("6", "SPAM", "Ferramentas de envio em massa")
+        table.add_row("7", "PHISHING", "Ferramentas de engenharia social")
         table.add_row("0", "SAIR", "Sair do sistema")
 
         console.print(table)
@@ -165,6 +180,8 @@ class HackerMenu:
                 console.print(Panel.fit(Banners.sql_inject(), style="bold cyan"))
             elif category == "spam":
                 console.print(Panel.fit(Banners.spam(), style="bold yellow"))
+            elif category == "phishing":
+                console.print(Panel.fit(Banners.phishing(), style="bold purple"))
             
             console.print(f"\n[bold]{category} TOOLS[/bold]\n")
             
@@ -285,6 +302,8 @@ class HackerMenu:
                 self.show_category_menu("sql-inject")
             elif choice == "6":
                 self.show_category_menu("spam")
+            elif choice == "7":
+                self.show_category_menu("phishing")
             elif choice == "0":
                 console.print("[bold red]Saindo do sistema...[/bold red]")
                 time.sleep(1)
