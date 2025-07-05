@@ -584,7 +584,7 @@ def start_documentation_site():
         </section>
         
         <footer>
-            <p>© 2023 Valkyrie Red Team | Todos os direitos reservados</p>
+            <p>© 2025 Valkyrie Red Team | Todos os direitos reservados</p>
             <p>Contato: valkyrie@safe-mail.net</p>
             <div class="social-icons">
                 <a href="#"><img src="assets/github.png" alt="GitHub"></a>
