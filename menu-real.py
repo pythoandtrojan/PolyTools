@@ -115,7 +115,8 @@ class HackerMenu:
             "brute": {
                 "dictionary-attack.py": "Ataque de dicionário a senhas",
                 "hash-cracker.c": "Quebrador de hashes em C",
-                "puro.py": "Força bruta pura"
+                "puro.py": "Força bruta pura",
+                "sites.py": "Força bruta em sites"
             },
             "sql-inject": {
                 "sqlmap.py": "Ferramenta automatizada de SQL injection",
@@ -133,7 +134,9 @@ class HackerMenu:
             "phishing": {
                 "menu-phishing.py": "Menu completo de ferramentas de phishing",
                 "rede-val.py": "Validador de redes de phishing",
-                "site-clone.py": "Clonador de sites para phishing"
+                "site-clone.py": "Clonador de sites para phishing",
+                "fotos-phishing.py": "Ferramenta de phishing com fotos",
+                "mascara.py": "Mascaramento de URLs para phishing"
             }
         }
 
