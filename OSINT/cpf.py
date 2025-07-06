@@ -9,370 +9,345 @@ from time import sleep
 # Inicializa colorama
 init(autoreset=True)
 
-def limpar_tela():
-    """Limpa a tela do console de forma compatível com multiplataforma"""
-    os.system('cls' if os.name == 'nt' else 'clear')
+class CPFConsultor:
+    def __init__(self):
+        self.api_url = "https://777apisss.vercel.app/cpf/credilink/"
+        self.api_key = "firminoh7778"
+        self.timeout = (10, 30)
+        self.delay_entre_consultas = 1
 
-def validar_cpf(cpf):
-    """Valida se o CPF é válido (formato e dígitos verificadores)"""
-    # Remove caracteres não numéricos
-    cpf = re.sub(r'[^0-9]', '', cpf)
-    
-    # Verifica se tem 11 dígitos e não é uma sequência repetida
-    if len(cpf) != 11 or cpf == cpf[0] * 11:
-        return False
-    
-    # Calcula o primeiro dígito verificador
-    soma = 0
-    for i in range(9):
-        soma += int(cpf[i]) * (10 - i)
-    resto = 11 - (soma % 11)
-    digito1 = resto if resto < 10 else 0
-    
-    # Calcula o segundo dígito verificador
-    soma = 0
-    for i in range(10):
-        soma += int(cpf[i]) * (11 - i)
-    resto = 11 - (soma % 11)
-    digito2 = resto if resto < 10 else 0
-    
-    # Verifica se os dígitos calculados conferem com os informados
-    return cpf[-2:] == f"{digito1}{digito2}"
+    def limpar_tela(self):
+        """Limpa a tela do console de forma compatível com multiplataforma"""
+        os.system('cls' if os.name == 'nt' else 'clear')
 
-def exibir_banner():
-    """Exibe o banner colorido do sistema"""
-    print(Fore.CYAN + """
-    ██████╗ ██████╗ ███████╗
-    ██╔═══██╗██╔══██╗██╔════╝
-    ██║   ██║██████╔╝█████╗  
-    ██║   ██║██╔═══╝ ██╔══╝  
-    ╚██████╔╝██║     ███████╗
-     ╚═════╝ ╚═╝     ╚══════╝
-    """ + Fore.YELLOW + "Consulta de Dados Pessoais" + Style.RESET_ALL)
-    print(Fore.GREEN + "="*60 + Style.RESET_ALL)
-
-def formatar_data(data_str):
-    """Formata a data para o padrão brasileiro"""
-    try:
-        data = datetime.strptime(data_str, "%d/%m/%Y")
-        return data.strftime("%d/%m/%Y")
-    except (ValueError, TypeError):
-        return data_str
-
-def formatar_moeda(valor):
-    """Formata valores numéricos como moeda brasileira"""
-    try:
-        valor = float(valor)
-        return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    except (ValueError, TypeError):
-        return valor
-
-def exibir_dados(dados):
-    """Exibe os dados formatados e coloridos"""
-    if not dados:
-        print(Fore.RED + "\nNenhum dado encontrado para exibição." + Style.RESET_ALL)
-        return
-    
-    try:
-        print("\n" + Fore.BLUE + "═"*60 + Style.RESET_ALL)
-        print(Fore.YELLOW + "■ DADOS PESSOAIS ■".center(60) + Style.RESET_ALL)
-        print(Fore.BLUE + "═"*60 + Style.RESET_ALL)
+    def validar_cpf(self, cpf):
+        """Valida se o CPF é válido (formato e dígitos verificadores)"""
+        cpf = re.sub(r'[^0-9]', '', cpf)
         
-        pessoais = dados.get('dados_pessoais', {})
-        print(Fore.GREEN + f" Nome: " + Fore.WHITE + f"{pessoais.get('NOME', 'Não informado')}")
-        print(Fore.GREEN + f" CPF: " + Fore.WHITE + f"{pessoais.get('CPF', 'Não informado')}")
-        print(Fore.GREEN + f" Data de Nascimento: " + Fore.WHITE + f"{formatar_data(pessoais.get('DT_NASCIMENTO', 'Não informado'))}")
-        print(Fore.GREEN + f" Idade: " + Fore.WHITE + f"{pessoais.get('idade', 'Não informado')}" + 
-              Fore.GREEN + " | Signo: " + Fore.WHITE + f"{pessoais.get('signo', 'Não informado')}")
-        print(Fore.GREEN + f" Nome da Mãe: " + Fore.WHITE + f"{pessoais.get('NOME_MAE', 'Não informado')}")
-        print(Fore.GREEN + f" E-mail: " + Fore.WHITE + f"{pessoais.get('EMAIL', 'Não informado')}")
-        print(Fore.GREEN + f" Sexo: " + Fore.WHITE + f"{pessoais.get('SEXO', 'Não informado')}")
-
-        print("\n" + Fore.BLUE + "═"*60 + Style.RESET_ALL)
-        print(Fore.YELLOW + "■ ENDEREÇO ■".center(60) + Style.RESET_ALL)
-        print(Fore.BLUE + "═"*60 + Style.RESET_ALL)
+        if len(cpf) != 11 or cpf == cpf[0] * 11:
+            return False
         
-        endereco = dados.get('endereco', {})
-        print(Fore.GREEN + f" Logradouro: " + Fore.WHITE + f"{endereco.get('LOGRADOURO', 'Não informado')}")
-        print(Fore.GREEN + f" Bairro: " + Fore.WHITE + f"{endereco.get('BAIRRO', 'Não informado')}")
-        print(Fore.GREEN + f" Cidade: " + Fore.WHITE + f"{endereco.get('CIDADE', 'Não informado')} - {endereco.get('UF', 'Não informado')}")
-        print(Fore.GREEN + f" CEP: " + Fore.WHITE + f"{endereco.get('CEP', 'Não informado')}")
-
-        print("\n" + Fore.BLUE + "═"*60 + Style.RESET_ALL)
-        print(Fore.YELLOW + "■ DADOS PROFISSIONAIS ■".center(60) + Style.RESET_ALL)
-        print(Fore.BLUE + "═"*60 + Style.RESET_ALL)
+        # Cálculo do primeiro dígito verificador
+        soma = sum(int(cpf[i]) * (10 - i) for i in range(9))
+        digito1 = (11 - (soma % 11)) if (11 - (soma % 11)) < 10 else 0
         
-        prof = dados.get('dados_profissionais', {})
-        print(Fore.GREEN + f" Profissão: " + Fore.WHITE + f"{prof.get('profissao', 'Não informado')}")
-        print(Fore.GREEN + f" CBO: " + Fore.WHITE + f"{prof.get('CBO', 'Não informado')}")
-        print(Fore.GREEN + f" Status Receita Federal: " + Fore.WHITE + f"{prof.get('STATUS_RECEITA_FEDERAL', 'Não informado')}")
-
-        print("\n" + Fore.BLUE + "═"*60 + Style.RESET_ALL)
-        print(Fore.YELLOW + "■ DADOS FINANCEIROS ■".center(60) + Style.RESET_ALL)
-        print(Fore.BLUE + "═"*60 + Style.RESET_ALL)
+        # Cálculo do segundo dígito verificador
+        soma = sum(int(cpf[i]) * (11 - i) for i in range(10))
+        digito2 = (11 - (soma % 11)) if (11 - (soma % 11)) < 10 else 0
         
-        financeiros = dados.get('dados_financeiros', {})
-        print(Fore.GREEN + f" Faixa de Renda: " + Fore.WHITE + f"{financeiros.get('FAIXA_RENDA', 'Não informado')}")
-        print(Fore.GREEN + f" Renda Presumida: " + Fore.WHITE + f"{formatar_moeda(financeiros.get('RENDA_PRESUMIDA', 'Não informado'))}")
+        return cpf[-2:] == f"{digito1}{digito2}"
 
-        print("\n" + Fore.BLUE + "═"*60 + Style.RESET_ALL)
-        print(Fore.YELLOW + "■ CONTATOS ■".center(60) + Style.RESET_ALL)
-        print(Fore.BLUE + "═"*60 + Style.RESET_ALL)
-        
-        contatos = dados.get('contatos', {})
-        celulares = contatos.get('celulares', [])
-        print(Fore.GREEN + " Celulares:")
-        if celulares:
-            for i, cel in enumerate(celulares, 1):
-                print(Fore.WHITE + f"  {i}. {cel}")
-        else:
-            print(Fore.WHITE + "  Nenhum celular cadastrado")
+    def exibir_banner(self):
+        """Exibe o banner colorido do sistema"""
+        banner = f"""
+        {Fore.CYAN}██████╗ ██████╗ ███████╗
+        ██╔═══██╗██╔══██╗██╔════╝
+        ██║   ██║██████╔╝█████╗  
+        ██║   ██║██╔═══╝ ██╔══╝  
+        ╚██████╔╝██║     ███████╗
+         ╚═════╝ ╚═╝     ╚══════╝
+        {Fore.YELLOW}Consulta de Dados Pessoais{Style.RESET_ALL}
+        {Fore.GREEN}{'='*60}{Style.RESET_ALL}
+        """
+        print(banner)
 
-        print("\n" + Fore.BLUE + "═"*60 + Style.RESET_ALL)
-        print(Fore.YELLOW + "■ VEÍCULOS ■".center(60) + Style.RESET_ALL)
-        print(Fore.BLUE + "═"*60 + Style.RESET_ALL)
-        
-        veiculos = dados.get('veiculos', {})
-        qt_veiculos = veiculos.get('QT_VEICULOS', 0)
-        print(Fore.GREEN + f" Quantidade de Veículos: " + Fore.WHITE + f"{qt_veiculos}")
-        
-        if qt_veiculos > 0:
-            for i in range(1, qt_veiculos + 1):
-                veic = veiculos.get(f'veiculo{i}', {})
-                print(Fore.GREEN + f" Veículo {i}: " + Fore.WHITE + 
-                      f"{veic.get('modelo', 'Modelo não informado')} ({veic.get('ano', 'Ano não informado')})")
+    def formatar_data(self, data_str):
+        """Formata a data para o padrão brasileiro"""
+        try:
+            return datetime.strptime(data_str, "%d/%m/%Y").strftime("%d/%m/%Y")
+        except (ValueError, TypeError):
+            return data_str or "Não consta"
 
-        print("\n" + Fore.BLUE + "═"*60 + Style.RESET_ALL)
-        print(Fore.GREEN + f" Consulta realizada em: " + Fore.WHITE + f"{datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
-        print(Fore.BLUE + "═"*60 + Style.RESET_ALL)
-    
-    except Exception as e:
-        print(Fore.RED + f"\nErro ao exibir dados: {str(e)}" + Style.RESET_ALL)
+    def formatar_moeda(self, valor):
+        """Formata valores numéricos como moeda brasileira"""
+        try:
+            valor = float(valor)
+            return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        except (ValueError, TypeError):
+            return str(valor) if valor else "Não consta"
 
-def sanitizar_nome_arquivo(nome):
-    """Remove caracteres inválidos para nomes de arquivos"""
-    return re.sub(r'[\\/*?:"<>|]', "", nome)
-
-def salvar_dados(dados, cpf):
-    """Salva os dados em um arquivo JSON com tratamento de erros"""
-    try:
-        nome_base = sanitizar_nome_arquivo(f"consulta_cpf_{cpf}_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
-        nome_arquivo = f"{nome_base}.json"
+    def exibir_secao(self, titulo, dados, campos):
+        """Exibe uma seção de dados formatada"""
+        if not any(dados.values()):
+            return False
+            
+        print(f"\n{Fore.BLUE}{'═'*60}{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}■ {titulo} ■{Style.RESET_ALL}".center(60))
+        print(f"{Fore.BLUE}{'═'*60}{Style.RESET_ALL}")
         
-        with open(nome_arquivo, 'w', encoding='utf-8') as f:
-            json.dump(dados, f, ensure_ascii=False, indent=4)
+        for campo, rotulo in campos.items():
+            valor = dados.get(campo)
+            if valor or isinstance(valor, (int, float)):
+                print(f"{Fore.GREEN} {rotulo}: {Fore.WHITE}{valor}")
         
-        print(Fore.GREEN + f"\nDados salvos com sucesso no arquivo: " + Fore.CYAN + f"{nome_arquivo}" + Style.RESET_ALL)
         return True
-    except PermissionError:
-        print(Fore.RED + "\nErro: Permissão negada para salvar o arquivo." + Style.RESET_ALL)
-    except Exception as e:
-        print(Fore.RED + f"\nErro ao salvar arquivo: {str(e)}" + Style.RESET_ALL)
-    return False
 
-def consultar_cpf(cpf):
-    """Consulta a API com tratamento robusto de erros"""
-    url = f"https://777apisss.vercel.app/cpf/credilink/?query={cpf}&apikey=firminoh7778"
-    
-    try:
-        # Adiciona timeout para a requisição (10 segundos para conexão, 30 para leitura)
-        response = requests.get(url, timeout=(10, 30))
-        
-        if response.status_code == 200:
-            dados = response.json()
+    def exibir_dados(self, dados):
+        """Exibe os dados formatados de forma inteligente"""
+        if not dados or not isinstance(dados, dict):
+            print(f"{Fore.RED}\nDados inválidos ou não encontrados.{Style.RESET_ALL}")
+            return
+
+        try:
+            # Dados Pessoais
+            pessoais = dados.get('dados_pessoais', {})
+            campos_pessoais = {
+                'NOME': 'Nome',
+                'CPF': 'CPF',
+                'DT_NASCIMENTO': 'Data Nascimento',
+                'idade': 'Idade',
+                'signo': 'Signo',
+                'NOME_MAE': 'Nome da Mãe',
+                'EMAIL': 'E-mail',
+                'SEXO': 'Sexo'
+            }
+            self.exibir_secao("DADOS PESSOAIS", pessoais, campos_pessoais)
+
+            # Endereço
+            endereco = dados.get('endereco', {})
+            campos_endereco = {
+                'LOGRADOURO': 'Logradouro',
+                'BAIRRO': 'Bairro',
+                'CIDADE': 'Cidade',
+                'UF': 'UF',
+                'CEP': 'CEP'
+            }
+            self.exibir_secao("ENDEREÇO", endereco, campos_endereco)
+
+            # Dados Profissionais
+            prof = dados.get('dados_profissionais', {})
+            campos_prof = {
+                'profissao': 'Profissão',
+                'CBO': 'CBO',
+                'STATUS_RECEITA_FEDERAL': 'Status Receita Federal'
+            }
+            self.exibir_secao("DADOS PROFISSIONAIS", prof, campos_prof)
+
+            # Dados Financeiros
+            financeiros = dados.get('dados_financeiros', {})
+            if financeiros.get('RENDA_PRESUMIDA'):
+                financeiros['RENDA_PRESUMIDA'] = self.formatar_moeda(financeiros['RENDA_PRESUMIDA'])
+            campos_fin = {
+                'FAIXA_RENDA': 'Faixa de Renda',
+                'RENDA_PRESUMIDA': 'Renda Presumida'
+            }
+            self.exibir_secao("DADOS FINANCEIROS", financeiros, campos_fin)
+
+            # Contatos
+            contatos = dados.get('contatos', {})
+            celulares = contatos.get('celulares', [])
+            if celulares:
+                print(f"\n{Fore.BLUE}{'═'*60}{Style.RESET_ALL}")
+                print(f"{Fore.YELLOW}■ CONTATOS ■{Style.RESET_ALL}".center(60))
+                print(f"{Fore.BLUE}{'═'*60}{Style.RESET_ALL}")
+                print(f"{Fore.GREEN} Celulares:{Style.RESET_ALL}")
+                for i, cel in enumerate(celulares, 1):
+                    print(f"{Fore.WHITE}  {i}. {cel}{Style.RESET_ALL}")
+
+            # Veículos
+            veiculos = dados.get('veiculos', {})
+            qt_veiculos = veiculos.get('QT_VEICULOS', 0)
+            if qt_veiculos > 0:
+                print(f"\n{Fore.BLUE}{'═'*60}{Style.RESET_ALL}")
+                print(f"{Fore.YELLOW}■ VEÍCULOS ■{Style.RESET_ALL}".center(60))
+                print(f"{Fore.BLUE}{'═'*60}{Style.RESET_ALL}")
+                print(f"{Fore.GREEN} Quantidade: {Fore.WHITE}{qt_veiculos}{Style.RESET_ALL}")
+                for i in range(1, qt_veiculos + 1):
+                    veic = veiculos.get(f'veiculo{i}', {})
+                    if veic:
+                        modelo = veic.get('modelo', 'Modelo não informado')
+                        ano = veic.get('ano', 'Ano não informado')
+                        print(f"{Fore.GREEN} Veículo {i}: {Fore.WHITE}{modelo} ({ano}){Style.RESET_ALL}")
+
+            # Rodapé
+            print(f"\n{Fore.BLUE}{'═'*60}{Style.RESET_ALL}")
+            print(f"{Fore.GREEN} Consulta realizada em: {Fore.WHITE}{datetime.now().strftime('%d/%m/%Y %H:%M:%S')}{Style.RESET_ALL}")
+            print(f"{Fore.BLUE}{'═'*60}{Style.RESET_ALL}")
+
+        except Exception as e:
+            print(f"{Fore.RED}\nErro ao exibir dados: {str(e)}{Style.RESET_ALL}")
+
+    def sanitizar_nome_arquivo(self, nome):
+        """Remove caracteres inválidos para nomes de arquivos"""
+        return re.sub(r'[\\/*?:"<>|]', "", nome)
+
+    def salvar_dados(self, dados, prefixo="consulta"):
+        """Salva os dados em um arquivo JSON"""
+        try:
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            nome_arquivo = f"{self.sanitizar_nome_arquivo(prefixo)}_{timestamp}.json"
             
-            if dados.get('status') == 'success':
-                return dados.get('data')
+            with open(nome_arquivo, 'w', encoding='utf-8') as f:
+                json.dump(dados, f, ensure_ascii=False, indent=4)
+            
+            print(f"{Fore.GREEN}\nDados salvos em: {Fore.CYAN}{nome_arquivo}{Style.RESET_ALL}")
+            return True
+        except Exception as e:
+            print(f"{Fore.RED}\nErro ao salvar: {str(e)}{Style.RESET_ALL}")
+            return False
+
+    def consultar_cpf(self, cpf):
+        """Consulta um CPF na API"""
+        try:
+            url = f"{self.api_url}?query={cpf}&apikey={self.api_key}"
+            response = requests.get(url, timeout=self.timeout)
+            
+            if response.status_code == 200:
+                dados = response.json()
+                if dados.get('status') == 'success':
+                    return dados.get('data')
+                else:
+                    print(f"{Fore.YELLOW}\nCPF não encontrado.{Style.RESET_ALL}")
             else:
-                print(Fore.YELLOW + "\nAviso: CPF não encontrado ou dados indisponíveis." + Style.RESET_ALL)
+                print(f"{Fore.RED}\nErro na API: {response.status_code}{Style.RESET_ALL}")
+                
+        except requests.exceptions.RequestException as e:
+            print(f"{Fore.RED}\nErro na conexão: {str(e)}{Style.RESET_ALL}")
+        except Exception as e:
+            print(f"{Fore.RED}\nErro inesperado: {str(e)}{Style.RESET_ALL}")
+        
+        return None
+
+    def processar_lista_cpfs(self, caminho_arquivo):
+        """Processa uma lista de CPFs de um arquivo"""
+        try:
+            with open(caminho_arquivo, 'r', encoding='utf-8') as f:
+                cpfs = [linha.strip() for linha in f if linha.strip()]
+            
+            if not cpfs:
+                print(f"{Fore.YELLOW}\nArquivo vazio.{Style.RESET_ALL}")
                 return None
-        else:
-            print(Fore.RED + f"\nErro na API: HTTP {response.status_code} - {response.reason}" + Style.RESET_ALL)
-            return None
             
-    except requests.exceptions.Timeout:
-        print(Fore.RED + "\nErro: Tempo de conexão com a API expirado." + Style.RESET_ALL)
-    except requests.exceptions.ConnectionError:
-        print(Fore.RED + "\nErro: Não foi possível conectar à API. Verifique sua internet." + Style.RESET_ALL)
-    except requests.exceptions.RequestException as e:
-        print(Fore.RED + f"\nErro na requisição: {str(e)}" + Style.RESET_ALL)
-    except json.JSONDecodeError:
-        print(Fore.RED + "\nErro: Resposta inválida da API." + Style.RESET_ALL)
-    except Exception as e:
-        print(Fore.RED + f"\nErro inesperado: {str(e)}" + Style.RESET_ALL)
-    
-    return None
+            resultados = []
+            total = len(cpfs)
+            
+            for i, cpf in enumerate(cpfs, 1):
+                if not self.validar_cpf(cpf):
+                    print(f"{Fore.YELLOW}\n[{i}/{total}] CPF inválido: {cpf}{Style.RESET_ALL}")
+                    resultados.append({cpf: "CPF inválido"})
+                    continue
+                
+                print(f"{Fore.CYAN}\n[{i}/{total}] Consultando: {cpf}{Style.RESET_ALL}")
+                dados = self.consultar_cpf(cpf)
+                
+                if dados:
+                    resultados.append({cpf: dados})
+                    print(f"{Fore.GREEN}  ✓ Dados encontrados{Style.RESET_ALL}")
+                else:
+                    resultados.append({cpf: "Não encontrado"})
+                    print(f"{Fore.YELLOW}  ✗ Sem resultados{Style.RESET_ALL}")
+                
+                if i < total:
+                    sleep(self.delay_entre_consultas)
+            
+            return resultados
+            
+        except Exception as e:
+            print(f"{Fore.RED}\nErro ao processar arquivo: {str(e)}{Style.RESET_ALL}")
+            return None
 
-def consultar_lista_cpfs(caminho_lista):
-    """Processa uma lista de CPFs com tratamento de erros"""
-    resultados = []
-    
-    try:
-        # Verifica se o arquivo existe
-        if not os.path.exists(caminho_lista):
-            print(Fore.RED + "\nErro: Arquivo não encontrado." + Style.RESET_ALL)
-            return None
-        
-        # Verifica se é um arquivo (não diretório)
-        if not os.path.isfile(caminho_lista):
-            print(Fore.RED + "\nErro: O caminho especificado não é um arquivo." + Style.RESET_ALL)
-            return None
-        
-        # Lê o arquivo
-        with open(caminho_lista, 'r', encoding='utf-8') as f:
-            cpfs = [linha.strip() for linha in f if linha.strip()]
-        
-        if not cpfs:
-            print(Fore.YELLOW + "\nAviso: O arquivo está vazio ou não contém CPFs válidos." + Style.RESET_ALL)
-            return None
-        
-        total_cpfs = len(cpfs)
-        print(Fore.GREEN + f"\nIniciando consulta de {total_cpfs} CPF(s)..." + Style.RESET_ALL)
-        
-        for i, cpf in enumerate(cpfs, 1):
-            # Valida o CPF antes de consultar
-            if not validar_cpf(cpf):
-                print(Fore.YELLOW + f"\n[{i}/{total_cpfs}] CPF inválido: {cpf}" + Style.RESET_ALL)
-                resultados.append({cpf: "CPF inválido"})
-                continue
+    def menu_principal(self):
+        """Exibe o menu principal"""
+        while True:
+            self.limpar_tela()
+            self.exibir_banner()
             
-            print(Fore.CYAN + f"\n[{i}/{total_cpfs}] Consultando CPF: {cpf}" + Style.RESET_ALL)
+            print(f"{Fore.WHITE}\nMenu Principal:{Style.RESET_ALL}")
+            print(f"{Fore.CYAN}1.{Style.RESET_ALL} Consultar CPF individual")
+            print(f"{Fore.CYAN}2.{Style.RESET_ALL} Consultar lista de CPFs")
+            print(f"{Fore.CYAN}3.{Style.RESET_ALL} Sair")
             
-            # Consulta o CPF com delay para evitar rate limiting
-            dados = consultar_cpf(cpf)
+            opcao = input(f"{Fore.YELLOW}\nOpção: {Style.RESET_ALL}").strip()
             
-            if dados:
-                resultados.append({cpf: dados})
-                print(Fore.GREEN + "  ✓ Dados encontrados" + Style.RESET_ALL)
+            if opcao == '1':
+                self.consultar_individual()
+            elif opcao == '2':
+                self.consultar_lista()
+            elif opcao == '3':
+                print(f"{Fore.GREEN}\nEncerrando...{Style.RESET_ALL}")
+                break
             else:
-                resultados.append({cpf: "Não encontrado"})
-                print(Fore.YELLOW + "  ✗ Dados não encontrados" + Style.RESET_ALL)
-            
-            # Delay entre consultas (1 segundo)
-            if i < total_cpfs:
-                sleep(1)
-        
-        return resultados
-    
-    except UnicodeDecodeError:
-        print(Fore.RED + "\nErro: O arquivo não está em um formato de texto válido." + Style.RESET_ALL)
-    except PermissionError:
-        print(Fore.RED + "\nErro: Permissão negada para ler o arquivo." + Style.RESET_ALL)
-    except Exception as e:
-        print(Fore.RED + f"\nErro ao processar arquivo: {str(e)}" + Style.RESET_ALL)
-    
-    return None
+                print(f"{Fore.RED}\nOpção inválida!{Style.RESET_ALL}")
+                input(f"{Fore.YELLOW}Pressione Enter...{Style.RESET_ALL}")
 
-def main():
-    """Função principal do programa"""
-    while True:
-        limpar_tela()
-        exibir_banner()
+    def consultar_individual(self):
+        """Fluxo de consulta individual"""
+        self.limpar_tela()
+        self.exibir_banner()
         
-        print(Fore.WHITE + "\nOpções disponíveis:" + Style.RESET_ALL)
-        print(Fore.CYAN + "1. " + Fore.WHITE + "Consultar um CPF")
-        print(Fore.CYAN + "2. " + Fore.WHITE + "Consultar lista de CPFs")
-        print(Fore.CYAN + "3. " + Fore.WHITE + "Sair")
+        cpf = input(f"{Fore.YELLOW}\nCPF (somente números): {Style.RESET_ALL}").strip()
         
-        opcao = input(Fore.YELLOW + "\nEscolha uma opção (1-3): " + Style.RESET_ALL).strip()
+        if not self.validar_cpf(cpf):
+            print(f"{Fore.RED}\nCPF inválido!{Style.RESET_ALL}")
+            input(f"{Fore.YELLOW}Pressione Enter...{Style.RESET_ALL}")
+            return
         
-        if opcao == '1':
-            limpar_tela()
-            exibir_banner()
+        print(f"{Fore.GREEN}\nConsultando...{Style.RESET_ALL}")
+        dados = self.consultar_cpf(cpf)
+        
+        self.limpar_tela()
+        self.exibir_banner()
+        
+        if dados:
+            self.exibir_dados(dados)
             
-            cpf = input(Fore.YELLOW + "\nDigite o CPF (apenas números): " + Style.RESET_ALL).strip()
+            while True:
+                opcao = input(f"{Fore.YELLOW}\nSalvar resultados? (S/N): {Style.RESET_ALL}").upper()
+                if opcao == 'S':
+                    self.salvar_dados(dados, f"consulta_cpf_{cpf}")
+                    break
+                elif opcao == 'N':
+                    break
+                else:
+                    print(f"{Fore.RED}Opção inválida!{Style.RESET_ALL}")
+        
+        input(f"{Fore.YELLOW}\nPressione Enter...{Style.RESET_ALL}")
+
+    def consultar_lista(self):
+        """Fluxo de consulta em lote"""
+        self.limpar_tela()
+        self.exibir_banner()
+        
+        caminho = input(f"{Fore.YELLOW}\nCaminho do arquivo com CPFs: {Style.RESET_ALL}").strip()
+        
+        if not os.path.exists(caminho):
+            print(f"{Fore.RED}\nArquivo não encontrado!{Style.RESET_ALL}")
+            input(f"{Fore.YELLOW}Pressione Enter...{Style.RESET_ALL}")
+            return
+        
+        print(f"{Fore.GREEN}\nProcessando...{Style.RESET_ALL}")
+        resultados = self.processar_lista_cpfs(caminho)
+        
+        self.limpar_tela()
+        self.exibir_banner()
+        
+        if resultados:
+            print(f"{Fore.GREEN}\nResumo dos resultados:{Style.RESET_ALL}")
+            for item in resultados:
+                for cpf, dados in item.items():
+                    status = f"{Fore.GREEN}✓" if isinstance(dados, dict) else f"{Fore.YELLOW}✗"
+                    nome = dados.get('dados_pessoais', {}).get('NOME', '') if isinstance(dados, dict) else ''
+                    print(f"{status} {Fore.CYAN}{cpf}{Style.RESET_ALL} {nome}")
             
-            # Validação robusta do CPF
-            if not validar_cpf(cpf):
-                print(Fore.RED + "\nCPF inválido. Verifique o número digitado." + Style.RESET_ALL)
-                input(Fore.YELLOW + "\nPressione Enter para continuar..." + Style.RESET_ALL)
-                continue
-            
-            print(Fore.GREEN + "\nConsultando CPF..." + Style.RESET_ALL)
-            dados = consultar_cpf(cpf)
-            
-            limpar_tela()
-            exibir_banner()
-            
-            if dados:
-                exibir_dados(dados)
-                
-                while True:
-                    salvar = input(Fore.YELLOW + "\nDeseja salvar os dados? (S/N): " + Style.RESET_ALL).upper()
-                    
-                    if salvar == 'S':
-                        if salvar_dados(dados, cpf):
-                            break
-                    elif salvar == 'N':
-                        break
-                    else:
-                        print(Fore.RED + "Opção inválida. Digite S ou N." + Style.RESET_ALL)
-            
-            input(Fore.YELLOW + "\nPressione Enter para continuar..." + Style.RESET_ALL)
-            
-        elif opcao == '2':
-            limpar_tela()
-            exibir_banner()
-            
-            caminho_lista = input(Fore.YELLOW + "\nDigite o caminho do arquivo com a lista de CPFs: " + Style.RESET_ALL).strip()
-            
-            resultados = consultar_lista_cpfs(caminho_lista)
-            
-            if resultados:
-                limpar_tela()
-                exibir_banner()
-                
-                print(Fore.GREEN + "\nResultados da consulta em lote:" + Style.RESET_ALL)
-                
-                for resultado in resultados:
-                    for cpf, dados in resultado.items():
-                        print(Fore.CYAN + f"\nCPF: {cpf}" + Style.RESET_ALL)
-                        
-                        if isinstance(dados, dict):
-                            print(Fore.GREEN + " ✓ Dados encontrados:" + Style.RESET_ALL)
-                            # Exibe apenas um resumo para listas grandes
-                            print(Fore.WHITE + f"  Nome: {dados.get('dados_pessoais', {}).get('NOME', 'Não informado')}")
-                            print(f"  Cidade: {dados.get('endereco', {}).get('CIDADE', 'Não informado')}")
-                        else:
-                            print(Fore.YELLOW + f" {dados}" + Style.RESET_ALL)
-                
-                while True:
-                    salvar = input(Fore.YELLOW + "\nDeseja salvar os resultados completos? (S/N): " + Style.RESET_ALL).upper()
-                    
-                    if salvar == 'S':
-                        nome_base = sanitizar_nome_arquivo(f"consulta_lote_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
-                        nome_arquivo = f"{nome_base}.json"
-                        
-                        try:
-                            with open(nome_arquivo, 'w', encoding='utf-8') as f:
-                                json.dump(resultados, f, ensure_ascii=False, indent=4)
-                            
-                            print(Fore.GREEN + f"\nResultados salvos com sucesso no arquivo: " + 
-                                  Fore.CYAN + f"{nome_arquivo}" + Style.RESET_ALL)
-                            break
-                        except Exception as e:
-                            print(Fore.RED + f"\nErro ao salvar arquivo: {str(e)}" + Style.RESET_ALL)
-                    elif salvar == 'N':
-                        break
-                    else:
-                        print(Fore.RED + "Opção inválida. Digite S ou N." + Style.RESET_ALL)
-            
-            input(Fore.YELLOW + "\nPressione Enter para continuar..." + Style.RESET_ALL)
-            
-        elif opcao == '3':
-            print(Fore.GREEN + "\nSaindo do sistema..." + Style.RESET_ALL)
-            break
-            
-        else:
-            print(Fore.RED + "\nOpção inválida. Por favor, escolha uma opção de 1 a 3." + Style.RESET_ALL)
-            input(Fore.YELLOW + "\nPressione Enter para continuar..." + Style.RESET_ALL)
+            while True:
+                opcao = input(f"{Fore.YELLOW}\nSalvar resultados completos? (S/N): {Style.RESET_ALL}").upper()
+                if opcao == 'S':
+                    self.salvar_dados(resultados, "consulta_lote_cpfs")
+                    break
+                elif opcao == 'N':
+                    break
+                else:
+                    print(f"{Fore.RED}Opção inválida!{Style.RESET_ALL}")
+        
+        input(f"{Fore.YELLOW}\nPressione Enter...{Style.RESET_ALL}")
 
 if __name__ == "__main__":
     try:
-        main()
+        consultor = CPFConsultor()
+        consultor.menu_principal()
     except KeyboardInterrupt:
-        print(Fore.RED + "\n\nOperação cancelada pelo usuário." + Style.RESET_ALL)
+        print(f"{Fore.RED}\nOperação cancelada pelo usuário.{Style.RESET_ALL}")
     except Exception as e:
-        print(Fore.RED + f"\nErro fatal: {str(e)}" + Style.RESET_ALL)
+        print(f"{Fore.RED}\nErro fatal: {str(e)}{Style.RESET_ALL}")
     finally:
-        print(Fore.CYAN + "\nPrograma encerrado." + Style.RESET_ALL)
+        print(f"{Fore.CYAN}\nSistema encerrado.{Style.RESET_ALL}")
