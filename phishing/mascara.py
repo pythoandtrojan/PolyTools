@@ -1,270 +1,210 @@
+#!/data/data/com.termux/files/usr/bin/python3
+import os
 import random
-import string
 import base64
+import sys
 import time
-from urllib.parse import urlparse, urlunparse, quote
-from cryptography.fernet import Fernet
-from rich.console import Console
-from rich.panel import Panel
-from rich.progress import Progress
-from rich.table import Table
-from rich.prompt import Prompt, Confirm
-from rich.markdown import Markdown
-import pyperclip
-import qrcode
-from rich.qr_code import QRCode
-import darkdetect
+from flask import Flask, render_template_string, request, redirect, url_for
 
-# Configuração inicial
-console = Console()
-THEME = "dark" if darkdetect.theme() == "Dark" else "light"
+# Cores para o terminal
+class colors:
+    RED = '\033[91m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    BLUE = '\033[94m'
+    MAGENTA = '\033[95m'
+    CYAN = '\033[96m'
+    WHITE = '\033[97m'
+    RESET = '\033[0m'
+    BOLD = '\033[1m'
 
-# Cores baseadas no tema
-COLORS = {
-    "dark": {
-        "primary": "bold cyan",
-        "secondary": "bold magenta",
-        "success": "bold green",
-        "error": "bold red",
-        "warning": "bold yellow",
-        "info": "bold blue"
-    },
-    "light": {
-        "primary": "bold blue",
-        "secondary": "bold violet",
-        "success": "bold green",
-        "error": "bold red",
-        "warning": "bold orange3",
-        "info": "bold dodger_blue1"
+# Banner da Valkiria
+def show_banner():
+    os.system('clear')
+    print(f"""{colors.RED}
+    ██╗   ██╗ █████╗ ██╗     ██╗  ██╗██╗██████╗ ██╗ █████╗
+    ██║   ██║██╔══██╗██║     ██║ ██╔╝██║██╔══██╗██║██╔══██╗
+    ██║   ██║███████║██║     █████╔╝ ██║██████╔╝██║███████║
+    ╚██╗ ██╔╝██╔══██║██║     ██╔═██╗ ██║██╔══██╗██║██╔══██║
+     ╚████╔╝ ██║  ██║███████╗██║  ██╗██║██║  ██║██║██║  ██║
+      ╚═══╝  ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═╝
+    {colors.RESET}""")
+    print(f"{colors.YELLOW}    Ferramenta de Disfarce de URLs - Valkiria Network{colors.RESET}\n")
+
+# Gerar URL mascarada
+def mask_url(original_url):
+    # Codificar a URL original em base64
+    encoded = base64.b64encode(original_url.encode()).decode()
+    
+    # Criar um domínio falso com caracteres especiais
+    domains = [
+        "link-seguro", "download-ok", "atualizacao-sistema",
+        "docs-online", "verificacao-contas", "central-arquivos"
+    ]
+    
+    fake_domain = random.choice(domains)
+    tlds = [".com", ".net", ".org", ".info", ".live"]
+    fake_tld = random.choice(tlds)
+    
+    # Criar parâmetros aleatórios
+    params = {
+        'id': random.randint(1000, 9999),
+        'ref': random.randint(100, 999),
+        'token': ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=8))
     }
-}
+    
+    # Construir URL mascarada
+    masked_url = f"https://{fake_domain}{fake_tld}/?{encoded}&"
+    masked_url += "&".join([f"{k}={v}" for k,v in params.items()])
+    
+    return masked_url
 
-def gerar_chave_criptografia():
-    """Gera e retorna uma chave de criptografia Fernet"""
-    return Fernet.generate_key()
+# Gerar site educativo sobre phishing
+def generate_phishing_site():
+    site_content = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Aprenda Sobre Phishing</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        h1 {
+            color: #d9534f;
+            text-align: center;
+        }
+        .warning {
+            background-color: #fcf8e3;
+            border-left: 6px solid #f0ad4e;
+            padding: 10px;
+            margin: 20px 0;
+        }
+        .tip {
+            background-color: #dff0d8;
+            border-left: 6px solid #5cb85c;
+            padding: 10px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Educação em Segurança Digital</h1>
+    
+    <div class="warning">
+        <h2>O que é Phishing?</h2>
+        <p>Phishing é uma técnica fraudulenta onde criminosos tentam obter informações sensíveis como logins, senhas e dados bancários, se passando por entidades confiáveis.</p>
+    </div>
+    
+    <div class="tip">
+        <h2>Como Identificar Phishing?</h2>
+        <ul>
+            <li>Verifique sempre o URL do site</li>
+            <li>Desconfie de emails pedindo informações pessoais</li>
+            <li>Observe erros gramaticais e ortográficos</li>
+            <li>Não clique em links suspeitos</li>
+        </ul>
+    </div>
+    
+    <div class="warning">
+        <h2>Técnicas Comuns de Phishing</h2>
+        <p>Algumas técnicas que os criminosos usam:</p>
+        <ol>
+            <li>Links mascarados que parecem legítimos</li>
+            <li>Sites falsos idênticos aos originais</li>
+            <li>Urgência falsa ("sua conta será bloqueada")</li>
+            <li>Ofertas boas demais para ser verdade</li>
+        </ol>
+    </div>
+    
+    <div class="tip">
+        <h2>Como se Proteger?</h2>
+        <ul>
+            <li>Use autenticação em dois fatores</li>
+            <li>Verifique o certificado SSL do site</li>
+            <li>Mantenha seu antivírus atualizado</li>
+            <li>Nunca reuse senhas entre sites</li>
+        </ul>
+    </div>
+    
+    <footer>
+        <p>Material fornecido por Valkiria Security Research</p>
+    </footer>
+</body>
+</html>
+    """
+    
+    # Criar diretório se não existir
+    if not os.path.exists("phishing_site"):
+        os.makedirs("phishing_site")
+    
+    # Salvar o site
+    with open("phishing_site/index.html", "w") as f:
+        f.write(site_content)
+    
+    return os.path.abspath("phishing_site")
 
-def criptografar_url(url, chave):
-    """Criptografa a URL usando Fernet"""
-    fernet = Fernet(chave)
-    return fernet.encrypt(url.encode()).decode()
-
-def ofuscar_url(url, tecnica="base64"):
-    """Aplica técnicas de ofuscação na URL"""
-    if tecnica == "base64":
-        # Base64 com salt
-        salt = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
-        return base64.urlsafe_b64encode(f"{salt}{url}".encode()).decode()
-    elif tecnica == "dupla":
-        # Codificação dupla
-        encoded = base64.urlsafe_b64encode(url.encode()).decode()
-        return quote(encoded[::-1])  # Inverte a string e aplica URL encoding
+# Menu principal
+def main_menu():
+    show_banner()
+    print(f"{colors.BOLD}Menu Principal:{colors.RESET}")
+    print(f"{colors.GREEN}[1]{colors.RESET} Mascarar URL")
+    print(f"{colors.GREEN}[2]{colors.RESET} Gerar Site Educativo sobre Phishing")
+    print(f"{colors.GREEN}[3]{colors.RESET} Rodar Servidor Local")
+    print(f"{colors.GREEN}[4]{colors.RESET} Sair")
+    
+    choice = input(f"\n{colors.BLUE}Selecione uma opção:{colors.RESET} ")
+    
+    if choice == "1":
+        url = input(f"\n{colors.YELLOW}Digite a URL para mascarar:{colors.RESET} ")
+        masked = mask_url(url)
+        print(f"\n{colors.GREEN}URL Mascarada:{colors.RESET}")
+        print(f"{colors.CYAN}{masked}{colors.RESET}")
+        input("\nPressione Enter para continuar...")
+        main_menu()
+    
+    elif choice == "2":
+        path = generate_phishing_site()
+        print(f"\n{colors.GREEN}Site educativo gerado em:{colors.RESET}")
+        print(f"{colors.CYAN}{path}{colors.RESET}")
+        input("\nPressione Enter para continuar...")
+        main_menu()
+    
+    elif choice == "3":
+        print(f"\n{colors.YELLOW}Iniciando servidor local...{colors.RESET}")
+        print(f"{colors.WHITE}Acesse http://localhost:5000 no seu navegador{colors.RESET}")
+        print(f"{colors.RED}Pressione CTRL+C para parar o servidor{colors.RESET}")
+        
+        app = Flask(__name__)
+        
+        @app.route('/')
+        def home():
+            with open("phishing_site/index.html", "r") as f:
+                return f.read()
+        
+        app.run(host='0.0.0.0', port=5000)
+    
+    elif choice == "4":
+        print(f"\n{colors.MAGENTA}Saindo...{colors.RESET}")
+        sys.exit()
+    
     else:
-        return url
-
-def gerar_dominio_aleatorio():
-    """Gera um domínio aleatório convincente"""
-    prefixos = ["go", "link", "secure", "access", "redirect", "gate", "portal"]
-    tlds = [".com", ".net", ".org", ".io", ".info", ".xyz", ".online"]
-    nome = ''.join(random.choices(string.ascii_lowercase, k=random.randint(3,8)))
-    return f"{random.choice(prefixos)}{nome}{random.choice(tlds)}"
-
-def gerar_rota_dinamica(url_ofuscada):
-    """Gera uma rota dinâmica para a URL"""
-    prefixos = ["path", "route", "go", "redirect", "access"]
-    return f"/{random.choice(prefixos)}/{url_ofuscada}"
-
-def gerar_url_mascarada(url_original, dominio_personalizado=None, tecnica="base64"):
-    """Gera uma URL mascarada avançada"""
-    # Gera chave de criptografia
-    chave = gerar_chave_criptografia()
-    
-    # Criptografa a URL original
-    url_criptografada = criptografar_url(url_original, chave)
-    
-    # Ofusca a URL criptografada
-    url_ofuscada = ofuscar_url(url_criptografada, tecnica)
-    
-    # Define o domínio
-    dominio = dominio_personalizado if dominio_personalizado else gerar_dominio_aleatorio()
-    
-    # Gera a rota dinâmica
-    rota = gerar_rota_dinamica(url_ofuscada)
-    
-    # Cria a URL mascarada final
-    return f"https://{dominio}{rota}", chave.decode()
-
-def exibir_banner():
-    """Exibe um banner estilizado"""
-    banner_text = "🔗 URL Masker Pro"
-    console.print(
-        Panel.fit(
-            banner_text,
-            title="[b]Bem-vindo[/]",
-            border_style=COLORS[THEME]["primary"],
-            padding=(1, 4)
-        )
-    )
-    console.print(
-        Panel.fit(
-            "[i]Ferramenta avançada de mascaramento e ofuscação de URLs[/i]",
-            border_style=COLORS[THEME]["secondary"],
-            style=COLORS[THEME]["info"]
-        )
-    )
-
-def mostrar_historico(historico):
-    """Exibe o histórico de URLs mascaradas"""
-    table = Table(title="📋 Histórico de URLs", show_lines=True)
-    table.add_column("Data", style="dim")
-    table.add_column("Domínio", style=COLORS[THEME]["primary"])
-    table.add_column("URL Original", style=COLORS[THEME]["info"])
-    
-    for item in historico[-5:]:  # Mostra apenas os 5 últimos
-        table.add_row(
-            item['data'],
-            item['dominio'],
-            item['original'][:30] + "..." if len(item['original']) > 30 else item['original']
-        )
-    
-    console.print(table)
-
-def mostrar_qrcode(url):
-    """Exibe um QR Code para a URL"""
-    console.print("\n" + Panel.fit(
-        QRCode(url),
-        title="📲 QR Code",
-        border_style=COLORS[THEME]["secondary"]
-    ))
-
-def main():
-    """Função principal da aplicação"""
-    historico = []
-    exibir_banner()
-    
-    while True:
-        console.print("\n" + Panel.fit(
-            "[1] Mascarar URL\n[2] Ver Histórico\n[3] Sair",
-            title="Menu Principal",
-            border_style=COLORS[THEME]["primary"]
-        ))
-        
-        opcao = Prompt.ask(
-            "[b]Escolha uma opção[/]",
-            choices=["1", "2", "3"],
-            default="1"
-        )
-        
-        if opcao == "1":
-            # Mascarar URL
-            url_original = Prompt.ask(
-                "[b]Insira a URL que deseja mascarar[/]",
-                default="https://"
-            ).strip()
-            
-            if not url_original.startswith(('http://', 'https://')):
-                url_original = 'https://' + url_original
-            
-            dominio_personalizado = Prompt.ask(
-                "[b]Domínio personalizado (deixe em branco para gerar aleatório)[/]",
-                default=""
-            ).strip()
-            
-            tecnica = Prompt.ask(
-                "[b]Técnica de ofuscação[/]",
-                choices=["base64", "dupla", "nenhuma"],
-                default="base64"
-            )
-            
-            # Simula processamento com barra de progresso
-            with Progress(transient=True) as progress:
-                task = progress.add_task("[cyan]Gerando URL mascarada...", total=100)
-                for i in range(100):
-                    progress.update(task, advance=1)
-                    time.sleep(0.02)
-            
-            # Gera a URL mascarada
-            url_mascarada, chave = gerar_url_mascarada(
-                url_original,
-                dominio_personalizado if dominio_personalizado else None,
-                tecnica
-            )
-            
-            # Adiciona ao histórico
-            historico.append({
-                'data': time.strftime("%Y-%m-%d %H:%M"),
-                'dominio': urlparse(url_mascarada).netloc,
-                'original': url_original,
-                'mascarada': url_mascarada,
-                'chave': chave
-            })
-            
-            # Exibe resultados
-            console.print("\n" + Panel.fit(
-                f"[b]URL Original:[/]\n[white]{url_original}[/]\n\n"
-                f"[b]URL Mascarada:[/]\n[yellow]{url_mascarada}[/]\n\n"
-                f"[b]Chave de Descriptografia:[/]\n[dim]{chave}[/]",
-                title="✅ Resultado",
-                border_style=COLORS[THEME]["success"],
-                padding=(1, 2)
-            ))
-            
-            # Copia para área de transferência
-            pyperclip.copy(url_mascarada)
-            console.print("\n📋 [green]URL mascarada copiada para a área de transferência!")
-            
-            # Mostra QR Code
-            if Confirm.ask("\n[b]Deseja gerar um QR Code para esta URL?"):
-                mostrar_qrcode(url_mascarada)
-        
-        elif opcao == "2":
-            # Mostrar histórico
-            if historico:
-                mostrar_historico(historico)
-                
-                # Opção para ver detalhes de um item
-                if Confirm.ask("\n[b]Deseja ver detalhes de alguma URL?"):
-                    indice = Prompt.ask(
-                        "[b]Digite o número do item (1-5)[/]",
-                        choices=["1", "2", "3", "4", "5"],
-                        default="1"
-                    )
-                    item = historico[-int(indice)]
-                    
-                    console.print("\n" + Panel.fit(
-                        f"[b]Data:[/] {item['data']}\n"
-                        f"[b]Domínio:[/] {item['dominio']}\n"
-                        f"[b]Original:[/] {item['original']}\n"
-                        f"[b]Mascarada:[/] {item['mascarada']}\n"
-                        f"[b]Chave:[/] [dim]{item['chave']}[/]",
-                        title="🔍 Detalhes",
-                        border_style=COLORS[THEME]["info"],
-                        padding=(1, 2)
-                    ))
-            else:
-                console.print("\n" + Panel.fit(
-                    "[red]Nenhum item no histórico ainda!",
-                    border_style=COLORS[THEME]["error"]
-                ))
-        
-        elif opcao == "3":
-            # Sair
-            console.print("\n" + Panel.fit(
-                "[green]Obrigado por usar o URL Masker Pro!",
-                border_style=COLORS[THEME]["success"]
-            ))
-            break
+        print(f"\n{colors.RED}Opção inválida!{colors.RESET}")
+        time.sleep(1)
+        main_menu()
 
 if __name__ == "__main__":
+    # Verificar se o Flask está instalado
     try:
-        main()
-    except KeyboardInterrupt:
-        console.print("\n" + Panel.fit(
-            "[red]Operação cancelada pelo usuário.",
-            border_style=COLORS[THEME]["error"]
-        ))
-    except Exception as e:
-        console.print("\n" + Panel.fit(
-            f"[red]Erro: {str(e)}",
-            border_style=COLORS[THEME]["error"],
-            title="⚠️ Erro"
-        ))
+        from flask import Flask
+    except ImportError:
+        print(f"{colors.RED}Erro: Flask não está instalado.{colors.RESET}")
+        print("Instale com: pip install flask")
+        sys.exit(1)
+    
+    main_menu()
