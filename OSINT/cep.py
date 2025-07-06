@@ -8,6 +8,8 @@ from datetime import datetime
 from urllib.parse import quote
 import sqlite3
 import math
+import time
+import hashlib
 from collections import defaultdict
 
 # Cores para terminal
@@ -99,39 +101,56 @@ def banner():
 {Cores.RESET}""")
 
 def validar_cep(cep):
+    if not cep or not isinstance(cep, str):
+        return False
     cep = re.sub(r'[^0-9]', '', cep)
     return len(cep) == 8
 
 def formatar_cep(cep):
+    if not cep:
+        return ""
     cep = re.sub(r'[^0-9]', '', cep)
     return f"{cep[:5]}-{cep[5:]}" if len(cep) == 8 else cep
 
 def calcular_distancia(lat1, lon1, lat2, lon2):
-    raio_terra = 6371  # km
-    dlat = math.radians(lat2 - lat1)
-    dlon = math.radians(lon2 - lon1)
-    a = (math.sin(dlat/2) * math.sin(dlat/2) + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2) * math.sin(dlon/2)
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-    return raio_terra * c
+    try:
+        raio_terra = 6371  # km
+        dlat = math.radians(lat2 - lat1)
+        dlon = math.radians(lon2 - lon1)
+        a = (math.sin(dlat/2) * math.sin(dlat/2) + 
+             math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * 
+             math.sin(dlon/2) * math.sin(dlon/2))
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+        return raio_terra * c
+    except (TypeError, ValueError):
+        return float('nan')
 
 def gerar_hash(texto):
+    if not texto:
+        return ""
     return hashlib.md5(texto.encode()).hexdigest()
 
 def cache_arquivo(nome, dados=None):
-    caminho = f"cache_cep/{nome}.json"
-    if dados is not None:  # Modo escrita
-        with open(caminho, 'w') as f:
-            json.dump({'data': dados, 'timestamp': time.time()}, f)
-        return dados
-    else:  # Modo leitura
-        if os.path.exists(caminho):
-            with open(caminho) as f:
-                cache = json.load(f)
-                if time.time() - cache['timestamp'] < TEMPO_CACHE:
-                    return cache['data']
+    try:
+        caminho = f"cache_cep/{nome}.json"
+        if dados is not None:  # Modo escrita
+            with open(caminho, 'w', encoding='utf-8') as f:
+                json.dump({'data': dados, 'timestamp': time.time()}, f)
+            return dados
+        else:  # Modo leitura
+            if os.path.exists(caminho):
+                with open(caminho, 'r', encoding='utf-8') as f:
+                    cache = json.load(f)
+                    if time.time() - cache['timestamp'] < TEMPO_CACHE:
+                        return cache['data']
+        return None
+    except (IOError, json.JSONDecodeError):
         return None
 
 def consultar_api(nome_api, config, cep):
+    if not cep or not validar_cep(cep):
+        return None
+        
     cache_id = f"{nome_api}_{cep}"
     cached = cache_arquivo(cache_id)
     if cached:
@@ -144,20 +163,23 @@ def consultar_api(nome_api, config, cep):
         
         if response.status_code == 200:
             dados = response.json()
-            if 'erro' not in dados and dados:
+            if dados and not isinstance(dados, list) and 'erro' not in dados:
                 resultado = {}
                 for campo_local, campo_api in config['fields'].items():
-                    if campo_api in dados:
+                    if campo_api in dados and dados[campo_api]:
                         resultado[campo_local] = dados[campo_api]
                 resultado['servico'] = nome_api
                 cache_arquivo(cache_id, resultado)
                 return resultado
-    except Exception:
+    except (requests.RequestException, json.JSONDecodeError, ValueError) as e:
         pass
     return None
 
 def consultar_apis_paralelo(cep):
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    if not validar_cep(cep):
+        return {}
+        
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         futures = {
             executor.submit(consultar_api, nome, config, cep): nome
             for nome, config in APIS.items()
@@ -176,7 +198,7 @@ def consultar_apis_paralelo(cep):
     return resultados
 
 def combinar_dados(resultados):
-    if not resultados:
+    if not resultados or not isinstance(resultados, dict):
         return None
         
     campos_prioritarios = {
@@ -191,36 +213,38 @@ def combinar_dados(resultados):
         'ddd': ['WideCEP']
     }
     
-    combinado = defaultdict(list)
-    for api, dados in resultados.items():
-        for campo, valor in dados.items():
-            combinado[campo].append((api, valor))
-    
     final = {}
     for campo, fontes in campos_prioritarios.items():
         for fonte in fontes:
-            if fonte in resultados and campo in resultados[fonte]:
+            if fonte in resultados and campo in resultados[fonte] and resultados[fonte][campo]:
                 final[campo] = resultados[fonte][campo]
                 break
     
-    final['fontes'] = ', '.join(resultados.keys())
-    return final
+    if final:
+        final['fontes'] = ', '.join(resultados.keys())
+    return final if final else None
 
 def obter_dados_ibge(codigo_ibge):
     try:
-        response = requests.get(f"https://servicodados.ibge.gov.br/api/v1/localidades/municipios/{codigo_ibge}", timeout=10)
+        if not codigo_ibge:
+            return None
+        response = requests.get(f"https://servicodados.ibge.gov.br/api/v1/localidades/municipios/{codigo_ibge}", 
+                              timeout=10)
         if response.status_code == 200:
             return response.json()
-    except Exception:
+    except requests.RequestException:
         pass
     return None
 
 def obter_dados_geograficos(lat, lng):
     try:
-        response = requests.get(f"https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={lng}&format=json", timeout=10)
+        if not lat or not lng:
+            return None
+        response = requests.get(f"https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={lng}&format=json", 
+                              timeout=10)
         if response.status_code == 200:
             return response.json()
-    except Exception:
+    except requests.RequestException:
         pass
     return None
 
@@ -232,7 +256,7 @@ def exibir_resultados(dados):
     print(f"\n{Cores.CIANO}{Cores.NEGRITO}=== DADOS PRINCIPAIS ==={Cores.RESET}")
     print(f"{Cores.AZUL}CEP:{Cores.RESET} {dados.get('cep', 'N/A')}")
     print(f"{Cores.AZUL}Logradouro:{Cores.RESET} {dados.get('logradouro', 'N/A')}")
-    if 'complemento' in dados and dados['complemento']:
+    if dados.get('complemento'):
         print(f"{Cores.AZUL}Complemento:{Cores.RESET} {dados['complemento']}")
     print(f"{Cores.AZUL}Bairro:{Cores.RESET} {dados.get('bairro', 'N/A')}")
     print(f"{Cores.AZUL}Cidade/UF:{Cores.RESET} {dados.get('cidade', 'N/A')}/{dados.get('estado', 'N/A')}")
@@ -247,9 +271,8 @@ def exibir_resultados(dados):
         print(f"{Cores.AZUL}Longitude:{Cores.RESET} {dados['lng']}")
         
         dados_geo = obter_dados_geograficos(dados['lat'], dados['lng'])
-        if dados_geo:
-            if 'display_name' in dados_geo:
-                print(f"\n{Cores.AZUL}Localização:{Cores.RESET} {dados_geo['display_name']}")
+        if dados_geo and 'display_name' in dados_geo:
+            print(f"\n{Cores.AZUL}Localização:{Cores.RESET} {dados_geo['display_name']}")
     
     print(f"\n{Cores.AZUL}Fontes consultadas:{Cores.RESET} {dados.get('fontes', 'N/A')}")
 
@@ -257,19 +280,19 @@ def salvar_resultado(dados, formato='txt'):
     if not dados:
         return False
     
-    cep_limpo = re.sub(r'[^0-9]', '', dados.get('cep', 'sem_cep'))
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    nome_arquivo = f"resultados/cep_{cep_limpo}_{timestamp}.{formato}"
-    os.makedirs('resultados', exist_ok=True)
-    
     try:
+        cep_limpo = re.sub(r'[^0-9]', '', dados.get('cep', 'sem_cep'))
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        os.makedirs('resultados', exist_ok=True)
+        nome_arquivo = f"resultados/cep_{cep_limpo}_{timestamp}.{formato.lower()}"
+        
         with open(nome_arquivo, 'w', encoding='utf-8') as f:
-            if formato == 'json':
+            if formato.lower() == 'json':
                 json.dump(dados, f, indent=2, ensure_ascii=False)
             else:
                 f.write(f"=== DADOS DO CEP {dados.get('cep', 'N/A')} ===\n\n")
                 f.write(f"LOGRADOURO: {dados.get('logradouro', 'N/A')}\n")
-                if 'complemento' in dados:
+                if dados.get('complemento'):
                     f.write(f"COMPLEMENTO: {dados['complemento']}\n")
                 f.write(f"BAIRRO:     {dados.get('bairro', 'N/A')}\n")
                 f.write(f"CIDADE/UF:  {dados.get('cidade', 'N/A')}/{dados.get('estado', 'N/A')}\n")
@@ -288,7 +311,7 @@ def salvar_resultado(dados, formato='txt'):
         
         print(f"{Cores.VERDE}[+] Resultado salvo em {nome_arquivo}{Cores.RESET}")
         return True
-    except Exception as e:
+    except (IOError, OSError, json.JSONDecodeError) as e:
         print(f"{Cores.VERMELHO}[!] Erro ao salvar: {str(e)}{Cores.RESET}")
         return False
 
@@ -298,7 +321,11 @@ def menu_principal():
     print(f"{Cores.VERDE}[1]{Cores.RESET} Consultar CEP")
     print(f"{Cores.VERDE}[2]{Cores.RESET} Sobre")
     print(f"{Cores.VERDE}[3]{Cores.RESET} Sair")
-    return input(f"\n{Cores.CIANO}Selecione uma opção: {Cores.RESET}")
+    
+    try:
+        return input(f"\n{Cores.CIANO}Selecione uma opção: {Cores.RESET}").strip()
+    except (EOFError, KeyboardInterrupt):
+        return '3'
 
 def sobre():
     banner()
@@ -325,7 +352,10 @@ def sobre():
 - Informações demográficas básicas
 
 {Cores.VERDE}Pressione Enter para voltar...{Cores.RESET}""")
-    input()
+    try:
+        input()
+    except (EOFError, KeyboardInterrupt):
+        pass
 
 def main():
     try:
@@ -334,11 +364,17 @@ def main():
             
             if opcao == '1':
                 banner()
-                cep = input(f"\n{Cores.CIANO}Digite o CEP (com ou sem hífen): {Cores.RESET}").strip()
+                try:
+                    cep = input(f"\n{Cores.CIANO}Digite o CEP (com ou sem hífen): {Cores.RESET}").strip()
+                except (EOFError, KeyboardInterrupt):
+                    continue
                 
                 if not validar_cep(cep):
                     print(f"{Cores.VERMELHO}[!] CEP inválido. Deve conter 8 dígitos.{Cores.RESET}")
-                    input(f"{Cores.AMARELO}Pressione Enter para continuar...{Cores.RESET}")
+                    try:
+                        input(f"{Cores.AMARELO}Pressione Enter para continuar...{Cores.RESET}")
+                    except (EOFError, KeyboardInterrupt):
+                        pass
                     continue
                 
                 cep_formatado = formatar_cep(cep)
@@ -351,13 +387,19 @@ def main():
                 exibir_resultados(dados_combinados)
                 
                 if dados_combinados:
-                    exportar = input(f"\n{Cores.CIANO}Exportar resultado? (JSON/TXT/Não): {Cores.RESET}").lower()
-                    if exportar.startswith('j'):
-                        salvar_resultado(dados_combinados, 'json')
-                    elif exportar.startswith('t'):
-                        salvar_resultado(dados_combinados, 'txt')
+                    try:
+                        exportar = input(f"\n{Cores.CIANO}Exportar resultado? (JSON/TXT/Não): {Cores.RESET}").lower()
+                        if exportar.startswith('j'):
+                            salvar_resultado(dados_combinados, 'json')
+                        elif exportar.startswith('t'):
+                            salvar_resultado(dados_combinados, 'txt')
+                    except (EOFError, KeyboardInterrupt):
+                        pass
                 
-                input(f"\n{Cores.AMARELO}Pressione Enter para continuar...{Cores.RESET}")
+                try:
+                    input(f"\n{Cores.AMARELO}Pressione Enter para continuar...{Cores.RESET}")
+                except (EOFError, KeyboardInterrupt):
+                    continue
             
             elif opcao == '2':
                 sobre()
@@ -368,7 +410,10 @@ def main():
             
             else:
                 print(f"{Cores.VERMELHO}[!] Opção inválida!{Cores.RESET}")
-                input(f"{Cores.AMARELO}Pressione Enter para continuar...{Cores.RESET}")
+                try:
+                    input(f"{Cores.AMARELO}Pressione Enter para continuar...{Cores.RESET}")
+                except (EOFError, KeyboardInterrupt):
+                    continue
     
     except KeyboardInterrupt:
         print(f"\n{Cores.VERMELHO}[!] Programa interrompido{Cores.RESET}")
