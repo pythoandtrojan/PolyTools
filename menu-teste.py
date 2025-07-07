@@ -182,10 +182,10 @@ class HackerMenu:
         table.add_row("3", "SCANNER", "Ferramentas de varredura")
         table.add_row("4", "FORÇA BRUTA", "Ataques de força bruta")
         table.add_row("5", "SQL INJECTION", "Injeção de SQL em bancos de dados")
-        table.add_row("6", "SPAM", "Ferramentas de envio em massa")
+        table.add_row("6", "SPAN", "Ferramentas de envio em massa")
         table.add_row("7", "PHISHING", "Ferramentas de engenharia social")
         table.add_row("8", "XSS", "Ataques Cross-Site Scripting")
-        table.add_row("9", "GIT EXPOSED", "Busca por repositórios Git expostos")
+        table.add_row("9", "GIT EXPOSTO", "Busca por repositórios Git expostos")
         table.add_row("0", "SAIR", "Sair do sistema")
 
         console.print(table)
@@ -208,15 +208,15 @@ class HackerMenu:
             elif category == "sql-inject":
                 console.print(Panel.fit(Banners.sql_inject(), style="bold cyan"))
             elif category == "span":
-                console.print(Panel.fit(Banners.spam(), style="bold yellow"))
+                console.print(Panel.fit(Banners.span(), style="bold yellow"))
             elif category == "phishing":
                 console.print(Panel.fit(Banners.phishing(), style="bold purple"))
             elif category == "xss":
                 console.print(Panel.fit(Banners.xss(), style="bold orange3"))
             elif category == "git-exposto":
-                console.print(Panel.fit(Banners.git_exposed(), style="bold dark_green"))
+                console.print(Panel.fit(Banners.git_exposto(), style="bold dark_green"))
             
-            console.print(f"\n[bold]{category} TOOLS[/bold]\n")
+            console.print(f"\n[bold]{category.upper()} TOOLS[/bold]\n")
             
             table = Table(show_header=True, header_style="bold blue")
             table.add_column("Nº", style="cyan", width=5)
@@ -270,9 +270,15 @@ class HackerMenu:
         console.print(f"[bold yellow]Executando {tool_name}...[/bold yellow]\n")
         
         try:
+            # Verifica se a pasta existe
+            if not os.path.exists(category):
+                console.print(f"[bold red]Erro: Pasta '{category}' não encontrada![/bold red]")
+                console.input("\nPressione Enter para continuar...")
+                return
+                
             script_path = os.path.join(category, tool_name)
             if not os.path.exists(script_path):
-                console.print(f"[bold red]Erro: Arquivo {script_path} não encontrado![/bold red]")
+                console.print(f"[bold red]Erro: Arquivo '{tool_name}' não encontrado em '{category}'![/bold red]")
                 console.input("\nPressione Enter para continuar...")
                 return
         
@@ -285,6 +291,7 @@ class HackerMenu:
                     console.input("\nPressione Enter para continuar...")
                     return
                 
+                # Executa o arquivo compilado
                 process = subprocess.Popen(
                     [f"./{compiled_path}"],
                     stdin=sys.stdin,
@@ -292,17 +299,20 @@ class HackerMenu:
                     stderr=sys.stderr,
                     env=env,
                     bufsize=1,
-                    universal_newlines=True
+                    universal_newlines=True,
+                    cwd=category  # Executa na pasta da categoria
                 )
             elif tool_name.endswith('.py'):
+                # Executa o script Python
                 process = subprocess.Popen(
-                    [sys.executable, script_path],
+                    [sys.executable, tool_name],
                     stdin=sys.stdin,
                     stdout=sys.stdout,
                     stderr=sys.stderr,
                     env=env,
                     bufsize=1,
-                    universal_newlines=True
+                    universal_newlines=True,
+                    cwd=category  # Executa na pasta da categoria
                 )
             else:
                 console.print("[bold red]Tipo de arquivo não suportado![/bold red]")
