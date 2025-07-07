@@ -1,1 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Black Market 🚬💉 - Loja Secreta</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background-color: #000;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 3px solid #ff6600;
+        }
+        h1 {
+            color: #ff6600;
+            margin: 0;
+            font-size: 2.5em;
+        }
+        nav {
+            background-color: #222;
+            padding: 10px;
+            text-align: center;
+        }
+        nav a {
+            color: #ff6600;
+            text-decoration: none;
+            margin: 0 15px;
+            font-weight: bold;
+        }
+        .product {
+            background-color: #222;
+            border: 1px solid #333;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .product h3 {
+            color: #ff6600;
+            margin-top: 0;
+        }
+        .price {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .comments {
+            margin-top: 30px;
+        }
+        .comment {
+            background-color: #333;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .comment p {
+            margin: 5px 0;
+        }
+        form {
+            margin: 20px 0;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background-color: #333;
+            border: 1px solid #444;
+            color: #fff;
+        }
+        button {
+            background-color: #ff6600;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            background-color: #000;
+            margin-top: 30px;
+        }
+        .hidden-admin {
+            display: none;
+            background-color: #111;
+            padding: 20px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🚬 Black Market 💊</h1>
+            <p>Seu acesso exclusivo a produtos premium (apenas para membros)</p>
+        </div>
+    </header>
 
+    <nav>
+        <div class="container">
+            <a href="#heroin">Heroína</a>
+            <a href="#cocaine">Cocaína</a>
+            <a href="#lsd">LSD</a>
+            <a href="#mdma">MDMA</a>
+            <a href="#contact">Contato</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2>Produtos em Destaque</h2>
+
+        <!-- XSS Refletido via URL (Exemplo: ?search=<script>alert(1)</script>) -->
+        <?php
+        if (isset($_GET['search'])) {
+            echo "<p>Resultados para: " . $_GET['search'] . "</p>";
+        }
+        ?>
+
+        <div class="product" id="heroin">
+            <h3>💉 Heroína Pura (Afeganistão)</h3>
+            <p>Grau A, importação direta. 99% de pureza.</p>
+            <p class="price">R$ 150,00 / grama</p>
+            <button onclick="addToCart('heroin')">Comprar</button>
+        </div>
+
+        <div class="product" id="cocaine">
+            <h3>❄️ Cocaína Colombiana</h3>
+            <p>Peruvian Flake, qualidade premium.</p>
+            <p class="price">R$ 200,00 / grama</p>
+            <button onclick="addToCart('cocaine')">Comprar</button>
+        </div>
+
+        <div class="product" id="lsd">
+            <h3>🌈 LSD (Swiss Bliss)</h3>
+            <p>200ug por blotter. Viagem limpa e intensa.</p>
+            <p class="price">R$ 50,00 / unidade</p>
+            <button onclick="addToCart('lsd')">Comprar</button>
+        </div>
+
+        <div class="product" id="mdma">
+            <h3>💊 MDMA (Holandês)</h3>
+            <p>Cristais de 84% de pureza.</p>
+            <p class="price">R$ 120,00 / grama</p>
+            <button onclick="addToCart('mdma')">Comprar</button>
+        </div>
+
+        <!-- Seção de Comentários (XSS Armazenado) -->
+        <div class="comments">
+            <h3>📝 Comentários de Clientes</h3>
+            <?php
+            // Simulação de banco de dados vulnerável (sem sanitização)
+            $comments_file = 'comments.txt';
+            
+            if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['comment'])) {
+                $comment = $_POST['comment'];
+                $name = $_POST['name'] ?? 'Anônimo';
+                $new_comment = "<div class='comment'><p><strong>$name</strong> diz:</p><p>$comment</p></div>\n";
+                file_put_contents($comments_file, $new_comment, FILE_APPEND);
+            }
+
+            if (file_exists($comments_file)) {
+                echo file_get_contents($comments_file);
+            }
+            ?>
+            <form method="POST">
+                <input type="text" name="name" placeholder="Seu nome (opcional)">
+                <textarea name="comment" placeholder="Deixe seu comentário..." required></textarea>
+                <button type="submit">Enviar</button>
+            </form>
+        </div>
+
+        <!-- Painel Admin (DOM-Based XSS) -->
+        <div class="hidden-admin" id="adminPanel">
+            <h3>🔒 Painel Administrativo</h3>
+            <p>Acesso restrito.</p>
+            <div id="adminContent"></div>
+        </div>
+
+        <!-- XSS via DOM (Exemplo: #adminContent=<script>alert('Hacked')</script>) -->
+        <script>
+            if (window.location.hash) {
+                const payload = decodeURIComponent(window.location.hash.substring(1));
+                document.getElementById('adminContent').innerHTML = payload;
+                document.getElementById('adminPanel').style.display = 'block';
+            }
+
+            function addToCart(product) {
+                alert(`${product} adicionado ao carrinho! (Simulação)`);
+            }
+        </script>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>© 2024 Black Market. Todos os direitos reservados (ou não).</p>
+            <p><small>Este site é apenas para fins educacionais e de teste de segurança.</small></p>
+        </div>
+    </footer>
+</body>
+</html>
