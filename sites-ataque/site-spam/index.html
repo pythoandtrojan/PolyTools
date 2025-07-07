@@ -1,0 +1,307 @@
+<?php
+// Banco de dados fake (apenas para simulação)
+$users_file = 'users.txt';
+$posts_file = 'posts.txt';
+$comments_file = 'comments.txt';
+
+// Processar cadastro (vulnerável a spam)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
+    $username = $_POST['username'] ?? '';
+    $email = $_POST['email'] ?? '';
+    $password = $_POST['password'] ?? '';
+    
+    // Sem validação de e-mail, sem confirmação, sem limites
+    $new_user = "$username|$email|$password\n";
+    file_put_contents($users_file, $new_user, FILE_APPEND);
+    $register_success = "Cadastro realizado! (Simulação)";
+}
+
+// Processar novo post (vulnerável a spam)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['new_post'])) {
+    $title = $_POST['title'] ?? '';
+    $content = $_POST['content'] ?? '';
+    $author = $_POST['author'] ?? 'Anônimo';
+    
+    // Sem sanitização, sem limite de posts
+    $new_post = "<div class='post'><h3>$title</h3><p><em>Por $author</em></p><p>$content</p></div>\n";
+    file_put_contents($posts_file, $new_post, FILE_APPEND);
+}
+
+// Processar comentários (vulnerável a XSS + spam)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['new_comment'])) {
+    $post_id = $_POST['post_id'] ?? '0';
+    $comment = $_POST['comment'] ?? '';
+    $user = $_POST['user'] ?? 'Anônimo';
+    
+    // Sem sanitização, sem limites
+    $new_comment = "<div class='comment' data-post='$post_id'><p><strong>$user</strong>:</p><p>$comment</p></div>\n";
+    file_put_contents($comments_file, $new_comment, FILE_APPEND);
+}
+
+// Ler posts e comentários (simulação de DB)
+$posts = file_exists($posts_file) ? file_get_contents($posts_file) : '';
+$comments = file_exists($comments_file) ? file_get_contents($comments_file) : '';
+?>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DarkNet Content 🕶️</title>
+    <style>
+        :root {
+            --dark-bg: #121212;
+            --darker-bg: #0a0a0a;
+            --primary: #6e44ff;
+            --text: #e0e0e0;
+            --text-muted: #888;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background-color: var(--darker-bg);
+            padding: 20px 0;
+            border-bottom: 3px solid var(--primary);
+        }
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        .menu a {
+            color: var(--text);
+            text-decoration: none;
+            margin-left: 20px;
+            transition: color 0.3s;
+        }
+        .menu a:hover {
+            color: var(--primary);
+        }
+        .hero {
+            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://fakeimg.pl/1200x400/121212/6e44ff/?text=DarkNet+Content');
+            background-size: cover;
+            padding: 80px 20px;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .hero h1 {
+            font-size: 3em;
+            margin: 0;
+        }
+        .hero p {
+            font-size: 1.2em;
+            max-width: 800px;
+            margin: 20px auto;
+        }
+        .btn {
+            display: inline-block;
+            background-color: var(--primary);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #5a36d6;
+        }
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 30px;
+        }
+        .posts {
+            background-color: var(--darker-bg);
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .post {
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #333;
+        }
+        .post h3 {
+            color: var(--primary);
+            margin-top: 0;
+        }
+        .post-meta {
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+        .comments {
+            margin-top: 30px;
+        }
+        .comment {
+            background-color: #1e1e1e;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+        .sidebar {
+            background-color: var(--darker-bg);
+            padding: 20px;
+            border-radius: 8px;
+            height: fit-content;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            color: var(--text);
+            border-radius: 4px;
+        }
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            margin-top: 50px;
+            background-color: var(--darker-bg);
+            color: var(--text-muted);
+        }
+        .disclaimer {
+            font-size: 0.8em;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">DarkNet</div>
+                <div class="menu">
+                    <a href="#">Início</a>
+                    <a href="#">Conteúdo</a>
+                    <a href="#">Fórum</a>
+                    <a href="#" id="registerBtn">Registrar</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="container">
+            <h1>Conteúdo Exclusivo</h1>
+            <p>Acesso a materiais restritos da dark web. Somente para membros verificados.</p>
+            <a href="#" class="btn" id="heroBtn">Acessar Conteúdo Premium</a>
+        </div>
+    </section>
+
+    <div class="container">
+        <div class="content-grid">
+            <main class="posts">
+                <h2>Últimos Posts</h2>
+                <?= $posts ?>
+                
+                <div class="comments">
+                    <h3>Comentários</h3>
+                    <?= $comments ?>
+                    
+                    <form method="POST" id="commentForm">
+                        <input type="hidden" name="post_id" value="1">
+                        <div class="form-group">
+                            <label for="user">Nome</label>
+                            <input type="text" class="form-control" name="user" id="user" value="Anônimo">
+                        </div>
+                        <div class="form-group">
+                            <label for="comment">Comentário</label>
+                            <textarea class="form-control" name="comment" id="comment" rows="3" required></textarea>
+                        </div>
+                        <button type="submit" class="btn" name="new_comment">Enviar Comentário</button>
+                    </form>
+                </div>
+            </main>
+
+            <aside class="sidebar">
+                <h3>Registrar-se</h3>
+                <?php if (isset($register_success)): ?>
+                    <div class="alert"><?= $register_success ?></div>
+                <?php endif; ?>
+                <form method="POST" id="registerForm">
+                    <div class="form-group">
+                        <label for="username">Usuário</label>
+                        <input type="text" class="form-control" name="username" id="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">E-mail</label>
+                        <input type="email" class="form-control" name="email" id="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Senha</label>
+                        <input type="password" class="form-control" name="password" id="password" required>
+                    </div>
+                    <button type="submit" class="btn" name="register">Criar Conta</button>
+                </form>
+
+                <h3 style="margin-top: 30px;">Criar Novo Post</h3>
+                <form method="POST" id="postForm">
+                    <div class="form-group">
+                        <label for="title">Título</label>
+                        <input type="text" class="form-control" name="title" id="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="author">Autor</label>
+                        <input type="text" class="form-control" name="author" id="author" value="Anônimo">
+                    </div>
+                    <div class="form-group">
+                        <label for="content">Conteúdo</label>
+                        <textarea class="form-control" name="content" id="content" rows="5" required></textarea>
+                    </div>
+                    <button type="submit" class="btn" name="new_post">Publicar Post</button>
+                </form>
+            </aside>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>© 2024 DarkNet Content. Todos os direitos não reservados.</p>
+            <p class="disclaimer">
+                AVISO: Este é um site simulado para fins educacionais de segurança cibernética.
+                Não apoiamos atividades ilegais.
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // CSRF Simulation (no tokens, no protection)
+        document.getElementById('heroBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('Redirecionando para conteúdo premium... (Simulação de CSRF)');
+        });
+
+        // Auto-fill vulnerable forms for spam testing
+        if (location.hash === '#spam') {
+            setInterval(() => {
+                document.getElementById('comment').value = 'SPAM BOT ' + Math.random();
+                document.getElementById('commentForm').submit();
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
