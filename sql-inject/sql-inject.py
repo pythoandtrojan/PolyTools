@@ -17,7 +17,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
-import numpy as np
 from pygments import highlight
 from pygments.lexers import SqlLexer, JsonLexer
 from pygments.formatters import TerminalFormatter
