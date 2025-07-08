@@ -10,11 +10,16 @@ import zlib
 import platform
 import hashlib
 import json
+import socket
 import subprocess
 from typing import Dict, List, Optional, Tuple
 from pathlib import Path
+
+# Criptografia
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
+
+# Interface avançada
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -426,7 +431,7 @@ public class MainActivity {
             if s.strip():
                 key = os.urandom(16)
                 cipher = AES.new(key, AES.MODE_ECB)
-                encrypted = cipher.encrypt(pad(s.encode(), AES.block_size)
+                encrypted = cipher.encrypt(pad(s.encode(), AES.block_size))
                 b64_encrypted = base64.b64encode(encrypted).decode()
                 
                 replacement = f'decrypt("{b64_encrypted}", "{base64.b64encode(key).decode()}")'
@@ -584,14 +589,14 @@ static {
             apk_name = f"droider_{payload_name}_{int(time.time())}.apk"
             apk_path = os.path.join(temp_dir, apk_name)
             
-            # Simulação - em produção usaríamos ferramentas reais
+            # Corrigido: usando apenas caracteres ASCII no modo binário
             with open(apk_path, 'wb') as f:
-                f.write(b"APK placeholder - implementação real requer build tools")
+                f.write(b"APK placeholder - implementacao real requer build tools")
             
             return apk_path
             
         except Exception as e:
-            console.print(f"[red]Erro na compilação: {str(e)}[/red]")
+            console.print(f"[red]Erro na compilacao: {str(e)}[/red]")
             return None
 
     def _sign_apk(self, apk_path: str):
