@@ -4,15 +4,14 @@ import socket
 import webbrowser
 import json
 import platform
-import subprocess
 from time import sleep
+from datetime import datetime
 from pathlib import Path
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 from rich.progress import Progress
 import requests
-import discord
 from discord_webhook import DiscordWebhook
 
 console = Console()
@@ -94,7 +93,88 @@ dX.    9Xb      .dXb    __                         __    dXb.     dXP     .Xb
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Valkiria - Justiça nas Sombras</title>
     <style>
-        /* (O estilo permanece o mesmo da versão anterior) */
+        body {{
+            font-family: 'Courier New', monospace;
+            background-color: #000;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }}
+        .container {{
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ff0000;
+            box-shadow: 0 0 20px #ff0000;
+        }}
+        h1 {{
+            color: #ff0000;
+            text-align: center;
+            border-bottom: 1px solid #ff0000;
+            padding-bottom: 10px;
+        }}
+        .warning {{
+            background-color: #1a0000;
+            border-left: 5px solid #ff0000;
+            padding: 15px;
+            margin: 20px 0;
+        }}
+        .quote {{
+            font-style: italic;
+            color: #ff0000;
+            text-align: center;
+            margin: 20px 0;
+        }}
+        .counter {{
+            text-align: center;
+            font-size: 24px;
+            margin: 20px 0;
+            color: #ff0000;
+        }}
+        .links {{
+            display: flex;
+            justify-content: space-around;
+            margin-top: 30px;
+        }}
+        .links a {{
+            color: #ff0000;
+            text-decoration: none;
+            border: 1px solid #ff0000;
+            padding: 10px 20px;
+            transition: all 0.3s;
+        }}
+        .links a:hover {{
+            background-color: #ff0000;
+            color: #000;
+        }}
+        form div {{
+            margin-bottom: 15px;
+        }}
+        label {{
+            display: block;
+            margin-bottom: 5px;
+            color: #ff0000;
+        }}
+        input, textarea {{
+            width: 100%;
+            padding: 8px;
+            background-color: #111;
+            border: 1px solid #333;
+            color: #fff;
+        }}
+        button {{
+            background-color: #ff0000;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+        }}
+        button:hover {{
+            background-color: #cc0000;
+        }}
     </style>
 </head>
 <body>
@@ -191,7 +271,7 @@ dX.    9Xb      .dXb    __                         __    dXb.     dXP     .Xb
             console.print(f"[bold white]Acesse: [bold green]http://{self.local_ip}:8000[/bold green][/bold white]")
             
             # Verificar se python3 está disponível
-            if os.system("which python3 > /dev/null") == 0:
+            if os.system("which python3 > /dev/null 2>&1") == 0:
                 os.system(f"cd {self.web_dir} && python3 -m http.server 8000 &")
             else:
                 os.system(f"cd {self.web_dir} && python -m http.server 8000 &")
@@ -287,7 +367,7 @@ de ser publicada. Falsas acusações são punidas.
                     {"name": "🖥️ IPs Conhecidos", "value": target["ips"] or "Não informado", "inline": False},
                     {"name": "🔗 Evidências", "value": target["evidence"] or "Não informado", "inline": False},
                     {"name": "📝 Informações Adicionais", "value": target["info"] or "Nenhuma", "inline": False},
-                    {"name": "📌 Sistema do Denunciante", "value": f"IP: {target['reporter_system']['local_ip}\nOS: {target['reporter_system']['system']}", "inline": False}
+                    {"name": "📌 Sistema do Denunciante", "value": f"IP: {target['reporter_system']['local_ip']}\nOS: {target['reporter_system']['system']}", "inline": False}
                 ],
                 "footer": {
                     "text": "Valkiria Network - Justiça nas Sombras"
@@ -352,7 +432,6 @@ de ser publicada. Falsas acusações são punidas.
 
 if __name__ == "__main__":
     try:
-        from datetime import datetime
         tool = ValkiriaTool()
         tool.run()
     except KeyboardInterrupt:
