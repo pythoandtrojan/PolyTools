@@ -1,304 +1,213 @@
+#!/usr/bin/env python3
 import requests
 import json
 import os
 import sys
 from datetime import datetime
-from http.server import HTTPServer, SimpleHTTPRequestHandler
-import threading
-import webbrowser
+from time import sleep
+import platform
+from pyfiglet import Figlet
+from colorama import Fore, Back, Style, init
+
+# Inicializa colorama
+init(autoreset=True)
 
 # Configurações
 API_URL = "https://777apisss.vercel.app/consulta/rg/"
 API_KEY = "firminoh7778"
-OUTPUT_DIR = "rg_data"
-HTML_TEMPLATE = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Consulta de RG - Valkyria Network</title>
-    <meta charset="UTF-8">
-    <style>
-        body { 
-            font-family: 'Courier New', monospace; 
-            background-color: #121212; 
-            color: #e0e0e0; 
-            max-width: 900px; 
-            margin: 0 auto; 
-            padding: 20px;
-        }
-        .banner { 
-            background-color: #1e1e1e; 
-            border: 1px solid #333; 
-            padding: 20px; 
-            margin-bottom: 20px;
-            white-space: pre;
-            overflow-x: auto;
-        }
-        .data-container { 
-            background-color: #1e1e1e; 
-            border: 1px solid #333; 
-            padding: 20px; 
-            margin-bottom: 20px;
-        }
-        h1 { 
-            color: #8a2be2; 
-            text-align: center;
-            border-bottom: 1px solid #8a2be2;
-            padding-bottom: 10px;
-        }
-        .photo { 
-            max-width: 300px; 
-            display: block; 
-            margin: 20px auto;
-            border: 1px solid #8a2be2;
-        }
-        .footer { 
-            text-align: center; 
-            margin-top: 30px; 
-            color: #666; 
-            font-size: 0.8em;
-        }
-    </style>
-</head>
-<body>
-    <h1>Consulta de RG - Valkyria Network</h1>
-    <div class="banner">{banner}</div>
-    <div class="data-container">
-        <h2>Dados Pessoais</h2>
-        <p><strong>Nome:</strong> {nome}</p>
-        <p><strong>Nome da Mãe:</strong> {nome_mae}</p>
-        <p><strong>Nome do Pai:</strong> {nome_pai if nome_pai else 'Não informado'}</p>
-        <p><strong>Data de Nascimento:</strong> {nasc}</p>
-        <p><strong>CPF:</strong> {cpf}</p>
-        <p><strong>RG:</strong> {rg}</p>
-        <p><strong>Órgão Emissor:</strong> {orgao_emissor}</p>
-        <p><strong>UF Emissão:</strong> {uf_emissao}</p>
-        <p><strong>Sexo:</strong> {sexo}</p>
-        <p><strong>Estado Civil:</strong> {estciv}</p>
-        
-        <h2>Informações Adicionais</h2>
-        <p><strong>CBO:</strong> {cbo}</p>
-        <p><strong>Mosaic:</strong> {cd_mosaic} (Novo: {cd_mosaic_novo}, Secundário: {cd_mosaic_secundario})</p>
-        <p><strong>Situação Cadastral:</strong> {cd_sit_cad}</p>
-        <p><strong>Data da Situação:</strong> {dt_sit_cad}</p>
-        <p><strong>Data da Informação:</strong> {dt_informacao}</p>
-        
-        {photo_html}
-    </div>
-    <div class="footer">
-        Consulta realizada em {data_consulta} | API by {criador}
-    </div>
-</body>
-</html>
-"""
+OUTPUT_DIR = "consultas_rg"
+LOG_FILE = "consultas.log"
 
-def create_banner(text):
-    """Cria um banner ASCII com bordas de quadrados"""
-    lines = text.split('\n')
-    max_len = max(len(line) for line in lines)
-    border = '█' * (max_len + 4)
-    
-    banner = []
-    banner.append('█' + border + '█')
-    for line in lines:
-        banner.append('█  ' + line.ljust(max_len) + '  █')
-    banner.append('█' + border + '█')
-    
-    return '\n'.join(banner)
+# Cores personalizadas
+class Cores:
+    TITULO = Fore.CYAN + Style.BRIGHT
+    DADO = Fore.WHITE + Style.BRIGHT
+    VALOR = Fore.YELLOW
+    ERRO = Fore.RED + Style.BRIGHT
+    SUCESSO = Fore.GREEN + Style.BRIGHT
+    DESTAQUE = Fore.MAGENTA + Style.BRIGHT
+    BANNER = Fore.BLUE + Style.BRIGHT
 
-def consulta_rg(rg_number):
-    """Consulta a API de RG e retorna os dados"""
+# Verificar e instalar dependências necessárias
+def verificar_dependencias():
     try:
-        response = requests.get(f"{API_URL}?query={rg_number}&apikey={API_KEY}")
-        response.raise_for_status()
-        return response.json()
+        import pyfiglet
+        import colorama
+    except ImportError:
+        print(f"{Cores.ERRO}Dependências não encontradas. Instalando...")
+        try:
+            import pip
+            pip.main(['install', 'pyfiglet', 'colorama'])
+            print(f"{Cores.SUCESSO}Dependências instaladas com sucesso!")
+            sleep(2)
+        except:
+            print(f"{Cores.ERRO}Erro ao instalar dependências. Instale manualmente:")
+            print("pip install pyfiglet colorama")
+            sys.exit(1)
+
+# Criar diretórios necessários
+def criar_diretorios():
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# Banner profissional
+def mostrar_banner():
+    if platform.system() == "Windows":
+        os.system('cls')
+    else:
+        os.system('clear')
+    
+    f = Figlet(font='slant')
+    print(f"{Cores.BANNER}{f.renderText('Valkyria RG')}")
+    print(f"{Cores.DESTAQUE}{'='*60}")
+    print(f"{Cores.DESTAQUE} SISTEMA DE CONSULTA DE DOCUMENTOS - RG")
+    print(f"{Cores.DESTAQUE} Versão 2.1 | Segurança da Informação")
+    print(f"{Cores.DESTAQUE}{'='*60}\n")
+
+# Consulta à API
+def consultar_rg(rg):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) ValkyriaRG/2.1',
+        'Accept': 'application/json'
+    }
+    
+    params = {
+        'query': rg,
+        'apikey': API_KEY
+    }
+    
+    try:
+        resposta = requests.get(
+            API_URL,
+            params=params,
+            headers=headers,
+            timeout=15
+        )
+        
+        resposta.raise_for_status()
+        return resposta.json()
+    
     except requests.exceptions.RequestException as e:
-        print(f"Erro ao consultar a API: {e}")
+        print(f"{Cores.ERRO}Erro na consulta: {str(e)}")
         return None
 
-def save_photo(photo_url, output_dir, rg_number):
-    """Salva a foto do RG se existir"""
-    if not photo_url:
-        return None
-    
-    try:
-        os.makedirs(output_dir, exist_ok=True)
-        photo_response = requests.get(photo_url)
-        photo_response.raise_for_status()
-        
-        photo_path = os.path.join(output_dir, f"photo_{rg_number}.jpg")
-        with open(photo_path, 'wb') as f:
-            f.write(photo_response.content)
-        return photo_path
-    except Exception as e:
-        print(f"Erro ao salvar foto: {e}")
-        return None
-
-def display_data(data):
-    """Exibe os dados formatados no terminal"""
+# Exibir resultados formatados
+def exibir_resultados(data):
     if not data or data.get('status') != 1:
-        print("Nenhum dado encontrado ou erro na consulta.")
+        print(f"\n{Cores.ERRO}Nenhum dado encontrado para este RG")
         return
     
-    dados = data['dados'][0]
+    registro = data['dados'][0]
     
-    # Criar banner
-    banner_text = f"""
-    ████████  Valkyria Network  ████████
-    Consulta de RG - Dados completos
-    RG: {data['rg']}
-    Data: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-    """
-    print(create_banner(banner_text))
+    print(f"\n{Cores.TITULO}{' DADOS ENCONTRADOS ':=^60}")
     
-    # Exibir dados
-    print("\nDADOS PESSOAIS:")
-    print(f"Nome: {dados['NOME']}")
-    print(f"Nome da Mãe: {dados['NOME_MAE']}")
-    print(f"Nome do Pai: {dados['NOME_PAI'] if dados['NOME_PAI'] else 'Não informado'}")
-    print(f"Data de Nascimento: {dados['NASC']}")
-    print(f"CPF: {dados['CPF']}")
-    print(f"RG: {dados['RG']}")
-    print(f"Órgão Emissor: {dados['ORGAO_EMISSOR']}")
-    print(f"UF Emissão: {dados['UF_EMISSAO']}")
-    print(f"Sexo: {dados['SEXO']}")
-    print(f"Estado Civil: {dados['ESTCIV']}")
+    # Seção de dados pessoais
+    print(f"\n{Cores.DADO}➤ DADOS PESSOAIS")
+    print(f"{Cores.DADO}┌{'─'*58}┐")
+    print(f"{Cores.DADO}│ {Cores.DADO}Nome: {Cores.VALOR}{registro.get('NOME', 'Não informado'):<49}│")
+    print(f"{Cores.DADO}│ {Cores.DADO}Mãe: {Cores.VALOR}{registro.get('NOME_MAE', 'Não informado'):<50}│")
+    print(f"{Cores.DADO}│ {Cores.DADO}Pai: {Cores.VALOR}{registro.get('NOME_PAI', 'Não informado'):<50}│")
+    print(f"{Cores.DADO}│ {Cores.DADO}Nascimento: {Cores.VALOR}{registro.get('NASC', 'Não informado'):<44}│")
+    print(f"{Cores.DADO}│ {Cores.DADO}Sexo: {Cores.VALOR}{registro.get('SEXO', 'Não informado'):<50}│")
+    print(f"{Cores.DADO}│ {Cores.DADO}Estado Civil: {Cores.VALOR}{registro.get('ESTCIV', 'Não informado'):<43}│")
+    print(f"{Cores.DADO}└{'─'*58}┘")
     
-    print("\nINFORMAÇÕES ADICIONAIS:")
-    print(f"CBO: {dados['CBO']}")
-    print(f"Mosaic: {dados['CD_MOSAIC']} (Novo: {dados['CD_MOSAIC_NOVO']}, Secundário: {dados['CD_MOSAIC_SECUNDARIO']})")
-    print(f"Situação Cadastral: {dados['CD_SIT_CAD']}")
-    print(f"Data da Situação: {dados['DT_SIT_CAD']}")
-    print(f"Data da Informação: {dados['DT_INFORMACAO']}")
+    # Seção de documentos
+    print(f"\n{Cores.DADO}➤ DOCUMENTOS")
+    print(f"{Cores.DADO}┌{'─'*58}┐")
+    print(f"{Cores.DADO}│ {Cores.DADO}RG: {Cores.VALOR}{registro.get('RG', 'Não informado'):<51}│")
+    print(f"{Cores.DADO}│ {Cores.DADO}Órgão Emissor: {Cores.VALOR}{registro.get('ORGAO_EMISSOR', 'Não informado'):<40}│")
+    print(f"{Cores.DADO}│ {Cores.DADO}UF Emissão: {Cores.VALOR}{registro.get('UF_EMISSAO', 'Não informado'):<44}│")
+    print(f"{Cores.DADO}│ {Cores.DADO}CPF: {Cores.VALOR}{registro.get('CPF', 'Não informado'):<51}│")
+    print(f"{Cores.DADO}└{'─'*58}┘")
     
-    print(f"\nCriador: {data['criador']}")
-    print(f"Quantidade de registros: {data['qnt']}")
+    # Seção de informações adicionais
+    print(f"\n{Cores.DADO}➤ INFORMAÇÕES ADICIONAIS")
+    print(f"{Cores.DADO}┌{'─'*58}┐")
+    print(f"{Cores.DADO}│ {Cores.DADO}CBO: {Cores.VALOR}{registro.get('CBO', 'Não informado'):<51}│")
+    print(f"{Cores.DADO}│ {Cores.DADO}Mosaic: {Cores.VALOR}{registro.get('CD_MOSAIC', 'N/A'):<47}│")
+    print(f"{Cores.DADO}│ {Cores.DADO}Situação Cadastral: {Cores.VALOR}{registro.get('CD_SIT_CAD', 'Não informado'):<36}│")
+    print(f"{Cores.DADO}│ {Cores.DADO}Última Atualização: {Cores.VALOR}{registro.get('DT_INFORMACAO', 'Não informado'):<36}│")
+    print(f"{Cores.DADO}└{'─'*58}┘")
+    
+    print(f"\n{Cores.DADO}Consulta realizada em: {Cores.VALOR}{datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+    print(f"{Cores.DADO}Fonte: {Cores.VALOR}{data.get('criador', 'Sistema Valkyria')}\n")
 
-def generate_html(data, photo_path=None):
-    """Gera uma página HTML com os dados"""
-    if not data or data.get('status') != 1:
-        return None
+# Salvar resultados em arquivo
+def salvar_consulta(data, rg):
+    if not data:
+        return False
     
-    dados = data['dados'][0]
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"RG_{rg}_{timestamp}.json"
+    filepath = os.path.join(OUTPUT_DIR, filename)
     
-    # Criar banner para HTML
-    banner_text = f"""
-    ████████  Valkyria Network  ████████
-    Consulta de RG - Dados completos
-    RG: {data['rg']}
-    Data: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-    """
-    banner_html = create_banner(banner_text).replace('█', '■')
-    
-    # Foto HTML
-    if photo_path and os.path.exists(photo_path):
-        photo_html = f'<img src="{os.path.basename(photo_path)}" class="photo" alt="Foto do RG">'
-    else:
-        photo_html = '<p>Foto não disponível</p>'
-    
-    # Substituir valores no template
-    html_content = HTML_TEMPLATE.format(
-        banner=banner_html,
-        nome=dados['NOME'],
-        nome_mae=dados['NOME_MAE'],
-        nome_pai=dados['NOME_PAI'] if dados['NOME_PAI'] else 'Não informado',
-        nasc=dados['NASC'],
-        cpf=dados['CPF'],
-        rg=dados['RG'],
-        orgao_emissor=dados['ORGAO_EMISSOR'],
-        uf_emissao=dados['UF_EMISSAO'],
-        sexo=dados['SEXO'],
-        estciv=dados['ESTCIV'],
-        cbo=dados['CBO'],
-        cd_mosaic=dados['CD_MOSAIC'],
-        cd_mosaic_novo=dados['CD_MOSAIC_NOVO'],
-        cd_mosaic_secundario=dados['CD_MOSAIC_SECUNDARIO'],
-        cd_sit_cad=dados['CD_SIT_CAD'],
-        dt_sit_cad=dados['DT_SIT_CAD'],
-        dt_informacao=dados['DT_INFORMACAO'],
-        photo_html=photo_html,
-        data_consulta=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        criador=data['criador']
-    )
-    
-    return html_content
+    try:
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        
+        # Registrar no log
+        with open(LOG_FILE, 'a', encoding='utf-8') as log:
+            log.write(f"{timestamp};{rg};{filepath}\n")
+        
+        return True
+    except Exception as e:
+        print(f"{Cores.ERRO}Erro ao salvar arquivo: {str(e)}")
+        return False
 
-def run_web_server(port=8000):
-    """Inicia um servidor web simples"""
-    os.chdir(OUTPUT_DIR)
-    server_address = ('', port)
-    httpd = HTTPServer(server_address, SimpleHTTPRequestHandler)
-    print(f"Servidor web rodando em http://localhost:{port}")
-    httpd.serve_forever()
-
-def main():
-    # Verificar e criar diretório de saída
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    
-    print(create_banner("Consulta de RG - Valkyria Network"))
-    
+# Menu principal
+def menu_principal():
     while True:
-        try:
-            rg_number = input("\nDigite o número do RG (ou 'sair' para encerrar): ").strip()
-            if rg_number.lower() in ('sair', 'exit'):
-                break
-                
-            if not rg_number.isdigit():
-                print("Por favor, digite apenas números para o RG.")
-                continue
-                
-            # Consultar API
-            print("\nConsultando dados...")
-            data = consulta_rg(rg_number)
-            
-            if not data or data.get('status') != 1:
-                print("Nenhum dado encontrado para este RG.")
-                continue
-                
-            # Exibir dados no terminal
-            display_data(data)
-            
-            # Perguntar se deseja salvar os dados
-            save_option = input("\nDeseja salvar os dados e foto (se disponível)? (s/n): ").strip().lower()
-            if save_option == 's':
-                # Salvar dados como JSON
-                json_path = os.path.join(OUTPUT_DIR, f"rg_{rg_number}.json")
-                with open(json_path, 'w', encoding='utf-8') as f:
-                    json.dump(data, f, ensure_ascii=False, indent=2)
-                
-                # Tentar salvar foto (URL precisa ser implementada conforme API)
-                photo_url = None  # Substituir pela URL real da foto se a API fornecer
-                photo_path = save_photo(photo_url, OUTPUT_DIR, rg_number)
-                
-                # Gerar HTML
-                html_content = generate_html(data, photo_path)
-                if html_content:
-                    html_path = os.path.join(OUTPUT_DIR, f"rg_{rg_number}.html")
-                    with open(html_path, 'w', encoding='utf-8') as f:
-                        f.write(html_content)
-                    
-                    print(f"\nDados salvos em: {json_path}")
-                    print(f"HTML gerado em: {html_path}")
-                    if photo_path:
-                        print(f"Foto salva em: {photo_path}")
-                    
-                    # Perguntar se deseja iniciar servidor web
-                    web_option = input("\nDeseja iniciar um servidor web para visualização? (s/n): ").strip().lower()
-                    if web_option == 's':
-                        print("\nIniciando servidor web...")
-                        threading.Thread(target=run_web_server, daemon=True).start()
-                        webbrowser.open(f"http://localhost:8000/rg_{rg_number}.html")
-                        input("Pressione Enter para encerrar o servidor...\n")
-                else:
-                    print("Erro ao gerar HTML.")
-            
-        except KeyboardInterrupt:
-            print("\nOperação cancelada pelo usuário.")
-            break
-        except Exception as e:
-            print(f"\nOcorreu um erro: {e}")
-            
-    print("\nConsulta encerrada. Valkyria Network - Segurança da Informação")
+        mostrar_banner()
+        print(f"{Cores.DADO}1. Consultar RG")
+        print(f"{Cores.DADO}2. Sair\n")
+        
+        opcao = input(f"{Cores.DADO}Selecione uma opção: {Cores.VALOR}").strip()
+        
+        if opcao == "1":
+            consultar_documento()
+        elif opcao == "2":
+            print(f"\n{Cores.SUCESSO}Sistema encerrado. Até logo!")
+            sys.exit(0)
+        else:
+            print(f"\n{Cores.ERRO}Opção inválida! Tente novamente.")
+            sleep(1)
 
+# Fluxo de consulta
+def consultar_documento():
+    mostrar_banner()
+    print(f"{Cores.DADO}Digite o número do RG (somente números)")
+    print(f"{Cores.DADO}Ou pressione ENTER para voltar\n")
+    
+    rg = input(f"{Cores.DADO}RG: {Cores.VALOR}").strip()
+    
+    if not rg:
+        return
+    
+    if not rg.isdigit():
+        print(f"\n{Cores.ERRO}O RG deve conter apenas números!")
+        sleep(2)
+        return
+    
+    print(f"\n{Cores.DADO}Consultando... Por favor aguarde.\n")
+    
+    dados = consultar_rg(rg)
+    exibir_resultados(dados)
+    
+    if dados and dados.get('status') == 1:
+        if salvar_consulta(dados, rg):
+            print(f"{Cores.SUCESSO}Consulta salva com sucesso no diretório '{OUTPUT_DIR}'")
+    
+    input(f"\n{Cores.DADO}Pressione ENTER para continuar...")
+
+# Ponto de entrada
 if __name__ == "__main__":
-    main()
+    try:
+        verificar_dependencias()
+        criar_diretorios()
+        menu_principal()
+    except KeyboardInterrupt:
+        print(f"\n{Cores.ERRO}Operação cancelada pelo usuário")
+        sys.exit(0)
+    except Exception as e:
+        print(f"\n{Cores.ERRO}Erro crítico: {str(e)}")
+        sys.exit(1)
