@@ -56,10 +56,16 @@ def mostrar_banner():
     else:
         os.system('clear')
     
-    f = Figlet(font='slant')
-    print(f"{Cores.BANNER}{f.renderText('Valkyria RG')}")
+    print(f"""{Cores.BANNER}
+   ██████╗  ██████╗     ██████╗ ██╗   ██╗███████╗ ██████╗ █████╗ 
+   ██╔══██╗██╔═══██╗    ██╔══██╗██║   ██║██╔════╝██╔════╝██╔══██╗
+   ██████╔╝██║   ██║    ██████╔╝██║   ██║███████╗██║     ███████║
+   ██╔══██╗██║   ██║    ██╔══██╗██║   ██║╚════██║██║     ██╔══██║
+   ██║  ██║╚██████╔╝    ██████╔╝╚██████╔╝███████║╚██████╗██║  ██║
+   ╚═╝  ╚═╝ ╚═════╝     ╚═════╝  ╚═════╝ ╚══════╝ ╚═════╝╚═╝  ╚═╝
+{Cores.RESET}""")
     print(f"{Cores.DESTAQUE}{'='*60}")
-    print(f"{Cores.DESTAQUE} SISTEMA DE CONSULTA DE DOCUMENTOS - RG")
+    print(f"{Cores.DESTAQUE} SISTEMA DE CONSULTA DE DOCUMENTOS - RG BUSCA")
     print(f"{Cores.DESTAQUE} Versão 2.1 | Segurança da Informação")
     print(f"{Cores.DESTAQUE}{'='*60}\n")
 
