@@ -286,7 +286,10 @@ class HackerMenu:
                 "Pos-Exploracao.py": "Ferramentas de pós-exploração",
                 "dropper.py": "Dropper para implantação de malware",
                 "menu-metasplit.py": "Interface para Metasploit Framework",
-                "netcat-c2.py": "Netcat como servidor C2"
+                "netcat-c2.py": "Netcat como servidor C2",
+                "malware-js.py": "malware feito em js",
+                "malware-ruby.py": "malware feito em ruby",
+                "malwer-java.py": "malware feito em java"
             },
             "scanner": {
                 "scanner.py": "Ferramenta de varredura de portas e redes",
