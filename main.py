@@ -395,8 +395,7 @@ class HackerMenu:
                 "malwer-java.py": "malware feito em java"
             },
             "scanner": {
-                "scanner.py": "Ferramenta de varredura de portas e redes",
-                "vulnerabilidade.py": "Scanner de vulnerabilidades"
+                "scanner.py": "Ferramenta de varredura de portas e redes nmap"
             },
             "brute": {
                 "dictionary-attack.py": "Ataque de dicionário a senhas",
@@ -415,7 +414,8 @@ class HackerMenu:
                 "social-span.py": "Spam em redes sociais",
                 "span-gmail.py": "Spam por e-mail (Gmail)",
                 "span-sms.py": "Spam por SMS",
-                "trolar-amigo.py": "Ferramenta para trollar amigos"
+                "trolar-amigo.py": "Ferramenta para trollar amigos",
+                "git.span-menu.py": "varias ferramentas de span"
             },
             "phishing": {
                 "menu-phishing.py": "Menu completo de ferramentas de phishing",
