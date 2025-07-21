@@ -38,6 +38,27 @@ spinner = spinning_cursor()
 def is_root():
     return os.geteuid() == 0
 
+# Verificar dependências
+def check_dependencies():
+    required = ["tor", "proot-distro", "curl", "nmap", "openssh", "net-tools"]
+    missing = []
+    
+    print(f"{colors.CYAN}[*] Verificando dependências...{colors.RESET}")
+    for pkg in required:
+        if not os.path.exists(f"/data/data/com.termux/files/usr/bin/{pkg}"):
+            missing.append(pkg)
+    
+    if missing:
+        print(f"{colors.YELLOW}[!] Pacotes faltando: {', '.join(missing)}{colors.RESET}")
+        choice = input(f"{colors.CYAN}[?] Deseja instalar os pacotes faltantes? [S/n]: {colors.RESET}").lower()
+        if choice in ['s', 'sim', '']:
+            os.system("pkg update -y && pkg upgrade -y")
+            for pkg in missing:
+                os.system(f"pkg install -y {pkg}")
+        else:
+            print(f"{colors.RED}[!] Algumas funcionalidades podem não funcionar sem os pacotes{colors.RESET}")
+            time.sleep(2)
+
 # Banner animado
 def animated_banner():
     os.system("clear")
@@ -77,7 +98,227 @@ def animated_banner():
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢻⣿⣿⣿⣿⡏⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⠏⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀    """)
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⠏⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+    {colors.RESET}""")
+
+# Funções do TOR
+def start_tor_service():
+    print(f"\n{colors.YELLOW}[*] Iniciando serviço TOR...{colors.RESET}")
+    os.system("tor &")
+    time.sleep(5)
+    print(f"{colors.GREEN}[+] TOR iniciado com sucesso!{colors.RESET}")
+    print(f"{colors.CYAN}[*] Configurando proxy para porta 9050{colors.RESET}")
+    os.system("export http_proxy='socks5://127.0.0.1:9050'")
+    os.system("export https_proxy='socks5://127.0.0.1:9050'")
+    print(f"{colors.GREEN}[+] Proxy configurado{colors.RESET}")
+    input(f"\n{colors.BLUE}[*] Pressione Enter para continuar...{colors.RESET}")
+
+def stop_tor_service():
+    print(f"\n{colors.YELLOW}[*] Parando serviço TOR...{colors.RESET}")
+    os.system("pkill tor")
+    print(f"{colors.GREEN}[+] TOR parado com sucesso!{colors.RESET}")
+    print(f"{colors.CYAN}[*] Removendo configurações de proxy{colors.RESET}")
+    os.system("unset http_proxy")
+    os.system("unset https_proxy")
+    print(f"{colors.GREEN}[+] Configurações removidas{colors.RESET}")
+    input(f"\n{colors.BLUE}[*] Pressione Enter para continuar...{colors.RESET}")
+
+def edit_tor_config():
+    print(f"\n{colors.YELLOW}[*] Editando configuração do TOR...{colors.RESET}")
+    torrc_path = "/data/data/com.termux/files/usr/etc/tor/torrc"
+    if os.path.exists(torrc_path):
+        os.system(f"nano {torrc_path}")
+        print(f"{colors.GREEN}[+] Configuração salva. Reinicie o TOR para aplicar.{colors.RESET}")
+    else:
+        print(f"{colors.RED}[!] Arquivo de configuração do TOR não encontrado!{colors.RESET}")
+    input(f"\n{colors.BLUE}[*] Pressione Enter para continuar...{colors.RESET}")
+
+def test_tor_connection():
+    print(f"\n{colors.YELLOW}[*] Testando conexão TOR...{colors.RESET}")
+    print(f"{colors.CYAN}[*] Isso pode levar alguns segundos{colors.RESET}")
+    try:
+        result = subprocess.getoutput("curl --socks5 127.0.0.1:9050 -s https://check.torproject.org/api/ip")
+        if "Congratulations" in result:
+            print(f"{colors.GREEN}[+] Você está conectado através do TOR!{colors.RESET}")
+        else:
+            print(f"{colors.RED}[!] Conexão TOR não está funcionando corretamente{colors.RESET}")
+    except Exception as e:
+        print(f"{colors.RED}[!] Erro ao testar TOR: {e}{colors.RESET}")
+    input(f"\n{colors.BLUE}[*] Pressione Enter para continuar...{colors.RESET}")
+
+# Funções de rede
+def mac_spoofing():
+    banner()
+    print(f"\n{colors.WHITE}Alteração de MAC Address:{colors.RESET}")
+    print(f"{colors.YELLOW}[!] Esta função requer root{colors.RESET}")
+    
+    if not os.path.exists("/data/data/com.termux/files/usr/bin/macchanger"):
+        print(f"{colors.RED}[!] macchanger não está instalado{colors.RESET}")
+        choice = input(f"{colors.CYAN}[?] Deseja instalar o macchanger? [S/n]: {colors.RESET}").lower()
+        if choice in ['s', 'sim', '']:
+            os.system("pkg install -y root-repo && pkg install -y macchanger")
+        else:
+            return
+    
+    print(f"\n{colors.GREEN}[1]{colors.RESET} Alterar MAC Address aleatório")
+    print(f"{colors.GREEN}[2]{colors.RESET} Definir MAC Address específico")
+    print(f"{colors.GREEN}[3]{colors.RESET} Resetar MAC Address original")
+    print(f"{colors.GREEN}[4]{colors.RESET} Voltar")
+    
+    choice = input(f"\n{colors.CYAN}[?] Selecione uma opção (1-4): {colors.RESET}")
+    
+    if choice == "1":
+        print(f"\n{colors.YELLOW}[*] Listando interfaces de rede...{colors.RESET}")
+        os.system("ip link show")
+        iface = input(f"\n{colors.CYAN}[?] Digite a interface (ex: wlan0): {colors.RESET}")
+        os.system(f"macchanger -r {iface}")
+    elif choice == "2":
+        print(f"\n{colors.YELLOW}[*] Listando interfaces de rede...{colors.RESET}")
+        os.system("ip link show")
+        iface = input(f"\n{colors.CYAN}[?] Digite a interface (ex: wlan0): {colors.RESET}")
+        new_mac = input(f"{colors.CYAN}[?] Digite o novo MAC (ex: 00:11:22:33:44:55): {colors.RESET}")
+        os.system(f"macchanger -m {new_mac} {iface}")
+    elif choice == "3":
+        print(f"\n{colors.YELLOW}[*] Listando interfaces de rede...{colors.RESET}")
+        os.system("ip link show")
+        iface = input(f"\n{colors.CYAN}[?] Digite a interface (ex: wlan0): {colors.RESET}")
+        os.system(f"macchanger -p {iface}")
+    elif choice == "4":
+        return
+    else:
+        print(f"\n{colors.RED}[!] Opção inválida!{colors.RESET}")
+        time.sleep(1)
+    
+    input(f"\n{colors.BLUE}[*] Pressione Enter para continuar...{colors.RESET}")
+
+def vpn_management():
+    print(f"\n{colors.YELLOW}[*] VPN management not fully implemented yet{colors.RESET}")
+    print(f"{colors.CYAN}[*] You can manually configure OpenVPN or WireGuard{colors.RESET}")
+    input(f"\n{colors.BLUE}[*] Press Enter to continue...{colors.RESET}")
+
+def dns_protection():
+    print(f"\n{colors.YELLOW}[*] Configurando proteção contra vazamento de DNS...{colors.RESET}")
+    os.system("pkg install -y dnscrypt-proxy")
+    os.system("dnscrypt-proxy -config /data/data/com.termux/files/usr/etc/dnscrypt-proxy.toml &")
+    print(f"{colors.GREEN}[+] DNS criptografado configurado{colors.RESET}")
+    input(f"\n{colors.BLUE}[*] Pressione Enter para continuar...{colors.RESET}")
+
+# Funções de comunicação segura
+def secure_communication():
+    while True:
+        animated_banner()
+        print(f"\n{colors.BOLD}{colors.WHITE}SECURE COMMUNICATION TOOLS:{colors.RESET}")
+        print(f"  {colors.GREEN}┌───┬───────────────────────────────────────────────┐")
+        print(f"  │ {colors.BOLD}1{colors.RESET}{colors.GREEN} │ Secure SSH Connection                     {colors.GREEN}│")
+        print(f"  ├───┼───────────────────────────────────────────────┤")
+        print(f"  │ {colors.BOLD}2{colors.RESET}{colors.GREEN} │ Encrypted Email Setup                    {colors.GREEN}│")
+        print(f"  ├───┼───────────────────────────────────────────────┤")
+        print(f"  │ {colors.BOLD}3{colors.RESET}{colors.GREEN} │ Secure Messaging Apps                    {colors.GREEN}│")
+        print(f"  ├───┼───────────────────────────────────────────────┤")
+        print(f"  │ {colors.BOLD}4{colors.RESET}{colors.GREEN} │ Back to Main Menu                       {colors.GREEN}│")
+        print(f"  └───┴───────────────────────────────────────────────┘{colors.RESET}")
+        
+        choice = input(f"\n{colors.CYAN}{colors.BOLD}[?] Select an option (1-4): {colors.RESET}")
+        
+        if choice == "1":
+            secure_ssh()
+        elif choice == "2":
+            encrypted_email()
+        elif choice == "3":
+            secure_messaging()
+        elif choice == "4":
+            return
+        else:
+            print(f"\n{colors.RED}[!] Invalid option!{colors.RESET}")
+            time.sleep(1)
+
+def secure_ssh():
+    print(f"\n{colors.YELLOW}[*] Configuring secure SSH...{colors.RESET}")
+    os.system("pkg install -y openssh")
+    if not os.path.exists("/data/data/com.termux/files/home/.ssh/id_rsa"):
+        os.system("ssh-keygen -t rsa -b 4096")
+    print(f"{colors.GREEN}[+] SSH key generated{colors.RESET}")
+    input(f"\n{colors.BLUE}[*] Press Enter to continue...{colors.RESET}")
+
+def encrypted_email():
+    print(f"\n{colors.YELLOW}[*] Encrypted email setup not implemented yet{colors.RESET}")
+    input(f"\n{colors.BLUE}[*] Press Enter to continue...{colors.RESET}")
+
+def secure_messaging():
+    print(f"\n{colors.YELLOW}[*] Secure messaging apps not implemented yet{colors.RESET}")
+    input(f"\n{colors.BLUE}[*] Press Enter to continue...{colors.RESET}")
+
+# Funções de limpeza
+def privacy_cleaner():
+    print(f"\n{colors.YELLOW}[*] Cleaning privacy-related files...{colors.RESET}")
+    os.system("rm -rf ~/.bash_history")
+    os.system("history -c")
+    os.system("rm -rf ~/.cache/*")
+    os.system("rm -rf ~/.thumbnails/*")
+    print(f"{colors.GREEN}[+] Privacy cleanup completed{colors.RESET}")
+    input(f"\n{colors.BLUE}[*] Press Enter to continue...{colors.RESET}")
+
+# Funções de modo background
+def background_mode_control():
+    while True:
+        animated_banner()
+        print(f"\n{colors.BOLD}{colors.WHITE}BACKGROUND MODE CONTROL:{colors.RESET}")
+        print(f"  {colors.GREEN}┌───┬───────────────────────────────────────────────┐")
+        print(f"  │ {colors.BOLD}1{colors.RESET}{colors.GREEN} │ Start in Background Mode                  {colors.GREEN}│")
+        print(f"  ├───┼───────────────────────────────────────────────┤")
+        print(f"  │ {colors.BOLD}2{colors.RESET}{colors.GREEN} │ Stop Background Mode                     {colors.GREEN}│")
+        print(f"  ├───┼───────────────────────────────────────────────┤")
+        print(f"  │ {colors.BOLD}3{colors.RESET}{colors.GREEN} │ Check Background Status                  {colors.GREEN}│")
+        print(f"  ├───┼───────────────────────────────────────────────┤")
+        print(f"  │ {colors.BOLD}4{colors.RESET}{colors.GREEN} │ Back to Main Menu                       {colors.GREEN}│")
+        print(f"  └───┴───────────────────────────────────────────────┘{colors.RESET}")
+        
+        choice = input(f"\n{colors.CYAN}{colors.BOLD}[?] Select an option (1-4): {colors.RESET}")
+        
+        if choice == "1":
+            start_background_mode()
+        elif choice == "2":
+            stop_background_mode()
+        elif choice == "3":
+            check_background_status()
+        elif choice == "4":
+            return
+        else:
+            print(f"\n{colors.RED}[!] Invalid option!{colors.RESET}")
+            time.sleep(1)
+
+def start_background_mode():
+    print(f"\n{colors.YELLOW}[*] Starting in background mode...{colors.RESET}")
+    pid = os.fork()
+    if pid > 0:
+        with open(BACKGROUND_PID_FILE, "w") as f:
+            f.write(str(pid))
+        print(f"{colors.GREEN}[+] Running in background with PID: {pid}{colors.RESET}")
+    else:
+        # This is the background process
+        while True:
+            time.sleep(60)
+    input(f"\n{colors.BLUE}[*] Press Enter to continue...{colors.RESET}")
+
+def stop_background_mode():
+    if os.path.exists(BACKGROUND_PID_FILE):
+        with open(BACKGROUND_PID_FILE, "r") as f:
+            pid = f.read().strip()
+        os.system(f"kill -9 {pid}")
+        os.remove(BACKGROUND_PID_FILE)
+        print(f"{colors.GREEN}[+] Background mode stopped{colors.RESET}")
+    else:
+        print(f"{colors.RED}[!] No background process running{colors.RESET}")
+    input(f"\n{colors.BLUE}[*] Press Enter to continue...{colors.RESET}")
+
+def check_background_status():
+    if os.path.exists(BACKGROUND_PID_FILE):
+        with open(BACKGROUND_PID_FILE, "r") as f:
+            pid = f.read().strip()
+        print(f"\n{colors.GREEN}[+] Background process running with PID: {pid}{colors.RESET}")
+    else:
+        print(f"\n{colors.RED}[!] No background process running{colors.RESET}")
+    input(f"\n{colors.BLUE}[*] Press Enter to continue...{colors.RESET}")
 
 # Monitor de IP em tempo real
 class IPMonitor(threading.Thread):
@@ -115,122 +356,6 @@ class IPMonitor(threading.Thread):
     
     def stop(self):
         self.running = False
-
-# Menu interativo moderno
-def show_menu(ip_monitor):
-    while True:
-        animated_banner()
-        
-        # Barra de status
-        print(f"\n{colors.BLUE}╔══════════════════════════════════════════════════════════════╗")
-        print(f"║ {colors.BOLD}STATUS:{colors.RESET}{colors.BLUE} ", end="")
-        print(f"IP: {colors.GREEN if ip_monitor.tor_enabled else colors.RED}{ip_monitor.current_ip}{colors.BLUE}", end="")
-        print(f" | Country: {colors.CYAN}{ip_monitor.current_country}{colors.BLUE}", end="")
-        print(f" | TOR: {'ON' if ip_monitor.tor_enabled else 'OFF'}{' '*(18-len(ip_monitor.current_ip))}║")
-        print(f"╚══════════════════════════════════════════════════════════════╝{colors.RESET}")
-        
-        # Opções do menu
-        print(f"\n{colors.BOLD}{colors.WHITE}MAIN MENU:{colors.RESET}")
-        print(f"  {colors.GREEN}┌───┬───────────────────────────────────────────────┐")
-        print(f"  │ {colors.BOLD}1{colors.RESET}{colors.GREEN} │ TOR Services Management                    {colors.GREEN}│")
-        print(f"  ├───┼───────────────────────────────────────────────┤")
-        print(f"  │ {colors.BOLD}2{colors.RESET}{colors.GREEN} │ Network Anonymization (MAC/VPN)           {colors.GREEN}│")
-        print(f"  ├───┼───────────────────────────────────────────────┤")
-        print(f"  │ {colors.BOLD}3{colors.RESET}{colors.GREEN} │ Secure Communication Tools                {colors.GREEN}│")
-        print(f"  ├───┼───────────────────────────────────────────────┤")
-        print(f"  │ {colors.BOLD}4{colors.RESET}{colors.GREEN} │ Privacy Cleaner & Anti-Forensics          {colors.GREEN}│")
-        print(f"  ├───┼───────────────────────────────────────────────┤")
-        print(f"  │ {colors.BOLD}5{colors.RESET}{colors.GREEN} │ Background Mode Control                   {colors.GREEN}│")
-        print(f"  ├───┼───────────────────────────────────────────────┤")
-        print(f"  │ {colors.BOLD}6{colors.RESET}{colors.GREEN} │ Real-time Network Monitor                 {colors.GREEN}│")
-        print(f"  ├───┼───────────────────────────────────────────────┤")
-        print(f"  │ {colors.BOLD}7{colors.RESET}{colors.GREEN} │ Exit & Cleanup                            {colors.GREEN}│")
-        print(f"  └───┴───────────────────────────────────────────────┘{colors.RESET}")
-        
-        try:
-            choice = input(f"\n{colors.CYAN}{colors.BOLD}[?] Select an option (1-7): {colors.RESET}")
-            
-            if choice == "1":
-                tor_management()
-            elif choice == "2":
-                network_anonymization()
-            elif choice == "3":
-                secure_communication()
-            elif choice == "4":
-                privacy_cleaner()
-            elif choice == "5":
-                background_mode_control()
-            elif choice == "6":
-                network_monitor(ip_monitor)
-            elif choice == "7":
-                cleanup_and_exit(ip_monitor)
-            else:
-                print(f"\n{colors.RED}[!] Invalid option! Please try again.{colors.RESET}")
-                time.sleep(1)
-        except KeyboardInterrupt:
-            cleanup_and_exit(ip_monitor)
-
-# Função para gerenciamento do TOR
-def tor_management():
-    while True:
-        animated_banner()
-        print(f"\n{colors.BOLD}{colors.WHITE}TOR SERVICES MANAGEMENT:{colors.RESET}")
-        print(f"  {colors.GREEN}┌───┬───────────────────────────────────────────────┐")
-        print(f"  │ {colors.BOLD}1{colors.RESET}{colors.GREEN} │ Start TOR Service                         {colors.GREEN}│")
-        print(f"  ├───┼───────────────────────────────────────────────┤")
-        print(f"  │ {colors.BOLD}2{colors.RESET}{colors.GREEN} │ Stop TOR Service                          {colors.GREEN}│")
-        print(f"  ├───┼───────────────────────────────────────────────┤")
-        print(f"  │ {colors.BOLD}3{colors.RESET}{colors.GREEN} │ TOR Configuration Editor                  {colors.GREEN}│")
-        print(f"  ├───┼───────────────────────────────────────────────┤")
-        print(f"  │ {colors.BOLD}4{colors.RESET}{colors.GREEN} │ Test TOR Connection                      {colors.GREEN}│")
-        print(f"  ├───┼───────────────────────────────────────────────┤")
-        print(f"  │ {colors.BOLD}5{colors.RESET}{colors.GREEN} │ Back to Main Menu                        {colors.GREEN}│")
-        print(f"  └───┴───────────────────────────────────────────────┘{colors.RESET}")
-        
-        choice = input(f"\n{colors.CYAN}{colors.BOLD}[?] Select an option (1-5): {colors.RESET}")
-        
-        if choice == "1":
-            start_tor_service()
-        elif choice == "2":
-            stop_tor_service()
-        elif choice == "3":
-            edit_tor_config()
-        elif choice == "4":
-            test_tor_connection()
-        elif choice == "5":
-            return
-        else:
-            print(f"\n{colors.RED}[!] Invalid option!{colors.RESET}")
-            time.sleep(1)
-
-# Funções para gerenciamento de rede
-def network_anonymization():
-    while True:
-        animated_banner()
-        print(f"\n{colors.BOLD}{colors.WHITE}NETWORK ANONYMIZATION:{colors.RESET}")
-        print(f"  {colors.GREEN}┌───┬───────────────────────────────────────────────┐")
-        print(f"  │ {colors.BOLD}1{colors.RESET}{colors.GREEN} │ Change MAC Address (Spoofing)             {colors.GREEN}│")
-        print(f"  ├───┼───────────────────────────────────────────────┤")
-        print(f"  │ {colors.BOLD}2{colors.RESET}{colors.GREEN} │ Enable VPN Connection                     {colors.GREEN}│")
-        print(f"  ├───┼───────────────────────────────────────────────┤")
-        print(f"  │ {colors.BOLD}3{colors.RESET}{colors.GREEN} │ DNS Leak Protection                      {colors.GREEN}│")
-        print(f"  ├───┼───────────────────────────────────────────────┤")
-        print(f"  │ {colors.BOLD}4{colors.RESET}{colors.GREEN} │ Back to Main Menu                        {colors.GREEN}│")
-        print(f"  └───┴───────────────────────────────────────────────┘{colors.RESET}")
-        
-        choice = input(f"\n{colors.CYAN}{colors.BOLD}[?] Select an option (1-4): {colors.RESET}")
-        
-        if choice == "1":
-            mac_spoofing()
-        elif choice == "2":
-            vpn_management()
-        elif choice == "3":
-            dns_protection()
-        elif choice == "4":
-            return
-        else:
-            print(f"\n{colors.RED}[!] Invalid option!{colors.RESET}")
-            time.sleep(1)
 
 # Monitor de rede em tempo real
 def network_monitor(ip_monitor):
