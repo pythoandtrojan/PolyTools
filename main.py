@@ -361,6 +361,8 @@ class HackerMenu:
                 "Geolocalização-Metadados.py": "Extrai metadados de geolocalização",
                 "Leaked-Databases.py": "Consulta bancos de dados vazados",
                 "busca-usuario.py": "Busca por usuários em redes sociais",
+                "gmail-social.py": "busca por gmail em redes sociais",
+                "nome-social.py": "busca por nome real em redes sociais",
                 "cep.py": "Consulta informações por CEP",
                 "cnpj.py": "Consulta dados de CNPJ",
                 "cpf.py": "Consulta dados de CPF",
@@ -376,7 +378,10 @@ class HackerMenu:
                 "placa.py": "Consulta informações de placas de veículos",
                 "sherlock.py": "Busca por nomes de usuário em redes sociais",
                 "pix.py": "Consulta informações de chaves PIX",
-                "gmail-api.py": "api que consulta dados vazados de um tau gmail"
+                "gmail-api.py": "api que consulta dados vazados de um tau gmail",
+                "holehe.py": "procura redes sociais vinculado a um gmail",
+                "FOTO.py": "procura meta dados de foto",
+                
             },
             "malwer": {
                 "c2.py": "Servidor de Comando e Controle",
