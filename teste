@@ -1,0 +1,429 @@
+#!/usr/bin/env python3
+import os
+import requests
+import time
+import json
+import threading
+from concurrent.futures import ThreadPoolExecutor
+from colorama import init, Fore, Back, Style
+from urllib.parse import urlparse
+
+# Inicializar colorama
+init(autoreset=True)
+
+# Configurações
+PASTA_RESULTADOS = "ErikNet_Results"
+os.makedirs(PASTA_RESULTADOS, exist_ok=True)
+MAX_THREADS = 10  # Número máximo de threads para buscas paralelas
+
+# Banner ErikNet
+BANNER = Fore.CYAN + r"""
+███████░██░ ░██░███████░░   ██░     ░██░  ░██░██████░ ██   ██░███████░██████░
+░░░██░░ ██░░░██░██  ░░      ██░░    ░██░  ░██░██   ██ ██  ██░ ██░░░░  ██   ██░
+  ░██░  ███████░█████░░     ██░     ░██░  ░██░██████░ ████░   █████   ██████░░
+  ░██░░ ██   ██░██   ░░     ██░░░░  ░██░░░░██░██  ██░ ██░░██░ ██░░░   ██   ██░░
+  ░██░░ ██░░░██░███████░░   ███████ ░████████░██░░░██ ██░░ ██ ███████ ██   ██░
+   ░░░  ░░░ ░░░ ░░░░░░░     ░░░░░░░  ░░░░░░░░ ░░   ░░ ░░  ░░░ ░░░░░░░░░░░░░░░░
+   ░ ░  ░     ░ ░   ░ ░     ░░   ░░  ░░░  ░░░  ░   ░  ░    ░░ ░░    ░░      ░░
+  ░  ░             ░   ░    ░   ░    ░  ░   ░  ░    ░       ░  ░   ░       ░ 
+""" + Style.RESET_ALL + Fore.YELLOW + """
+  made in Brazil Big The god and Erik 16y Linux and termux 
+""" + Style.RESET_ALL
+
+def limpar_tela():
+    os.system('cls' if os.name == 'nt' else 'clear')
+
+def validar_username(username):
+    """Valida se o nome de usuário é válido para a maioria das plataformas"""
+    if not username or len(username) < 3 or len(username) > 30:
+        return False
+    
+    # Verifica caracteres permitidos (letras, números, pontos, underscores)
+    for char in username:
+        if not (char.isalnum() or char in ['.', '_', '-']):
+            return False
+    
+    return True
+
+def verificar_instagram(username):
+    """Verificação específica para Instagram"""
+    try:
+        url = f"https://www.instagram.com/{username}/"
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        response = requests.get(url, headers=headers, timeout=10, allow_redirects=False)
+        
+        if response.status_code == 200:
+            return {'exists': True, 'url': url, 'method': 'Web Scraping'}
+        elif response.status_code == 404:
+            return {'exists': False, 'url': url, 'method': 'Web Scraping'}
+        else:
+            return {'error': f'Status code: {response.status_code}', 'exists': False, 'url': url, 'method': 'Web Scraping'}
+    except Exception as e:
+        return {'error': str(e), 'exists': False, 'url': url, 'method': 'Web Scraping'}
+
+def verificar_github(username):
+    """Verificação específica para GitHub"""
+    try:
+        url = f"https://api.github.com/users/{username}"
+        headers = {'Accept': 'application/vnd.github.v3+json'}
+        response = requests.get(url, headers=headers, timeout=10)
+        
+        if response.status_code == 200:
+            return {'exists': True, 'url': f"https://github.com/{username}", 'method': 'API', 'data': response.json()}
+        elif response.status_code == 404:
+            return {'exists': False, 'url': f"https://github.com/{username}", 'method': 'API'}
+        else:
+            return {'error': f'Status code: {response.status_code}', 'exists': False, 'url': f"https://github.com/{username}", 'method': 'API'}
+    except Exception as e:
+        return {'error': str(e), 'exists': False, 'url': f"https://github.com/{username}", 'method': 'API'}
+
+def verificar_tiktok(username):
+    """Verificação específica para TikTok"""
+    try:
+        url = f"https://www.tiktok.com/@{username}"
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        response = requests.head(url, headers=headers, timeout=10, allow_redirects=True)
+        
+        if response.status_code == 200 and username.lower() in response.url.lower():
+            return {'exists': True, 'url': response.url, 'method': 'Web Scraping'}
+        else:
+            return {'exists': False, 'url': url, 'method': 'Web Scraping'}
+    except Exception as e:
+        return {'error': str(e), 'exists': False, 'url': url, 'method': 'Web Scraping'}
+
+def verificar_plataforma_generica(plataforma, username, url_template, method='Web Scraping'):
+    """Verificação genérica para plataformas sem API específica"""
+    try:
+        url = url_template.format(username=username)
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        if method == 'API':
+            response = requests.get(url, headers=headers, timeout=10)
+        else:
+            response = requests.head(url, headers=headers, timeout=10, allow_redirects=True)
+        
+        if response.status_code == 200:
+            return {'exists': True, 'url': response.url if method == 'Web Scraping' else url, 'method': method}
+        else:
+            return {'exists': False, 'url': url, 'method': method}
+    except Exception as e:
+        return {'error': str(e), 'exists': False, 'url': url, 'method': method}
+
+def buscar_perfis_paralelo(username):
+    """Busca perfis em paralelo usando threads"""
+    resultados = {}
+    
+    # Lista de redes sociais (20 brasileiras + internacionais relevantes)
+    sites = {
+        # Redes Brasileiras
+        "Kwai": {
+            "url": "https://www.kwai.com/@{username}",
+            "method": "Web Scraping",
+            "function": verificar_plataforma_generica
+        },
+        "TikTok": {
+            "url": "https://www.tiktok.com/@{username}",
+            "method": "Web Scraping",
+            "function": verificar_tiktok
+        },
+        "Skoob": {
+            "url": "https://www.skoob.com.br/usuario/{username}",
+            "method": "Web Scraping",
+            "function": verificar_plataforma_generica
+        },
+        "Vivver": {
+            "url": "https://www.vivver.com.br/{username}",
+            "method": "Web Scraping",
+            "function": verificar_plataforma_generica
+        },
+        "Recanto": {
+            "url": "https://www.recantodasletras.com.br/perfil/{username}",
+            "method": "Web Scraping",
+            "function": verificar_plataforma_generica
+        },
+        "UOL": {
+            "url": "https://meu.uol.com.br/perfil/{username}",
+            "method": "Web Scraping",
+            "function": verificar_plataforma_generica
+        },
+        "Terra": {
+            "url": "https://perfil.terra.com.br/{username}",
+            "method": "Web Scraping",
+            "function": verificar_plataforma_generica
+        },
+        "iFood": {
+            "url": "https://www.ifood.com.br/perfil/{username}",
+            "method": "Web Scraping",
+            "function": verificar_plataforma_generica
+        },
+        "OLX": {
+            "url": "https://www.olx.com.br/perfil/{username}",
+            "method": "Web Scraping",
+            "function": verificar_plataforma_generica
+        },
+        "Mercado Livre": {
+            "url": "https://www.mercadolivre.com.br/perfil/{username}",
+            "method": "Web Scraping",
+            "function": verificar_plataforma_generica
+        },
+        # Redes Internacionais
+        "Instagram": {
+            "url": "https://www.instagram.com/{username}",
+            "method": "Web Scraping",
+            "function": verificar_instagram
+        },
+        "Facebook": {
+            "url": "https://www.facebook.com/{username}",
+            "method": "Web Scraping",
+            "function": verificar_plataforma_generica
+        },
+        "Twitter": {
+            "url": "https://twitter.com/{username}",
+            "method": "Web Scraping",
+            "function": verificar_plataforma_generica
+        },
+        "GitHub": {
+            "url": "https://api.github.com/users/{username}",
+            "method": "API",
+            "function": verificar_github
+        },
+        "Reddit": {
+            "url": "https://www.reddit.com/user/{username}",
+            "method": "API",
+            "function": verificar_plataforma_generica
+        },
+        "YouTube": {
+            "url": "https://www.youtube.com/@{username}",
+            "method": "Web Scraping",
+            "function": verificar_plataforma_generica
+        },
+        "Twitch": {
+            "url": "https://www.twitch.tv/{username}",
+            "method": "API",
+            "function": verificar_plataforma_generica
+        },
+        "Pinterest": {
+            "url": "https://www.pinterest.com/{username}",
+            "method": "Web Scraping",
+            "function": verificar_plataforma_generica
+        },
+        "LinkedIn": {
+            "url": "https://www.linkedin.com/in/{username}",
+            "method": "Web Scraping",
+            "function": verificar_plataforma_generica
+        },
+        "Telegram": {
+            "url": "https://t.me/{username}",
+            "method": "Web Scraping",
+            "function": verificar_plataforma_generica
+        }
+    }
+
+    def processar_site(site, config):
+        try:
+            if config['function'] == verificar_plataforma_generica:
+                result = config['function'](site, username, config['url'], config['method'])
+            else:
+                result = config['function'](username)
+            resultados[site] = result
+        except Exception as e:
+            resultados[site] = {
+                'error': str(e),
+                'exists': False,
+                'url': config['url'].format(username=username),
+                'method': config['method']
+            }
+
+    # Usando ThreadPoolExecutor para buscas paralelas
+    with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
+        futures = []
+        for site, config in sites.items():
+            futures.append(executor.submit(processar_site, site, config))
+        
+        # Espera todas as threads terminarem
+        for future in futures:
+            future.result()
+
+    return resultados
+
+def salvar_resultados(username, dados):
+    """Salva os resultados em um arquivo JSON"""
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    nome_arquivo = f"{PASTA_RESULTADOS}/{username}_{timestamp}.json"
+    
+    try:
+        with open(nome_arquivo, 'w', encoding='utf-8') as f:
+            json.dump({
+                'username': username,
+                'date': timestamp,
+                'results': dados
+            }, f, indent=4, ensure_ascii=False)
+        
+        return nome_arquivo
+    except Exception as e:
+        print(f"{Fore.RED}Erro ao salvar resultados: {str(e)}{Style.RESET_ALL}")
+        return None
+
+def mostrar_resultados_eriknet(username, dados):
+    limpar_tela()
+    print(BANNER)
+    
+    print("\n" + "═"*80)
+    print(Fore.CYAN + f" RESULTADOS ERIKNET - @{username} ".center(80) + Style.RESET_ALL)
+    print("═"*80)
+    
+    encontrados = sum(1 for info in dados.values() if info.get('exists'))
+    total = len(dados)
+    
+    print(f"\n{Fore.YELLOW}🔍 Busca concluída: {encontrados}/{total} plataformas encontradas{Style.RESET_ALL}\n")
+    
+    for plataforma, info in sorted(dados.items()):
+        print(f"\n▓ {Fore.YELLOW}{plataforma.upper()}{Style.RESET_ALL}")
+        
+        if 'error' in info:
+            print(f"  {Fore.RED}🔴 ERRO: {info['error']}{Style.RESET_ALL}")
+        else:
+            if info.get('exists'):
+                print(f"  {Fore.GREEN}🟢 ENCONTRADO{Style.RESET_ALL}")
+                print(f"  {Fore.BLUE}🌐 URL: {info['url']}{Style.RESET_ALL}")
+                
+                # Opção para copiar URL
+                if input(f"  {Fore.MAGENTA}📋 Copiar URL? (s/n): {Style.RESET_ALL}").lower() == 's':
+                    try:
+                        import pyperclip
+                        pyperclip.copy(info['url'])
+                        print(f"  {Fore.GREEN}✅ URL copiada para a área de transferência!{Style.RESET_ALL}")
+                    except:
+                        print(f"  {Fore.RED}❌ Não foi possível copiar (pyperclip não instalado){Style.RESET_ALL}")
+            else:
+                print(f"  {Fore.RED}🔴 NÃO ENCONTRADO{Style.RESET_ALL}")
+                
+            print(f"  {Fore.MAGENTA}⚙️ MÉTODO: {info['method']}{Style.RESET_ALL}")
+    
+    print("\n" + "═"*80)
+    print(f"{Fore.YELLOW}Total de redes verificadas: {total}{Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}Perfis encontrados: {encontrados}{Style.RESET_ALL}")
+    print("═"*80)
+
+def menu_principal():
+    limpar_tela()
+    print(BANNER)
+    print(f"\n{Fore.GREEN}[{time.strftime('%d/%m/%Y %H:%M:%S')}]{Style.RESET_ALL}")
+    print("\n1. Buscar por nome de usuário")
+    print("2. Ver histórico de buscas")
+    print("3. Sair")
+    
+    try:
+        return int(input(f"\n{Fore.YELLOW}Escolha uma opção (1-3): {Style.RESET_ALL}"))
+    except:
+        return 0
+
+def ver_historico():
+    limpar_tela()
+    print(BANNER)
+    print("\n" + "═"*60)
+    print(Fore.CYAN + " HISTÓRICO DE BUSCAS ".center(60) + Style.RESET_ALL)
+    print("═"*60)
+    
+    try:
+        arquivos = [f for f in os.listdir(PASTA_RESULTADOS) if f.endswith('.json')]
+        
+        if not arquivos:
+            print(f"\n{Fore.RED}Nenhuma busca encontrada no histórico.{Style.RESET_ALL}")
+            return
+        
+        print(f"\n{Fore.YELLOW}Últimas buscas:{Style.RESET_ALL}")
+        for i, arquivo in enumerate(arquivos[-10:], 1):  # Mostra os 10 últimos
+            nome, data = arquivo.split('_')[:2]
+            data_formatada = f"{data[6:8]}/{data[4:6]}/{data[0:4]} {data[9:11]}:{data[11:13]}"
+            print(f"{i}. {nome} - {data_formatada}")
+        
+        print("\n1. Visualizar busca específica")
+        print("2. Voltar")
+        
+        opcao = input(f"\n{Fore.YELLOW}Escolha uma opção: {Style.RESET_ALL}")
+        
+        if opcao == '1':
+            num = int(input(f"{Fore.YELLOW}Número da busca: {Style.RESET_ALL}")) - 1
+            if 0 <= num < len(arquivos):
+                carregar_resultados(os.path.join(PASTA_RESULTADOS, arquivos[::-1][num]))
+            else:
+                print(f"{Fore.RED}Número inválido!{Style.RESET_ALL}")
+                time.sleep(1)
+    except Exception as e:
+        print(f"\n{Fore.RED}Erro ao acessar histórico: {str(e)}{Style.RESET_ALL}")
+        time.sleep(2)
+
+def carregar_resultados(caminho_arquivo):
+    try:
+        with open(caminho_arquivo, 'r', encoding='utf-8') as f:
+            dados = json.load(f)
+        
+        mostrar_resultados_eriknet(dados['username'], dados['results'])
+        input(f"\n{Fore.YELLOW}Pressione Enter para continuar...{Style.RESET_ALL}")
+    except Exception as e:
+        print(f"\n{Fore.RED}Erro ao carregar resultados: {str(e)}{Style.RESET_ALL}")
+        time.sleep(2)
+
+def executar_busca():
+    while True:
+        opcao = menu_principal()
+        
+        if opcao == 1:
+            username = input(f"\n{Fore.YELLOW}Digite o nome de usuário: {Style.RESET_ALL}").strip()
+            
+            if not validar_username(username):
+                print(f"{Fore.RED}❌ Nome de usuário inválido! Deve ter entre 3-30 caracteres (letras, números, ., _){Style.RESET_ALL}")
+                time.sleep(2)
+                continue
+                
+            print(f"\n{Fore.YELLOW}⏳ Buscando por '@{username}' em 30 redes sociais (usando {MAX_THREADS} threads)...{Style.RESET_ALL}")
+            
+            try:
+                resultados = buscar_perfis_paralelo(username)
+                mostrar_resultados_eriknet(username, resultados)
+                
+                # Salva os resultados
+                arquivo = salvar_resultados(username, resultados)
+                if arquivo:
+                    print(f"\n{Fore.GREEN}✅ Resultados salvos em: {arquivo}{Style.RESET_ALL}")
+            except Exception as e:
+                print(f"\n{Fore.RED}❌ Erro durante a busca: {str(e)}{Style.RESET_ALL}")
+                
+        elif opcao == 2:
+            ver_historico()
+            continue
+            
+        elif opcao == 3:
+            print(f"\n{Fore.GREEN}Saindo do ErikNet...{Style.RESET_ALL}")
+            break
+            
+        else:
+            print(f"\n{Fore.RED}❌ Opção inválida! Tente novamente.{Style.RESET_ALL}")
+            time.sleep(1)
+            
+        input(f"\n{Fore.YELLOW}Pressione Enter para continuar...{Style.RESET_ALL}")
+
+if __name__ == "__main__":
+    try:
+        # Verifica dependências
+        try:
+            import pyperclip
+        except ImportError:
+            print(f"{Fore.YELLOW}Aviso: pyperclip não instalado. Recursos de copiar URL não estarão disponíveis.{Style.RESET_ALL}")
+            print(f"{Fore.YELLOW}Instale com: pip install pyperclip{Style.RESET_ALL}")
+            time.sleep(2)
+        
+        executar_busca()
+    except KeyboardInterrupt:
+        print(f"\n\n{Fore.RED}ErikNet interrompido pelo usuário!{Style.RESET_ALL}")
+    except Exception as e:
+        print(f"\n{Fore.RED}ERRO CRÍTICO: {str(e)}{Style.RESET_ALL}")
+    finally:
+        print(f"\n{Fore.GREEN}Obrigado por usar o ErikNet! Segurança sempre.{Style.RESET_ALL}\n")
