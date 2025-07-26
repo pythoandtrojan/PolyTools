@@ -39,4 +39,5 @@ Clone o repositório com:
 git clone https://github.com/pythoandtrojan/varios-investiga
 cd varios-investiga
 python install-osint.py
+python install-malwer.py
 python menu-real.py
