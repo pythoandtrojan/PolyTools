@@ -36,7 +36,7 @@ A intenção é:
 Clone o repositório com:
 
 ```bash
-git clone https://github.com/pythoandtrojan/varios-investiga
+git clone https://github.com/pythoandtrojan/varios-investiga.git
 cd varios-investiga
 python install-osint.py
 python install-malwer.py
