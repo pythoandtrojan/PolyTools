@@ -15,22 +15,7 @@ Este repositório reúne múltiplas ferramentas voltadas para:
 - 🎓 Ensino e capacitação em cibersegurança ofensiva  
 - ⚔️ Simulações de ataques para uso ético e legal  
 - 🕵️‍♀️ Investigações OSINT e levantamento de dados públicos  
-
----
-
-## ⚙️ Estrutura
-
-/varios-investiga
-├── malware/ # Exemplos didáticos de malwares
-├── força-bruta/ # Ataques a painéis, redes e senhas
-├── phishing/ # Kits simulados para teste de engenharia social
-├── sql-xss/ # Injeção SQL e Cross-Site Scripting
-├── git-exposto/ # Ferramentas para detectar .git vazado
-├── scanner/ # Varredura de portas, IPs, subdomínios
-├── ddos-dos/ # Scripts de negação de serviço (teste)
-├── spam/ # Envio de mensagens automáticas (teste)
-├── dox/ # Coleta e organização de dados públicos
-└── README.md # Este arquivo                                                                                                                                                                                                                                                   
+                                                                                                       
 ---
 
 ## 🧠 Objetivo
