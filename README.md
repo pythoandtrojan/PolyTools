@@ -38,4 +38,5 @@ Clone o repositório com:
 ```bash
 git clone https://github.com/pythoandtrojan/varios-investiga
 cd varios-investiga
-python install-osint.py                                                                                                                python install-malwer.py                                                                                                               python menu-real.py
+python install-osint.py
+python menu-real.py
