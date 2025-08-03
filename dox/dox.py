@@ -21,7 +21,7 @@ class ValkiriaTool:
         self.web_dir = "valkiria_web"
         self.reports_dir = "valkiria_reports"
         self.telegram_link = "https://t.me/valkiria_network"
-        self.discord_link = "https://discord.gg/ESDFpyyj"
+        self.discord_link = ""
         self.webhook_url = "https://discord.com/api/webhooks/your_webhook_here"
         self.local_ip = self.get_local_ip()
         self.system_info = self.get_system_info()
