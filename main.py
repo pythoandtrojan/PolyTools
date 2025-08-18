@@ -397,7 +397,8 @@ class HackerMenu:
                 "netcat-c2.py": "Netcat como servidor C2",
                 "malware-js.py": "malware feito em js",
                 "malware-ruby.py": "malware feito em ruby",
-                "malwer-java.py": "malware feito em java"
+                "malwer-java.py": "malware feito em java",
+                "malware-bash.py": "malwares em bash"
             },
             "scanner": {
                 "scanner.py": "Ferramenta de varredura de portas e redes nmap"
