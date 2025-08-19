@@ -662,7 +662,7 @@ class HackerMenu:
             elif choice == "12":
                 self.show_category_menu("dox")
             elif choice == "13":
-                self.show_category_menu("zero-day")
+                self.show_category_menu("zero-day-leve")
             elif choice == "0":
                 console.print("[bold red]Saindo do sistema...[/bold red]")
                 time.sleep(1)
