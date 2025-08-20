@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Ferramenta para enviar arquivos via rede (Termux compatível)
-Autor: [Seu Nome]
-Versão: 2.0
-"""
 
 import os
 import sys
@@ -16,7 +11,7 @@ from pathlib import Path
 class FileSender:
     DEFAULT_IP = "192.168.1.100"
     DEFAULT_PORT = 5555
-    BUFFER_SIZE = 4096  # Tamanho do buffer aumentado para melhor performance
+    BUFFER_SIZE = 4096  
     
     def __init__(self):
         self.ip = self.DEFAULT_IP
