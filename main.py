@@ -381,7 +381,7 @@ class HackerMenu:
                 "gmail-api.py": "api que consulta dados vazados de um tau gmail",
                 "holehe.py": "procura redes sociais vinculado a um gmail",
                 "FOTO.py": "procura meta dados de foto",
-                "whois.py: "busca com whois"
+                "whois.py": "busca com whois",
                 
             },
             "malwer": {
