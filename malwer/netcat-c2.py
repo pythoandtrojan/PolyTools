@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/data/data/com.termux/files/usr/bin/python3
 # -*- coding: utf-8 -*-
 
 import os
@@ -7,418 +7,595 @@ import time
 import random
 import subprocess
 import threading
-from typing import List, Dict, Optional
-from datetime import datetime
+import socket
+import select
+from typing import Dict, List, Optional, Tuple
 
-# Configuração de rich para interface colorida
+# Interface colorida no terminal
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-from rich.progress import Progress
 from rich.prompt import Prompt, Confirm, IntPrompt
+from rich.progress import Progress
 from rich.text import Text
+from rich.syntax import Syntax
+from rich.style import Style
 
 console = Console()
 
-class NetcatListener:
+class NetcatTool:
     def __init__(self):
-        self.themes = {
-            "dark": {
-                "primary": "bold red",
-                "secondary": "bold black on red",
-                "warning": "blink bold red",
-                "info": "bold white on red",
-                "banner": self._generate_dark_banner()
-            },
-            "kwaii": {
-                "primary": "bold #FF9FF3",
-                "secondary": "bold #FECA57",
-                "warning": "bold #FF6B6B",
-                "info": "bold #1DD1A1",
-                "banner": self._generate_kwaii_banner()
-            },
-            "generic": {
-                "primary": "bold blue",
-                "secondary": "bold white on blue",
-                "warning": "bold yellow",
-                "info": "bold green",
-                "banner": self._generate_generic_banner()
-            }
+        self.banner = self._gerar_banner_netcat()
+        self.config = {
+            'mode': 'listen',
+            'host': '0.0.0.0',
+            'port': 4444,
+            'protocol': 'tcp',
+            'verbose': True,
+            'keep_alive': False,
+            'timeout': 30,
+            'output_file': None,
+            'execute_command': None,
+            'hex_dump': False
         }
-        self.current_theme = "dark"
-        self.active_listeners = []
-        self.saved_profiles = {}
-        self._load_profiles()
-
-    def _generate_dark_banner(self) -> str:
-        return """
-[bold red]
-   :-====--:.            .:-=====-.              
-           :+************+=-:  :-=+************=.           
-         .+****++************.-************++****+.         
-        .*+-.     .+*********.-*********=.     .-**.        
-        +:          -********.-********-          -=        
-       :=            =*******.-*******-            =:       
-      ***+            *******.-******+            ****      
-      -++:            -++++++.:++++++:            -++:      
-                      :==============:                      
-                                                           
-                        =.        --                        
-                      .-*+:     .:++:.                      
-                        :         ..                        
-                                 -**=                           
-                       =:       =**=-=                       
-                       -*+-.    .-**:                       
-                         :=+***++=:                         
-        █▀▀ █▀▀ █▀▄▀█ █▀▀ █▀▀ ▀█▀ █▀▀ █▀▄ █ █▀█ █▀▀ █▀
-        █▄█ ██▄ █░▀░█ ██▄ █▄▄ ░█░ ██▄ █▄▀ █ █▀▀ ██▄ ▄█
-         ╔══════════════════════════════════════════════════╗
-         ║    AUTOMATED NETCAT LISTENER - MULTI-PORT        ║
-         ║      RECEIVE FILES & COMMANDS - DARK MODE        ║
-         ╚══════════════════════════════════════════════════╝
-  [/bold red]
-  [bold white on red]       LISTENER AUTOMATOR - MULTI-PORT NETCAT LISTENER[/bold white on red]
-  [blink bold red]⚠️ ATENÇÃO: FERRAMENTA PARA USO ÉTICO E LEGAL APENAS! ⚠️[/blink bold red]
-"""
-
-    def _generate_kwaii_banner(self) -> str:
-        return """
-[bold #FF9FF3]
-  ∧,,,∧
- ( ̳• · • ̳)
- /    づ♡  [bold #FECA57]Nyaa~ Netcat Listener[/bold #FECA57]
-[/bold #FF9FF3]
-[bold #1DD1A1]✧･ﾟ: *✧･ﾟ:*  [bold #FECA57]Multi-port listener with file transfer![/bold #FECA57] *:･ﾟ✧*:･ﾟ✧
-[blink bold #FF6B6B]✧･ﾟ: *✧･ﾟ:* Warning: Use responsibly! *:･ﾟ✧*:･ﾟ✧[/blink bold #FF6B6B]
-"""
-
-    def _generate_generic_banner(self) -> str:
-        return """
-[bold blue]
- ███╗   ██╗███████╗████████╗ ██████╗ █████╗ ████████╗
- ████╗  ██║██╔════╝╚══██╔══╝██╔════╝██╔══██╗╚══██╔══╝
- ██╔██╗ ██║█████╗     ██║   ██║     ███████║   ██║   
- ██║╚██╗██║██╔══╝     ██║   ██║     ██╔══██║   ██║   
- ██║ ╚████║███████╗   ██║   ╚██████╗██║  ██║   ██║   
- ╚═╝  ╚═══╝╚══════╝   ╚═╝    ╚═════╝╚═╝  ╚═╝   ╚═╝   
-[/bold blue]
-[bold white on blue]       NETCAT LISTENER AUTOMATION TOOL - v2.0[/bold white on blue]
-[bold yellow]⚠️ WARNING: FOR LEGAL AND ETHICAL USE ONLY! ⚠️[/bold yellow]
-"""
-
-    def _load_profiles(self):
-        """Carrega os perfis salvos"""
-        try:
-            with open('nc_profiles.json', 'r') as f:
-                self.saved_profiles = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            self.saved_profiles = {}
-
-    def _save_profiles(self):
-        """Salva os perfis"""
-        with open('nc_profiles.json', 'w') as f:
-            json.dump(self.saved_profiles, f)
-
-    def show_banner(self):
-        theme = self.themes[self.current_theme]
-        console.print(theme["banner"])
-        time.sleep(0.5)
-
-    def change_theme(self):
-        console.clear()
-        console.print(Panel.fit("[bold]Selecione um Tema[/bold]"))
         
-        table = Table(show_header=True, header_style="bold")
-        table.add_column("Opção", style="cyan", width=10)
-        table.add_column("Tema", style="green")
-        table.add_column("Descrição")
-
-        table.add_row("1", "Dark", "Tema vermelho intenso para uso noturno")
-        table.add_row("2", "Kwaii", "Tema fofo com cores pastel")
-        table.add_row("3", "Genérico", "Tema neutro para uso profissional")
-
-        console.print(table)
-
-        choice = Prompt.ask("Selecione um tema", choices=["1", "2", "3"])
+        self.modes = {
+            'listen': 'Modo escuta (servidor)',
+            'connect': 'Modo conexão (cliente)',
+            'proxy': 'Modo proxy',
+            'port_scan': 'Varredura de portas'
+        }
         
-        if choice == "1":
-            self.current_theme = "dark"
-        elif choice == "2":
-            self.current_theme = "kwaii"
-        elif choice == "3":
-            self.current_theme = "generic"
-        
-        console.print(f"[green]Tema alterado para {self.current_theme}![/green]")
-        time.sleep(1)
-
-    def show_main_menu(self):
+        self.protocols = {
+            'tcp': 'TCP - Conexão confiável',
+            'udp': 'UDP - Conexão sem conexão'
+        }
+    
+    def _gerar_banner_netcat(self) -> str:
+        return """
+[bold cyan]
+╔═╗┬ ┬┌┬┐┌┬┐┌─┐┌─┐┌┬┐
+╠═╝│ │ │  │ │ │└─┐ │ 
+╩  └─┘ ┴  ┴ └─┘└─┘ ┴ 
+[/bold cyan]
+[bold blue]        FERRAMENTA NETCAT AVANÇADA - v2.0[/bold blue]
+[bold yellow]        Swiss Army Knife de Redes[/bold yellow]
+"""
+    
+    def mostrar_menu_principal(self):
         while True:
             console.clear()
-            self.show_banner()
-
-            theme = self.themes[self.current_theme]
+            console.print(self.banner)
             
-            table = Table(title="Menu Principal", show_header=True, header_style=theme["primary"])
-            table.add_column("Opção", style="cyan", width=10)
-            table.add_column("Descrição", style="green")
-
-            table.add_row("1", "Iniciar listener em portas específicas")
-            table.add_row("2", "Iniciar listener em range de portas")
-            table.add_row("3", "Gerenciar perfis salvos")
-            table.add_row("4", "Visualizar listeners ativos")
-            table.add_row("5", "Parar listeners")
-            table.add_row("6", "Alterar tema")
-            table.add_row("9", "Sair")
-
-            console.print(table)
-
-            choice = Prompt.ask("Selecione uma opção", choices=["1", "2", "3", "4", "5", "6", "9"])
-
-            if choice == "1":
-                self.start_specific_listeners()
-            elif choice == "2":
-                self.start_range_listeners()
-            elif choice == "3":
-                self.manage_profiles()
-            elif choice == "4":
-                self.show_active_listeners()
-            elif choice == "5":
-                self.stop_listeners()
-            elif choice == "6":
-                self.change_theme()
-            elif choice == "9":
-                self._exit()
-
-    def start_specific_listeners(self):
-        console.clear()
-        theme = self.themes[self.current_theme]
-        console.print(Panel.fit("[bold]Iniciar Listeners em Portas Específicas[/bold]", style=theme["primary"]))
-        
-        ports_input = Prompt.ask("Digite as portas (separadas por vírgula)")
-        ports = [p.strip() for p in ports_input.split(",") if p.strip().isdigit()]
-        
-        if not ports:
-            console.print("[red]Nenhuma porta válida informada![/red]")
-            input("\nPressione Enter para continuar...")
-            return
-        
-        receive_files = Confirm.ask("Deseja configurar para receber arquivos?", default=False)
-        output_dir = ""
-        if receive_files:
-            output_dir = Prompt.ask("Diretório para salvar arquivos (deixe em branco para ./nc_files)")
-            if not output_dir:
-                output_dir = "./nc_files"
-                os.makedirs(output_dir, exist_ok=True)
-        
-        save_profile = Confirm.ask("Deseja salvar esta configuração como perfil?", default=False)
-        profile_name = ""
-        if save_profile:
-            profile_name = Prompt.ask("Nome do perfil")
-            self.saved_profiles[profile_name] = {
-                "ports": ports,
-                "receive_files": receive_files,
-                "output_dir": output_dir
-            }
-            self._save_profiles()
-            console.print(f"[green]Perfil '{profile_name}' salvo com sucesso![/green]")
-        
-        self._start_listeners(ports, receive_files, output_dir)
+            tabela = Table(
+                title="[bold green]🔧 MENU NETCAT[/bold green]",
+                show_header=True,
+                header_style="bold magenta"
+            )
+            tabela.add_column("Opção", style="cyan", width=8)
+            tabela.add_column("Função", style="green")
+            tabela.add_column("Status", style="yellow")
+            
+            tabela.add_row("1", "Modo Escuta (Servidor)", "🔄 Aguardando conexões")
+            tabela.add_row("2", "Modo Conexão (Cliente)", "📡 Conectar a servidor")
+            tabela.add_row("3", "Varredura de Portas", "🔍 Scanner de portas")
+            tabela.add_row("4", "Modo Proxy", "🔁 Relay de conexões")
+            tabela.add_row("5", "Configurações", "⚙️ Personalizar opções")
+            tabela.add_row("6", "Status da Config", "📋 Visualizar configuração")
+            tabela.add_row("0", "Voltar", "↩️ Menu anterior")
+            
+            console.print(tabela)
+            
+            escolha = Prompt.ask(
+                "[blink yellow]➤[/blink yellow] Selecione uma opção",
+                choices=[str(i) for i in range(0, 7)],
+                show_choices=False
+            )
+            
+            if escolha == "1":
+                self._modo_escuta()
+            elif escolha == "2":
+                self._modo_conexao()
+            elif escolha == "3":
+                self._varredura_portas()
+            elif escolha == "4":
+                self._modo_proxy()
+            elif escolha == "5":
+                self._menu_configuracao()
+            elif escolha == "6":
+                self._mostrar_configuracao()
+            elif escolha == "0":
+                return
+    
+    def _menu_configuracao(self):
+        while True:
+            console.clear()
+            console.print(Panel.fit(
+                "[bold cyan]⚙️ CONFIGURAÇÕES NETCAT[/bold cyan]",
+                border_style="cyan"
+            ))
+            
+            tabela = Table(show_header=False)
+            tabela.add_row("1", f"Host: {self.config['host']}")
+            tabela.add_row("2", f"Porta: {self.config['port']}")
+            tabela.add_row("3", f"Protocolo: {self.config['protocol'].upper()}")
+            tabela.add_row("4", f"Verbose: {'✅' if self.config['verbose'] else '❌'}")
+            tabela.add_row("5", f"Keep Alive: {'✅' if self.config['keep_alive'] else '❌'}")
+            tabela.add_row("6", f"Timeout: {self.config['timeout']}s")
+            tabela.add_row("7", f"Arquivo Saída: {self.config['output_file'] or 'Nenhum'}")
+            tabela.add_row("8", f"Executar Comando: {self.config['execute_command'] or 'Nenhum'}")
+            tabela.add_row("9", f"Hex Dump: {'✅' if self.config['hex_dump'] else '❌'}")
+            tabela.add_row("0", "Voltar")
+            
+            console.print(tabela)
+            
+            escolha = Prompt.ask(
+                "[blink yellow]➤[/blink yellow] Selecione para alterar",
+                choices=[str(i) for i in range(0, 10)],
+                show_choices=False
+            )
+            
+            if escolha == "1":
+                self.config['host'] = Prompt.ask(
+                    "[yellow]?[/yellow] Digite o host",
+                    default=self.config['host']
+                )
+            elif escolha == "2":
+                self.config['port'] = IntPrompt.ask(
+                    "[yellow]?[/yellow] Digite a porta",
+                    default=self.config['port']
+                )
+            elif escolha == "3":
+                console.print("\n[bold]Protocolos disponíveis:[/bold]")
+                for proto, desc in self.protocols.items():
+                    console.print(f"  [cyan]{proto}[/cyan]: {desc}")
+                
+                self.config['protocol'] = Prompt.ask(
+                    "[yellow]?[/yellow] Selecione o protocolo",
+                    choices=list(self.protocols.keys()),
+                    default=self.config['protocol']
+                )
+            elif escolha == "4":
+                self.config['verbose'] = Confirm.ask(
+                    "[yellow]?[/yellow] Modo verbose",
+                    default=self.config['verbose']
+                )
+            elif escolha == "5":
+                self.config['keep_alive'] = Confirm.ask(
+                    "[yellow]?[/yellow] Manter conexão ativa",
+                    default=self.config['keep_alive']
+                )
+            elif escolha == "6":
+                self.config['timeout'] = IntPrompt.ask(
+                    "[yellow]?[/yellow] Timeout (segundos)",
+                    default=self.config['timeout']
+                )
+            elif escolha == "7":
+                arquivo = Prompt.ask(
+                    "[yellow]?[/yellow] Arquivo de saída (deixe vazio para nenhum)",
+                    default=""
+                )
+                self.config['output_file'] = arquivo if arquivo else None
+            elif escolha == "8":
+                comando = Prompt.ask(
+                    "[yellow]?[/yellow] Comando para executar na conexão",
+                    default=""
+                )
+                self.config['execute_command'] = comando if comando else None
+            elif escolha == "9":
+                self.config['hex_dump'] = Confirm.ask(
+                    "[yellow]?[/yellow] Mostrar hex dump",
+                    default=self.config['hex_dump']
+                )
+            elif escolha == "0":
+                return
+    
+    def _mostrar_configuracao(self):
+        console.print(Panel.fit(
+            f"""[bold]Configuração Atual:[/bold]
+[cyan]Host:[/cyan] {self.config['host']}
+[cyan]Porta:[/cyan] {self.config['port']}
+[cyan]Protocolo:[/cyan] {self.config['protocol'].upper()}
+[cyan]Verbose:[/cyan] {'✅' if self.config['verbose'] else '❌'}
+[cyan]Keep Alive:[/cyan] {'✅' if self.config['keep_alive'] else '❌'}
+[cyan]Timeout:[/cyan] {self.config['timeout']}s
+[cyan]Arquivo Saída:[/cyan] {self.config['output_file'] or 'Nenhum'}
+[cyan]Executar Comando:[/cyan] {self.config['execute_command'] or 'Nenhum'}
+[cyan]Hex Dump:[/cyan] {'✅' if self.config['hex_dump'] else '❌'}""",
+            title="[bold green]CONFIGURAÇÃO[/bold green]",
+            border_style="green"
+        ))
         input("\nPressione Enter para continuar...")
-
-    def start_range_listeners(self):
-        console.clear()
-        theme = self.themes[self.current_theme]
-        console.print(Panel.fit("[bold]Iniciar Listeners em Range de Portas[/bold]", style=theme["primary"]))
+    
+    def _modo_escuta(self):
+        console.print(Panel.fit(
+            "[bold red]🔊 MODO ESCUTA (SERVIDOR)[/bold red]",
+            border_style="red"
+        ))
         
-        start_port = IntPrompt.ask("Porta inicial", default=8000)
-        end_port = IntPrompt.ask("Porta final", default=8010)
+        console.print(f"[yellow]Escutando em:[/yellow] {self.config['host']}:{self.config['port']}")
+        console.print(f"[yellow]Protocolo:[/yellow] {self.config['protocol'].upper()}")
         
-        if start_port > end_port:
-            console.print("[red]Porta inicial deve ser menor que porta final![/red]")
-            input("\nPressione Enter para continuar...")
-            return
+        if self.config['execute_command']:
+            console.print(f"[yellow]Executando:[/yellow] {self.config['execute_command']}")
         
-        ports = [str(p) for p in range(start_port, end_port + 1)]
+        try:
+            if self.config['protocol'] == 'tcp':
+                self._escuta_tcp()
+            else:
+                self._escuta_udp()
+                
+        except KeyboardInterrupt:
+            console.print("\n[red]✗ Interrompido pelo usuário[/red]")
+        except Exception as e:
+            console.print(f"\n[red]✗ Erro: {str(e)}[/red]")
         
-        receive_files = Confirm.ask("Deseja configurar para receber arquivos?", default=False)
-        output_dir = ""
-        if receive_files:
-            output_dir = Prompt.ask("Diretório para salvar arquivos (deixe em branco para ./nc_files)")
-            if not output_dir:
-                output_dir = "./nc_files"
-                os.makedirs(output_dir, exist_ok=True)
-        
-        save_profile = Confirm.ask("Deseja salvar esta configuração como perfil?", default=False)
-        profile_name = ""
-        if save_profile:
-            profile_name = Prompt.ask("Nome do perfil")
-            self.saved_profiles[profile_name] = {
-                "ports": ports,
-                "receive_files": receive_files,
-                "output_dir": output_dir
-            }
-            self._save_profiles()
-            console.print(f"[green]Perfil '{profile_name}' salvo com sucesso![/green]")
-        
-        self._start_listeners(ports, receive_files, output_dir)
         input("\nPressione Enter para continuar...")
-
-    def _start_listeners(self, ports: List[str], receive_files: bool, output_dir: str):
-        theme = self.themes[self.current_theme]
+    
+    def _escuta_tcp(self):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            s.bind((self.config['host'], self.config['port']))
+            s.listen(1)
+            
+            console.print(f"[green]✅ Escutando na porta {self.config['port']}...[/green]")
+            console.print("[yellow]Pressione Ctrl+C para parar[/yellow]")
+            
+            conn, addr = s.accept()
+            with conn:
+                console.print(f"[green]🔗 Conexão estabelecida de {addr[0]}:{addr[1]}[/green]")
+                
+                # Executar comando se especificado
+                if self.config['execute_command']:
+                    output = subprocess.getoutput(self.config['execute_command'])
+                    conn.sendall(output.encode())
+                
+                # Loop principal de comunicação
+                while True:
+                    try:
+                        data = conn.recv(1024)
+                        if not data:
+                            break
+                            
+                        if self.config['hex_dump']:
+                            hex_data = ' '.join(f'{b:02x}' for b in data)
+                            console.print(f"[cyan]HEX:[/cyan] {hex_data}")
+                        
+                        texto = data.decode('utf-8', errors='ignore')
+                        console.print(f"[blue]RECV:[/blue] {texto}")
+                        
+                        # Salvar em arquivo se especificado
+                        if self.config['output_file']:
+                            with open(self.config['output_file'], 'a') as f:
+                                f.write(texto)
+                        
+                        # Echo response
+                        if self.config['keep_alive']:
+                            conn.sendall(data)
+                            
+                    except (ConnectionResetError, BrokenPipeError):
+                        break
+            
+            console.print("[red]📴 Conexão fechada[/red]")
+    
+    def _escuta_udp(self):
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.bind((self.config['host'], self.config['port']))
+            
+            console.print(f"[green]✅ Escutando UDP na porta {self.config['port']}...[/green]")
+            console.print("[yellow]Pressione Ctrl+C para parar[/yellow]")
+            
+            while True:
+                try:
+                    data, addr = s.recvfrom(1024)
+                    console.print(f"[green]📨 UDP de {addr[0]}:{addr[1]}[/green]")
+                    
+                    if self.config['hex_dump']:
+                        hex_data = ' '.join(f'{b:02x}' for b in data)
+                        console.print(f"[cyan]HEX:[/cyan] {hex_data}")
+                    
+                    texto = data.decode('utf-8', errors='ignore')
+                    console.print(f"[blue]RECV:[/blue] {texto}")
+                    
+                    # Salvar em arquivo se especificado
+                    if self.config['output_file']:
+                        with open(self.config['output_file'], 'a') as f:
+                            f.write(f"[{datetime.now()}] {addr}: {texto}\n")
+                    
+                    # Echo response
+                    if self.config['keep_alive']:
+                        s.sendto(data, addr)
+                        
+                except KeyboardInterrupt:
+                    break
+    
+    def _modo_conexao(self):
+        console.print(Panel.fit(
+            "[bold green]📡 MODO CONEXÃO (CLIENTE)[/bold green]",
+            border_style="green"
+        ))
         
-        console.print(f"\n[bold]Iniciando listeners nas portas:[/bold] {', '.join(ports)}")
-        if receive_files:
-            console.print(f"[bold]Diretório de saída:[/bold] {output_dir}")
+        host = Prompt.ask(
+            "[yellow]?[/yellow] Digite o host para conectar",
+            default=self.config['host']
+        )
+        porta = IntPrompt.ask(
+            "[yellow]?[/yellow] Digite a porta",
+            default=self.config['port']
+        )
+        
+        try:
+            if self.config['protocol'] == 'tcp':
+                self._conectar_tcp(host, porta)
+            else:
+                self._conectar_udp(host, porta)
+                
+        except KeyboardInterrupt:
+            console.print("\n[red]✗ Interrompido pelo usuário[/red]")
+        except Exception as e:
+            console.print(f"\n[red]✗ Erro: {str(e)}[/red]")
+        
+        input("\nPressione Enter para continuar...")
+    
+    def _conectar_tcp(self, host: str, porta: int):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(self.config['timeout'])
+            s.connect((host, porta))
+            
+            console.print(f"[green]✅ Conectado a {host}:{porta}[/green]")
+            console.print("[yellow]Digite 'quit' para sair[/yellow]")
+            
+            # Thread para receber dados
+            def receiver():
+                while True:
+                    try:
+                        data = s.recv(1024)
+                        if not data:
+                            break
+                            
+                        if self.config['hex_dump']:
+                            hex_data = ' '.join(f'{b:02x}' for b in data)
+                            console.print(f"\n[cyan]HEX:[/cyan] {hex_data}")
+                        
+                        texto = data.decode('utf-8', errors='ignore')
+                        console.print(f"\n[green]RECV:[/green] {texto}")
+                        
+                    except (socket.timeout, ConnectionResetError):
+                        break
+            
+            recv_thread = threading.Thread(target=receiver, daemon=True)
+            recv_thread.start()
+            
+            # Loop principal para enviar dados
+            while True:
+                try:
+                    mensagem = input("[blue]SEND: [/blue]")
+                    
+                    if mensagem.lower() == 'quit':
+                        break
+                    
+                    s.sendall(mensagem.encode())
+                    time.sleep(0.1)
+                    
+                except KeyboardInterrupt:
+                    break
+            
+            console.print("[red]📴 Conexão fechada[/red]")
+    
+    def _conectar_udp(self, host: str, porta: int):
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            console.print(f"[green]🔗 Socket UDP criado para {host}:{porta}[/green]")
+            console.print("[yellow]Digite 'quit' para sair[/yellow]")
+            
+            while True:
+                try:
+                    mensagem = input("[blue]SEND: [/blue]")
+                    
+                    if mensagem.lower() == 'quit':
+                        break
+                    
+                    s.sendto(mensagem.encode(), (host, porta))
+                    
+                    # Tentar receber resposta
+                    try:
+                        s.settimeout(2)
+                        data, addr = s.recvfrom(1024)
+                        
+                        if self.config['hex_dump']:
+                            hex_data = ' '.join(f'{b:02x}' for b in data)
+                            console.print(f"\n[cyan]HEX:[/cyan] {hex_data}")
+                        
+                        texto = data.decode('utf-8', errors='ignore')
+                        console.print(f"\n[green]RECV from {addr}:[/green] {texto}")
+                        
+                    except socket.timeout:
+                        console.print("\n[yellow]⏰ Timeout aguardando resposta[/yellow]")
+                    
+                except KeyboardInterrupt:
+                    break
+    
+    def _varredura_portas(self):
+        console.print(Panel.fit(
+            "[bold yellow]🔍 VARREDURA DE PORTAS[/bold yellow]",
+            border_style="yellow"
+        ))
+        
+        host = Prompt.ask(
+            "[yellow]?[/yellow] Digite o host para scanear",
+            default="127.0.0.1"
+        )
+        
+        porta_inicio = IntPrompt.ask(
+            "[yellow]?[/yellow] Porta inicial",
+            default=1
+        )
+        porta_fim = IntPrompt.ask(
+            "[yellow]?[/yellow] Porta final",
+            default=1024
+        )
+        
+        protocolo = Prompt.ask(
+            "[yellow]?[/yellow] Protocolo (tcp/udp)",
+            choices=['tcp', 'udp'],
+            default='tcp'
+        )
+        
+        timeout = IntPrompt.ask(
+            "[yellow]?[/yellow] Timeout por porta (ms)",
+            default=500
+        ) / 1000  # Converter para segundos
+        
+        console.print(f"\n[cyan]Scanning {host}:{porta_inicio}-{porta_fim} ({protocolo.upper()})[/cyan]")
+        
+        portas_abertas = []
         
         with Progress() as progress:
-            task = progress.add_task("[cyan]Iniciando listeners...", total=len(ports))
+            task = progress.add_task("[yellow]Scanning...[/yellow]", total=porta_fim - porta_inicio + 1)
             
-            for port in ports:
+            for porta in range(porta_inicio, porta_fim + 1):
                 try:
-                    if receive_files:
-                        cmd = f"nc -lvnp {port} > {os.path.join(output_dir, 'file_'+port+'_'+datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                    else:
-                        cmd = f"nc -lvnp {port}"
+                    if protocolo == 'tcp':
+                        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        sock.settimeout(timeout)
+                        resultado = sock.connect_ex((host, porta))
+                        sock.close()
+                        
+                        if resultado == 0:
+                            portas_abertas.append(porta)
+                            console.print(f"[green]✅ Porta {porta} aberta (TCP)[/green]")
                     
-                    # Usamos um thread para cada listener para não bloquear
-                    thread = threading.Thread(
-                        target=self._run_listener,
-                        args=(cmd, port),
-                        daemon=True
-                    )
-                    thread.start()
-                    self.active_listeners.append((port, thread))
+                    else:  # UDP
+                        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                        sock.settimeout(timeout)
+                        sock.sendto(b'', (host, porta))
+                        
+                        try:
+                            data, addr = sock.recvfrom(1024)
+                            portas_abertas.append(porta)
+                            console.print(f"[green]✅ Porta {porta} respondeu (UDP)[/green]")
+                        except socket.timeout:
+                            pass
+                        finally:
+                            sock.close()
                     
-                    progress.update(task, advance=1)
-                    time.sleep(0.2)
                 except Exception as e:
-                    console.print(f"[red]Erro ao iniciar listener na porta {port}: {str(e)}[/red]")
+                    if self.config['verbose']:
+                        console.print(f"[red]Erro na porta {porta}: {str(e)}[/red]")
+                
+                progress.update(task, advance=1)
         
-        console.print(f"\n[green]{len(ports)} listeners iniciados com sucesso![/green]")
-
-    def _run_listener(self, cmd: str, port: str):
-        """Executa o comando netcat em um subprocesso"""
-        try:
-            process = subprocess.Popen(
-                cmd,
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-            process.communicate()
-        except Exception as e:
-            console.print(f"[red]Erro no listener da porta {port}: {str(e)}[/red]")
-
-    def manage_profiles(self):
-        while True:
-            console.clear()
-            theme = self.themes[self.current_theme]
-            console.print(Panel.fit("[bold]Gerenciamento de Perfis Salvos[/bold]", style=theme["primary"]))
-            
-            if not self.saved_profiles:
-                console.print("[yellow]Nenhum perfil salvo.[/yellow]")
-                input("\nPressione Enter para voltar...")
-                return
-            
-            table = Table(title="Perfis Salvos", show_header=True, header_style=theme["primary"])
-            table.add_column("Nome", style="cyan")
-            table.add_column("Portas", style="green")
-            table.add_column("Recebe Arquivos?", style="magenta")
-            table.add_column("Diretório", style="yellow")
-
-            for name, profile in self.saved_profiles.items():
-                table.add_row(
-                    name,
-                    ", ".join(profile["ports"]),
-                    "Sim" if profile["receive_files"] else "Não",
-                    profile.get("output_dir", "N/A")
-                )
-
-            console.print(table)
-
-            console.print("\n[bold]Opções:[/bold]")
-            console.print("1. Carregar perfil")
-            console.print("2. Excluir perfil")
-            console.print("3. Voltar")
-
-            choice = Prompt.ask("Selecione uma opção", choices=["1", "2", "3"])
-
-            if choice == "1":
-                profile_name = Prompt.ask("Nome do perfil para carregar", choices=list(self.saved_profiles.keys()))
-                profile = self.saved_profiles[profile_name]
-                self._start_listeners(
-                    profile["ports"],
-                    profile["receive_files"],
-                    profile.get("output_dir", "")
-                )
-                input("\nPressione Enter para continuar...")
-
-            elif choice == "2":
-                profile_name = Prompt.ask("Nome do perfil para excluir", choices=list(self.saved_profiles.keys()))
-                if Confirm.ask(f"[red]Tem certeza que deseja excluir o perfil '{profile_name}'?[/red]"):
-                    del self.saved_profiles[profile_name]
-                    self._save_profiles()
-                    console.print(f"[green]Perfil '{profile_name}' excluído![/green]")
-                    time.sleep(1)
-
-            elif choice == "3":
-                return
-
-    def show_active_listeners(self):
-        console.clear()
-        theme = self.themes[self.current_theme]
-        console.print(Panel.fit("[bold]Listeners Ativos[/bold]", style=theme["primary"]))
-        
-        if not self.active_listeners:
-            console.print("[yellow]Nenhum listener ativo no momento.[/yellow]")
-        else:
-            table = Table(show_header=True, header_style=theme["primary"])
-            table.add_column("Porta", style="cyan")
-            table.add_column("Status", style="green")
-
-            for port, thread in self.active_listeners:
-                table.add_row(port, "Ativo" if thread.is_alive() else "Inativo")
-
-            console.print(table)
-        
-        input("\nPressione Enter para continuar...")
-
-    def stop_listeners(self):
-        console.clear()
-        theme = self.themes[self.current_theme]
-        console.print(Panel.fit("[bold]Parar Listeners[/bold]", style=theme["primary"]))
-        
-        if not self.active_listeners:
-            console.print("[yellow]Nenhum listener ativo para parar.[/yellow]")
-            input("\nPressione Enter para continuar...")
-            return
-        
-        # Encerra todos os processos netcat
-        os.system("pkill -f 'nc -lvnp'")
-        
-        # Limpa a lista de listeners ativos
-        self.active_listeners = []
-        
-        console.print("[green]Todos os listeners foram parados![/green]")
-        input("\nPressione Enter para continuar...")
-
-    def _exit(self):
-        theme = self.themes[self.current_theme]
+        # Mostrar resultados
         console.print(Panel.fit(
-            f"[{theme['warning']}]⚠️ AVISO: FERRAMENTA PARA USO ÉTICO E LEGAL APENAS! ⚠️[/{theme['warning']}]",
-            style=theme["primary"]
+            f"""[bold]RESULTADOS DO SCAN:[/bold]
+[cyan]Host:[/cyan] {host}
+[cyan]Portas escaneadas:[/cyan] {porta_inicio}-{porta_fim}
+[cyan]Protocolo:[/cyan] {protocolo.upper()}
+[cyan]Portas abertas:[/cyan] {', '.join(map(str, portas_abertas)) if portas_abertas else 'Nenhuma'}
+[cyan]Total:[/cyan] {len(portas_abertas)} portas abertas""",
+            title="[bold green]SCAN COMPLETO[/bold green]",
+            border_style="green"
         ))
-        console.print("[cyan]Saindo...[/cyan]")
-        time.sleep(1)
-        sys.exit(0)
+        
+        input("\nPressione Enter para continuar...")
+    
+    def _modo_proxy(self):
+        console.print(Panel.fit(
+            "[bold magenta]🔁 MODO PROXY[/bold magenta]",
+            border_style="magenta"
+        ))
+        
+        console.print("[yellow]Este modo redireciona tráfego entre duas conexões[/yellow]")
+        
+        local_port = IntPrompt.ask(
+            "[yellow]?[/yellow] Porta local para escutar",
+            default=8080
+        )
+        remote_host = Prompt.ask(
+            "[yellow]?[/yellow] Host remoto para redirecionar",
+            default="example.com"
+        )
+        remote_port = IntPrompt.ask(
+            "[yellow]?[/yellow] Porta remota",
+            default=80
+        )
+        
+        console.print(f"[cyan]🔀 Redirecionando localhost:{local_port} -> {remote_host}:{remote_port}[/cyan]")
+        
+        try:
+            self._iniciar_proxy(local_port, remote_host, remote_port)
+        except KeyboardInterrupt:
+            console.print("\n[red]✗ Proxy interrompido[/red]")
+        except Exception as e:
+            console.print(f"\n[red]✗ Erro no proxy: {str(e)}[/red]")
+        
+        input("\nPressione Enter para continuar...")
+    
+    def _iniciar_proxy(self, local_port: int, remote_host: str, remote_port: int):
+        def handle_client(client_sock):
+            try:
+                remote_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                remote_sock.connect((remote_host, remote_port))
+                
+                # Threads para forwarding bidirecional
+                def forward(source, destination, name):
+                    try:
+                        while True:
+                            data = source.recv(4096)
+                            if not data:
+                                break
+                            if self.config['verbose']:
+                                console.print(f"[blue]{name}:[/blue] {len(data)} bytes")
+                            destination.sendall(data)
+                    except:
+                        pass
+                
+                # Iniciar threads de forwarding
+                threads = [
+                    threading.Thread(target=forward, args=(client_sock, remote_sock, "CLIENT→REMOTE")),
+                    threading.Thread(target=forward, args=(remote_sock, client_sock, "REMOTE→CLIENT"))
+                ]
+                
+                for t in threads:
+                    t.daemon = True
+                    t.start()
+                
+                for t in threads:
+                    t.join()
+                    
+            except Exception as e:
+                if self.config['verbose']:
+                    console.print(f"[red]Erro no proxy: {str(e)}[/red]")
+            finally:
+                client_sock.close()
+                remote_sock.close()
+        
+        # Servidor proxy
+        proxy_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        proxy_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        proxy_sock.bind(('0.0.0.0', local_port))
+        proxy_sock.listen(5)
+        
+        console.print(f"[green]✅ Proxy escutando na porta {local_port}[/green]")
+        console.print("[yellow]Pressione Ctrl+C para parar[/yellow]")
+        
+        try:
+            while True:
+                client_sock, addr = proxy_sock.accept()
+                console.print(f"[cyan]🔗 Nova conexão de {addr[0]}:{addr[1]}[/cyan]")
+                
+                client_thread = threading.Thread(target=handle_client, args=(client_sock,))
+                client_thread.daemon = True
+                client_thread.start()
+                
+        except KeyboardInterrupt:
+            pass
+        finally:
+            proxy_sock.close()
+
+# Integração com o menu principal existente
+def main():
+    netcat_tool = NetcatTool()
+    netcat_tool.mostrar_menu_principal()
 
 if __name__ == '__main__':
-    try:
-        listener = NetcatListener()
-        listener.show_main_menu()
-    except KeyboardInterrupt:
-        console.print("\n[red]Operação cancelada pelo usuário[/red]")
-        sys.exit(0)
-    except Exception as e:
-        console.print(f"\n[red]Erro fatal: {str(e)}[/red]")
-        sys.exit(1)
+    main()
