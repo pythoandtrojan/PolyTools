@@ -422,7 +422,8 @@ class HackerMenu:
                 "span-gmail.py": "Spam por e-mail (Gmail)",
                 "span-sms.py": "Spam por SMS",
                 "trolar-amigo.py": "Ferramenta para trollar amigos",
-                "git.span-menu.py": "varias ferramentas de span"
+                "git.span-menu.py": "varias ferramentas de span",
+                "discord-span.py": "span de discord",
             },
             "phishing": {
                 "menu-phishing.py": "Menu completo de ferramentas de phishing",
