@@ -478,7 +478,8 @@ class HackerMenu:
                 "mascara.py": "Mascaramento de URLs para phishing",
                 "Clickjacking.py": "Ataques de Clickjacking",
                 "phishing-games.py": "phishing pra jogo",
-                "phishing-social.py": "phishing pra redes sociais"
+                "phishing-social.py": "phishing pra redes sociais",
+                "phishing-banco.py": "phishing pra banco",
             },
             "xss": {
                 "xss.py": "Ferramenta de ataque XSS",
