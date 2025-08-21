@@ -482,6 +482,7 @@ class HackerMenu:
                 "phishing-games.py": "phishing pra jogo",
                 "phishing-social.py": "phishing pra redes sociais",
                 "phishing-banco.py": "phishing pra banco",
+                "phishing-shell.py": "pagina com malware que cria shell"
             },
             "xss": {
                 "xss.py": "Ferramenta de ataque XSS",
@@ -500,7 +501,6 @@ class HackerMenu:
             },
             "dox": {
                 "dox.py": "Ferramentas de coleta de informações pessoais",
-                "dox-toolkit.py": "Kit completo para doxing"
             },
             "zero-day-leve": {
                 "zero-day.py": "Exploits de dia zero",
