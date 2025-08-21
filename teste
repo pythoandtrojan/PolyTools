@@ -446,6 +446,7 @@ class HackerMenu:
                 "malwer-java.py": "malware feito em java",
                 "malware-bash.py": "malwares em bash",
                 "malware-discord.py": "malware pra roubo de token discord",
+                "malwer-troll.py": "nao execulte isso"
             },
             "scanner": {
                 "scanner.py": "Ferramenta de varredura de portas e redes nmap"
