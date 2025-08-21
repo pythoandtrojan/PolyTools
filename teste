@@ -490,7 +490,8 @@ class HackerMenu:
                 "xss-scan.py": "Scanner de vulnerabilidades XSS"
             },
             "git-exposto": {
-                "git.py": "Scanner de repositórios Git expostos"
+                "git.py": "Scanner de repositórios Git expostos",
+                "baixar-git.py": "abaixar git"
             },
             "dos": {
                 "dos.py": "Ferramentas de Denial of Service",
