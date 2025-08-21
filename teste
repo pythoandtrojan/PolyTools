@@ -431,7 +431,6 @@ class HackerMenu:
             "malwer": {
                 "c2.py": "Servidor de Comando e Controle",
                 "malwer.py": "Ferramentas de malware",
-                "dependencias.py": "Instalador de dependências",
                 "malwer-assembly": "Malware em Assembly",
                 "malwer-c.py": "Malware em C",
                 "malwerPowerShell.py": "Malware em PowerShell",
@@ -443,7 +442,8 @@ class HackerMenu:
                 "malware-js.py": "malware feito em js",
                 "malware-ruby.py": "malware feito em ruby",
                 "malwer-java.py": "malware feito em java",
-                "malware-bash.py": "malwares em bash"
+                "malware-bash.py": "malwares em bash",
+                "malware-discord.py": "malware pra roubo de token discord",
             },
             "scanner": {
                 "scanner.py": "Ferramenta de varredura de portas e redes nmap"
@@ -453,7 +453,8 @@ class HackerMenu:
                 "hash-cracker.c": "Quebrador de hashes em C",
                 "puro.py": "Força bruta pura",
                 "sites.py": "Força bruta em sites",
-                "hydra.py": "Ferramenta Hydra para força bruta"
+                "hydra.py": "Ferramenta Hydra para força bruta",
+                "pin.py": "quebrar pin de celular"
             },
             "sql-inject": {
                 "sqlmap.py": "Ferramenta automatizada de SQL injection",
@@ -475,7 +476,9 @@ class HackerMenu:
                 "site-clone.py": "Clonador de sites para phishing",
                 "info-phishing.py": "Ferramenta de phishing com informações",
                 "mascara.py": "Mascaramento de URLs para phishing",
-                "Clickjacking.py": "Ataques de Clickjacking"
+                "Clickjacking.py": "Ataques de Clickjacking",
+                "phishing-games.py": "phishing pra jogo",
+                "phishing-social.py": "phishing pra redes sociais"
             },
             "xss": {
                 "xss.py": "Ferramenta de ataque XSS",
@@ -510,7 +513,9 @@ class HackerMenu:
                 "vpn.py": "Ferramentas de VPN"
             },
             "wi-fi": {
-                "wifi.py": "Ferramentas de análise Wi-Fi"
+                "wifi.py": "Ferramentas de análise Wi-Fi",
+                "clonar-wi_fi.py": "clonar wi-fi",
+                "quebrar-senha.py": "quebrar senha de wi-fi"
             }
         }
 
