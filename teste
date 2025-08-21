@@ -732,7 +732,7 @@ class HackerMenu:
             elif choice == "12":
                 self.show_category_menu("dox")
             elif choice == "13":
-                self.show_category_menu("zero-day")
+                self.show_category_menu("zero-day-leve")
             elif choice == "14":
                 self.show_category_menu("testes-rede")
             elif choice == "15":
