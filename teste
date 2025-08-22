@@ -518,7 +518,7 @@ class HackerMenu:
                 "vpn.py": "Ferramentas de VPN"
             },
             "wi-fi": {
-                "wifi.py": "Ferramentas de análise Wi-Fi",
+                "wi-fi.py": "Ferramentas de análise Wi-Fi",
                 "clonar-wi_fi.py": "clonar wi-fi",
                 "quebrar-senha.py": "quebrar senha de wi-fi"
             }
