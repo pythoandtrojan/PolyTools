@@ -172,6 +172,7 @@ class FakeSiteHandler(BaseHTTPRequestHandler):
         <html>
         <head>
             <title>Atualização de Sistema</title>
+            <meta charset="UTF-8">
             <style>
                 body { font-family: Arial, sans-serif; margin: 40px; }
                 .update-box { border: 1px solid #ccc; padding: 20px; border-radius: 5px; }
@@ -208,6 +209,7 @@ class FakeSiteHandler(BaseHTTPRequestHandler):
         <html>
         <head>
             <title>Dashboard - Sistema Seguro</title>
+            <meta charset="UTF-8">
             <style>
                 body { font-family: Arial, sans-serif; margin: 40px; }
                 .header { background: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
@@ -245,6 +247,7 @@ class FakeSiteHandler(BaseHTTPRequestHandler):
         <html>
         <head>
             <title>Download - Software Oficial</title>
+            <meta charset="UTF-8">
             <style>
                 body { font-family: Arial, sans-serif; margin: 40px; }
                 .download-box { border: 1px solid #ccc; padding: 20px; border-radius: 5px; }
