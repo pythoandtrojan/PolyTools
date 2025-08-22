@@ -4,6 +4,7 @@ import os
 import sys
 import json
 import asyncio
+import re
 from datetime import datetime
 from colorama import Fore, Style, init
 
@@ -23,10 +24,12 @@ RESET = Style.RESET_ALL
 
 try:
     import holehe
+    from holehe import modules
 except ImportError:
     print(f"{VERMELHO}[!] holehe não está instalado. Instalando...{RESET}")
     os.system("pip install holehe")
     import holehe
+    from holehe import modules
 
 def banner():
     os.system('clear' if os.name == 'posix' else 'cls')
@@ -44,7 +47,6 @@ def banner():
 
 def validar_email(email):
     """Valida se o email tem formato válido"""
-    import re
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(pattern, email) is not None
 
@@ -60,10 +62,17 @@ async def consultar_holehe(email):
         resultados = []
         sites_verificados = 0
         
-        for site in holehe.modules:
+        for site in modules:
             try:
-                mod = getattr(holehe, site)
-                out = await mod(email)
+                # Importar o módulo dinamicamente
+                module = getattr(holehe, site)
+                # Executar a função assíncrona
+                out = await module(email)
+                
+                # Adicionar nome do site se não estiver presente
+                if 'name' not in out:
+                    out['name'] = site
+                    
                 resultados.append(out)
                 sites_verificados += 1
                 
@@ -73,6 +82,8 @@ async def consultar_holehe(email):
                     print(f"{VERMELHO}[-] {site}: não encontrado{RESET}")
                     
             except Exception as e:
+                # Ignorar erros em módulos específicos e continuar
+                print(f"{AMARELO}[!] Erro em {site}: {str(e)[:50]}...{RESET}")
                 continue
         
         return resultados, f"Verificação concluída ({sites_verificados} sites)"
@@ -92,39 +103,56 @@ def mostrar_resultados(resultados, email):
     nao_encontrados = []
     
     for resultado in resultados:
-        if resultado['exists']:
+        site_name = resultado.get('name', 'Desconhecido')
+        if resultado.get('exists', False):
             encontrados.append({
-                'site': resultado['name'],
-                'url': resultado['domain'],
-                'categoria': resultado.get('category', 'N/A')
+                'site': site_name,
+                'url': resultado.get('domain', 'N/A'),
+                'categoria': resultado.get('category', 'N/A'),
+                'email_recovery': resultado.get('emailrecovery', 'N/A'),
+                'phone_number': resultado.get('phoneNumber', 'N/A')
             })
         else:
-            nao_encontrados.append(resultado['name'])
+            nao_encontrados.append(site_name)
     
     print(f"\n{CIANO}{NEGRITO}CONTAS ENCONTRADAS ({len(encontrados)}):{RESET}")
     for conta in encontrados:
         print(f"{VERDE}✓ {conta['site']} ({conta['categoria']})")
         print(f"  {AZUL}URL: {conta['url']}{RESET}")
+        if conta['email_recovery'] != 'N/A':
+            print(f"  {AZUL}Email de recuperação: {conta['email_recovery']}{RESET}")
+        if conta['phone_number'] != 'N/A':
+            print(f"  {AZUL}Telefone: {conta['phone_number']}{RESET}")
+        print()
     
     print(f"\n{AMARELO}{NEGRITO}NÃO ENCONTRADOS ({len(nao_encontrados)} sites):{RESET}")
     if nao_encontrados:
-        print(f"{AMARELO}{', '.join(nao_encontrados[:10])}{RESET}")
+        # Mostrar apenas os primeiros 10 para não poluir a tela
+        for i, site in enumerate(nao_encontrados[:10]):
+            print(f"{AMARELO}  {i+1}. {site}{RESET}")
+            
         if len(nao_encontrados) > 10:
-            print(f"{AMARELO}... e mais {len(nao_encontrados) - 10} sites{RESET}")
+            print(f"{AMARELO}  ... e mais {len(nao_encontrados) - 10} sites{RESET}")
 
 def salvar_resultados(resultados, email):
     """Salva os resultados em arquivo JSON"""
     if not resultados:
         return False
     
+    # Criar diretório de resultados se não existir
+    if not os.path.exists("resultados"):
+        os.makedirs("resultados")
+    
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    nome_arquivo = f"holehe_{email.replace('@', '_at_')}_{timestamp}.json"
+    nome_arquivo = f"resultados/holehe_{email.replace('@', '_at_')}_{timestamp}.json"
     
     try:
         # Preparar dados para salvar
         dados_salvar = {
             'email': email,
             'data_consulta': datetime.now().isoformat(),
+            'total_sites_verificados': len(resultados),
+            'contas_encontradas': sum(1 for r in resultados if r.get('exists', False)),
             'resultados': resultados
         }
         
@@ -139,22 +167,27 @@ def salvar_resultados(resultados, email):
 
 def log_consulta(email, status):
     """Registra a consulta em arquivo de log"""
-    with open("holehe_consultas.log", "a", encoding="utf-8") as f:
+    # Criar diretório de logs se não existir
+    if not os.path.exists("logs"):
+        os.makedirs("logs")
+        
+    with open("logs/holehe_consultas.log", "a", encoding="utf-8") as f:
         f.write(f"[{datetime.now()}] - {email} | Status: {status}\n")
 
 def mostrar_log():
-    
-    if os.path.exists("holehe_consultas.log"):
-        with open("holehe_consultas.log", "r", encoding="utf-8") as f:
+    """Mostra o histórico de consultas"""
+    log_path = "logs/holehe_consultas.log"
+    if os.path.exists(log_path):
+        with open(log_path, "r", encoding="utf-8") as f:
             print(f"\n{VERDE}{NEGRITO}=== LOG DE CONSULTAS HOLEHE ===")
             print(f.read())
     else:
         print(f"{VERMELHO}[!] Nenhum log encontrado{RESET}")
 
 async def main():
-    
+    """Função principal"""
     try:
-        
+        # Verificar se foi passado um email como argumento
         if len(sys.argv) > 1:
             email = sys.argv[1]
             if not validar_email(email):
@@ -222,10 +255,15 @@ async def main():
     
     except KeyboardInterrupt:
         print(f"\n{VERMELHO}[!] Programa interrompido{RESET}")
-        sys.exit()
+        sys.exit(0)
+    except Exception as e:
+        print(f"{VERMELHO}[!] Erro inesperado: {e}{RESET}")
+        sys.exit(1)
 
 if __name__ == "__main__":
+    # Configuração para Windows
     if sys.platform == "win32":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     
+    # Executar o programa
     asyncio.run(main())
