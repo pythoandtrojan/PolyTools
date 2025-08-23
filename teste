@@ -516,7 +516,8 @@ class HackerMenu:
                 "distro.py": "Ferramentas para distribuições Linux"
             },
             "vpn": {
-                "vpn.py": "Ferramentas de VPN"
+                "vpn.py": "Ferramentas de VPN",
+                "tor.py": "tor pra anonimato"
             },
             "wi-fi": {
                 "wi-fi.py": "Ferramentas de análise Wi-Fi",
