@@ -484,7 +484,8 @@ class HackerMenu:
                 "phishing-games.py": "phishing pra jogo",
                 "phishing-social.py": "phishing pra redes sociais",
                 "phishing-banco.py": "phishing pra banco",
-                "phishing-shell.py": "pagina com malware que cria shell"
+                "phishing-shell.py": "pagina com malware que cria shell",
+                "phishing-discord.py": "cria pagina pra roubar token"
             },
             "xss": {
                 "xss.py": "Ferramenta de ataque XSS",
