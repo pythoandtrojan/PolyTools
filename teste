@@ -47,7 +47,7 @@ class Banners:
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠀⠀⠀⠉⠛⠷⢦⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣠⣴⠶⠟⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠉⠉⠛⠛⠿⠿⠿⠿⠿⠿⠿⠿⠿⠟⠛⠋⠉⠁⠀
             
-     v 9.3 data: 22/8/2025               ass: Erik | made: Brasil⠀⠀⠀⠀
+     v 9.3 data: 24/8/2025               ass: Erik | made: Brasil⠀⠀⠀⠀
                           desde: 10/7/2025⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀               
         [/bold red]"""
 
@@ -447,7 +447,8 @@ class HackerMenu:
                 "malwer-java.py": "malware feito em java",
                 "malware-bash.py": "malwares em bash",
                 "malware-discord.py": "malware pra roubo de token discord",
-                "malwer-troll.py": "nao execulte isso"
+                "malwer-troll.py": "nao execulte isso",
+                "Binary-Padding.py": "depois eu explico"
             },
             "scanner": {
                 "scanner.py": "Ferramenta de varredura de portas e redes nmap"
@@ -511,7 +512,8 @@ class HackerMenu:
                 "zero-day-scanner.py": "Scanner de vulnerabilidades zero-day"
             },
             "testes-rede": {
-                "rede.py": "Ferramentas de teste de rede"
+                "rede.py": "Ferramentas de teste de rede",
+                "my-wireshark.py": "copia do wireshark"
             },
             "linux": {
                 "distro.py": "Ferramentas para distribuições Linux"
