@@ -1199,7 +1199,7 @@ def print_banner():
      ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝
     {Colors.RESET}""")
     
-    print(f"{Colors.CYAN}    Operator Phisher - Ferramenta educacional para testes de segurança{Colors.RESET}\n")
+    print(f"{Colors.CYAN}    ideia de > nathanael lucas{Colors.RESET}\n")
 
 def main():
     # Verificar argumentos
