@@ -1,278 +1,306 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import os
 import sys
+import subprocess
 import time
-from colorama import init, Fore, Style
+from colorama import Fore, Style, init
 
-# Inicializa o Colorama para que as cores funcionem no Termux/Windows
-init()
+init(autoreset=True)
 
-# Cores e Estilos usando Colorama
-class C:
-    CYAN = Fore.CYAN
-    GREEN = Fore.GREEN
-    RED = Fore.RED
-    YELLOW = Fore.YELLOW
-    BLUE = Fore.BLUE
-    MAGENTA = Fore.MAGENTA
-    WHITE = Fore.WHITE
-    BRIGHT = Style.BRIGHT
-    RESET = Style.RESET_ALL
-
-# Função para limpar a tela
-def clear_screen():
+# ======= Banner =======
+def banner():
     os.system('clear' if os.name == 'posix' else 'cls')
+    print(Fore.RED + Style.BRIGHT + r"""
+     ███████╗██╗  ██╗███████╗██████╗ ██╗     ██╗ ██████╗██╗  ██╗
+     ██╔════╝██║  ██║██╔════╝██╔══██╗██║     ██║██╔════╝██║ ██╔╝
+     ███████╗███████║█████╗  ██████╔╝██║     ██║██║     █████╔╝ 
+     ╚════██║██╔══██║██╔══╝  ██╔══██╗██║     ██║██║     ██╔═██╗ 
+     ███████║██║  ██║███████╗██║  ██║███████╗██║╚██████╗██║  ██╗
+     ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝ ╚═════╝╚═╝  ╚═╝
+                [ SHERLOCK USERNAME SEARCH MENU ]
+    """ + Style.RESET_ALL)
 
-# Função para pausar e continuar
-def press_enter_to_continue():
-    print(f"\n{C.YELLOW}{C.BRIGHT}[!] Pressione ENTER para continuar...{C.RESET}")
-    input()
-    clear_screen()
+# ======= Plataformas do Sherlock =======
+plataformas = {
+    1: ("Todas as Plataformas", ""),
+    2: ("Facebook", "facebook"),
+    3: ("Instagram", "instagram"),
+    4: ("Twitter", "twitter"),
+    5: ("LinkedIn", "linkedin"),
+    6: ("GitHub", "github"),
+    7: ("Reddit", "reddit"),
+    8: ("Pinterest", "pinterest"),
+    9: ("Tumblr", "tumblr"),
+    10: ("YouTube", "youtube"),
+    11: ("Twitch", "twitch"),
+    12: ("TikTok", "tiktok"),
+    13: ("Snapchat", "snapchat"),
+    14: ("Telegram", "telegram"),
+    15: ("VK", "vk"),
+    16: ("Weibo", "weibo"),
+    17: ("QQ", "qq"),
+    18: ("Baidu", "baidu"),
+    19: ("Spotify", "spotify"),
+    20: ("SoundCloud", "soundcloud"),
+    21: ("DeviantArt", "deviantart"),
+    22: ("Flickr", "flickr"),
+    23: ("Medium", "medium"),
+    24: ("Vimeo", "vimeo"),
+    25: ("Dribbble", "dribbble"),
+    26: ("Behance", "behance"),
+    27: ("GitLab", "gitlab"),
+    28: ("Keybase", "keybase"),
+    29: ("Roblox", "roblox"),
+    30: ("Xbox", "xbox"),
+}
 
-# Função para exibir o banner da lupa com 1s e 0s
-def display_magnifying_glass_banner():
-    print(f"{C.CYAN}{C.BRIGHT}")
-    print("      000000000000000000000")
-    print("    0000000000000000000000000")
-    print("   000000000000000000000000000")
-    print("  00000000000000000000000000000")
-    print(" 0000000000000000000000000000000")
-    print(" 0000000000000000000000000000000")
-    print(" 0000000000000000000000000000000")
-    print("  00000000000000000000000000000")
-    print("   000000000000000000000000000")
-    print("    0000000000000000000000000")
-    print("      000000000000000000000")
-    print("            00000")
-    print("            00000")
-    print("            00000")
-    print("            00000")
-    print("           0000000")
-    print("          000000000")
-    print("         00000000000")
-    print("   " + " " * 7 + f"{C.YELLOW}{C.BRIGHT}Sherlock Automator{C.CYAN}") # Centralizando texto
-    print("------------------------------------")
-    print(f"{C.RESET}")
-
-# Função para instalar o Sherlock (com opção de recusar)
-def install_sherlock_if_needed():
-    print(f"{C.YELLOW}{C.BRIGHT}[*] Verificando instalação do Sherlock...{C.RESET}")
+# ======= Verificar se o Sherlock está instalado =======
+def verificar_sherlock():
     try:
-        import sherlock
-        print(f"{C.GREEN}[+] Sherlock já está instalado.{C.RESET}")
-        return True
-    except ImportError:
-        print(f"{C.RED}[-] Sherlock não encontrado.{C.RESET}")
-        confirm = input(f"{C.YELLOW}Deseja instalar o Sherlock agora? (s/N): {C.RESET}").lower()
-        if confirm == 's':
-            print(f"{C.YELLOW}[*] Iniciando instalação... Isso pode levar alguns minutos.{C.RESET}")
-            os.system('pkg update -y')
-            os.system('pkg install git python -y')
-            
-            if not os.path.exists('sherlock'):
-                print(f"{C.YELLOW}[*] Clonando repositório do Sherlock...{C.RESET}")
-                os.system('git clone https://github.com/sherlock-project/sherlock.git')
-            else:
-                print(f"{C.YELLOW}[*] Repositório do Sherlock já existe. Pulando clone.{C.RESET}")
-            
-            print(f"{C.YELLOW}[*] Instalando dependências do Sherlock...{C.RESET}")
-            # Garante que o pip instale no ambiente correto
-            os.system('pip install -r sherlock/requirements.txt') 
-            
-            try:
-                import sherlock # Tenta importar novamente após a instalação
-                print(f"{C.GREEN}[+] Sherlock instalado com sucesso!{C.RESET}")
-                return True
-            except ImportError:
-                print(f"{C.RED}[-] Falha na instalação do Sherlock. Verifique sua conexão ou permissões.{C.RESET}")
-                return False
-        else:
-            print(f"{C.RED}[!] Instalação do Sherlock recusada. Algumas funcionalidades podem não funcionar.{C.RESET}")
-            return False
-    finally:
-        press_enter_to_continue()
-
-# Função para executar comandos do Sherlock
-def run_sherlock_command(username, options=""):
-    if not is_sherlock_installed(): # Verifica se o Sherlock está disponível antes de tentar executar
-        print(f"{C.RED}[-] Sherlock não está instalado. Por favor, instale-o para usar esta função.{C.RESET}")
-        press_enter_to_continue()
-        return
-
-    command = f"python sherlock/sherlock.py {username} {options}"
-    print(f"\n{C.YELLOW}{C.BRIGHT}[!] Executando comando:{C.RESET} {command}\n")
+        # Primeiro tenta com o comando sherlock normal
+        result = subprocess.run(["sherlock", "--version"], capture_output=True, text=True, timeout=10)
+        if "sherlock" in result.stdout.lower() or "sherlock" in result.stderr.lower():
+            print(Fore.GREEN + "[+] Sherlock encontrado (comando: sherlock)!")
+            return "sherlock"
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pass
+    
     try:
-        os.system(command)
-        print(f"\n{C.GREEN}[+] Comando executado com sucesso!{C.RESET}")
+        # Se não encontrar, tenta com python -m sherlock
+        result = subprocess.run(["python", "-m", "sherlock", "--version"], capture_output=True, text=True, timeout=10)
+        if "sherlock" in result.stdout.lower() or "sherlock" in result.stderr.lower():
+            print(Fore.GREEN + "[+] Sherlock encontrado (comando: python -m sherlock)!")
+            return "python -m sherlock"
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pass
+    
+    try:
+        # Tenta com python3 -m sherlock
+        result = subprocess.run(["python3", "-m", "sherlock", "--version"], capture_output=True, text=True, timeout=10)
+        if "sherlock" in result.stdout.lower() or "sherlock" in result.stderr.lower():
+            print(Fore.GREEN + "[+] Sherlock encontrado (comando: python3 -m sherlock)!")
+            return "python3 -m sherlock"
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pass
+    
+    print(Fore.RED + "[X] Sherlock não encontrado.")
+    
+    # Tentar instalar automaticamente via pip
+    print(Fore.YELLOW + "[~] Tentando instalar o Sherlock via pip...")
+    try:
+        subprocess.run(["pip", "install", "sherlock-project"], 
+                     capture_output=True, timeout=300)
+        
+        # Verificar se a instalação foi bem-sucedida
+        try:
+            result = subprocess.run(["python3", "-m", "sherlock", "--version"], 
+                                  capture_output=True, text=True, timeout=10)
+            if "sherlock" in result.stdout.lower() or "sherlock" in result.stderr.lower():
+                print(Fore.GREEN + "[+] Sherlock instalado com sucesso via pip!")
+                return "python3 -m sherlock"
+        except:
+            pass
+            
     except Exception as e:
-        print(f"\n{C.RED}[-] Erro ao executar o comando: {e}{C.RESET}")
-        print(f"{C.RED}[-] Verifique a sintaxe ou a instalação do Sherlock.{C.RESET}")
-    press_enter_to_continue()
+        print(Fore.RED + f"[X] Falha ao instalar Sherlock: {e}")
+    
+    print(Fore.YELLOW + "[!] Instale manualmente: pip install sherlock-project")
+    return None
 
-# Variável global para rastrear se o Sherlock está instalado
-_sherlock_status = False
+# ======= Obter entrada do usuário =======
+def obter_entrada(prompt, default=""):
+    if default:
+        entrada = input(Fore.YELLOW + f"{prompt} [{default}]: ").strip()
+        return entrada if entrada else default
+    else:
+        return input(Fore.YELLOW + f"{prompt}: ").strip()
 
-def is_sherlock_installed():
-    global _sherlock_status
+# ======= Construir comando Sherlock =======
+def construir_comando(comando_sherlock, plataforma, username):
+    comando = f"{comando_sherlock} {username}"
+    
+    # Adicionar plataforma específica se não for "Todas as Plataformas"
+    if plataforma and plataforma != "Todas as Plataformas":
+        comando += f" --site {plataforma}"
+    
+    # Adicionar opções adicionais
+    print(Fore.CYAN + "\n[~] Opções adicionais:")
+    print(Fore.CYAN + "[1] Busca rápida (apenas resultados positivos)")
+    print(Fore.CYAN + "[2] Busca completa (todos os resultados)")
+    print(Fore.CYAN + "[3] Salvar resultados em arquivo")
+    
+    opcao = obter_entrada("Escolha uma opção", "1")
+    
+    if opcao == "1":
+        comando += " --print-found"
+    elif opcao == "3":
+        arquivo = obter_entrada("Nome do arquivo para salvar", f"{username}_results.txt")
+        comando += f" --output {arquivo}"
+        comando += " --print-found"
+    
+    # Adicionar timeout personalizado
+    timeout = obter_entrada("Timeout (segundos)", "60")
+    comando += f" --timeout {timeout}"
+    
+    return comando
+
+# ======= Executar comando Sherlock =======
+def executar_comando(comando):
+    print(Fore.CYAN + f"[>] Executando: {comando}")
+    print(Fore.YELLOW + "[!] Esta operação pode demorar vários minutos...")
+    
+    # Confirmar execução
+    confirmar = input(Fore.YELLOW + "Deseja executar este comando? (S/N): ").strip().upper()
+    if confirmar != 'S':
+        print(Fore.YELLOW + "[!] Comando cancelado.")
+        return
+    
     try:
-        import sherlock
-        _sherlock_status = True
-    except ImportError:
-        _sherlock_status = False
-    return _sherlock_status
+        # Executar o comando
+        processo = subprocess.Popen(comando, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        
+        # Mostrar saída em tempo real
+        while True:
+            output = processo.stdout.readline()
+            if output == b'' and processo.poll() is not None:
+                break
+            if output:
+                linha = output.decode().strip()
+                if "found" in linha.lower() or "positive" in linha.lower():
+                    print(Fore.GREEN + linha)
+                elif "error" in linha.lower() or "failed" in linha.lower():
+                    print(Fore.RED + linha)
+                else:
+                    print(Fore.CYAN + linha)
+        
+        # Verificar se houve erro
+        stderr = processo.stderr.read()
+        if stderr:
+            print(Fore.RED + f"Erro: {stderr.decode()}")
+            
+    except KeyboardInterrupt:
+        print(Fore.RED + "\n[X] Busca interrompida pelo usuário.")
+    except Exception as e:
+        print(Fore.RED + f"[X] Erro ao executar comando: {e}")
 
-# --- Funções de Busca (sem alterações significativas na lógica) ---
+# ======= Mostrar plataformas em 3 colunas =======
+def mostrar_plataformas():
+    print(Fore.CYAN + "\n[~] Plataformas Disponíveis:")
+    print(Fore.CYAN + "-" * 90)
+    
+    # Organizar em 3 colunas
+    items = list(plataformas.items())
+    for i in range(0, len(items), 3):
+        linha = ""
+        for j in range(3):
+            if i + j < len(items):
+                num, (nome, _) = items[i + j]
+                linha += f"{Fore.YELLOW}[{num:02d}] {nome:<25}"
+        print(linha)
 
-def search_specific_sites():
-    username = input(f"{C.BLUE}Digite o nome de usuário a ser buscado: {C.RESET}")
-    sites = input(f"{C.BLUE}Digite os sites (separados por vírgula, ex: facebook,twitter): {C.RESET}")
-    print(f"\n{C.YELLOW}[*] Buscando '{username}' nos sites: {sites}...{C.RESET}")
-    run_sherlock_command(username, f"--site {sites}")
+# ======= Verificar resultados anteriores =======
+def verificar_resultados_anteriores():
+    resultados = []
+    for arquivo in os.listdir("."):
+        if arquivo.endswith("_results.txt"):
+            resultados.append(arquivo)
+    
+    if resultados:
+        print(Fore.GREEN + "\n[+] Resultados anteriores encontrados:")
+        for i, arquivo in enumerate(resultados, 1):
+            print(Fore.CYAN + f"[{i}] {arquivo}")
+        
+        escolha = input(Fore.YELLOW + "\nDeseja visualizar algum resultado? (Número ou Enter para pular): ").strip()
+        if escolha.isdigit():
+            index = int(escolha) - 1
+            if 0 <= index < len(resultados):
+                try:
+                    with open(resultados[index], 'r') as f:
+                        print(Fore.GREEN + f"\nConteúdo de {resultados[index]}:")
+                        print(Fore.CYAN + "-" * 50)
+                        print(f.read())
+                except Exception as e:
+                    print(Fore.RED + f"Erro ao ler arquivo: {e}")
+    else:
+        print(Fore.YELLOW + "[!] Nenhum resultado anterior encontrado.")
 
-def search_all_sites():
-    username = input(f"{C.BLUE}Digite o nome de usuário a ser buscado: {C.RESET}")
-    print(f"\n{C.YELLOW}[*] Buscando '{username}' em todos os sites...{C.RESET}")
-    run_sherlock_command(username)
-
-def search_ignore_sites():
-    username = input(f"{C.BLUE}Digite o nome de usuário a ser buscado: {C.RESET}")
-    ignored_sites = input(f"{C.BLUE}Digite os sites a serem ignorados (separados por vírgula, ex: reddit,instagram): {C.RESET}")
-    print(f"\n{C.YELLOW}[*] Buscando '{username}' ignorando os sites: {ignored_sites}...{C.RESET}")
-    run_sherlock_command(username, f"--ns {ignored_sites}")
-
-def search_with_timeout():
-    username = input(f"{C.BLUE}Digite o nome de usuário a ser buscado: {C.RESET}")
-    timeout = input(f"{C.BLUE}Digite o tempo limite em segundos (ex: 30): {C.RESET}")
-    print(f"\n{C.YELLOW}[*] Buscando '{username}' com tempo limite de {timeout} segundos...{C.RESET}")
-    run_sherlock_command(username, f"--timeout {timeout}")
-
-def search_with_proxy():
-    username = input(f"{C.BLUE}Digite o nome de usuário a ser buscado: {C.RESET}")
-    proxy_address = input(f"{C.BLUE}Digite o endereço do proxy SOCKS5 (ex: socks5://127.0.0.1:9050): {C.RESET}")
-    print(f"\n{C.YELLOW}[*] Buscando '{username}' com proxy: {proxy_address}...{C.RESET}")
-    run_sherlock_command(username, f"--proxy {proxy_address}")
-
-def search_verbose():
-    username = input(f"{C.BLUE}Digite o nome de usuário a ser buscado: {C.RESET}")
-    print(f"\n{C.YELLOW}[*] Buscando '{username}' com resultados detalhados...{C.RESET}")
-    run_sherlock_command(username, "--verbose")
-
-# --- Funções de Download/Saída (sem alterações significativas na lógica) ---
-
-def download_txt():
-    username = input(f"{C.BLUE}Digite o nome de usuário que você buscou ou deseja baixar os resultados: {C.RESET}")
-    filename = input(f"{C.BLUE}Digite o nome do arquivo TXT para salvar (ex: resultados.txt): {C.RESET}")
-    print(f"\n{C.YELLOW}[*] Salvando resultados para '{username}' em {filename} (formato TXT)...{C.RESET}")
-    run_sherlock_command(username, f"--output {filename}")
-
-def download_json():
-    username = input(f"{C.BLUE}Digite o nome de usuário que você buscou ou deseja baixar os resultados: {C.RESET}")
-    filename = input(f"{C.BLUE}Digite o nome do arquivo JSON para salvar (ex: resultados.json): {C.RESET}")
-    print(f"\n{C.YELLOW}[*] Salvando resultados para '{username}' em {filename} (formato JSON)...{C.RESET}")
-    run_sherlock_command(username, f"--output {filename} --json")
-
-def download_csv():
-    username = input(f"{C.BLUE}Digite o nome de usuário que você buscou ou deseja baixar os resultados: {C.RESET}")
-    filename = input(f"{C.BLUE}Digite o nome do arquivo CSV para salvar (ex: resultados.csv): {C.RESET}")
-    print(f"\n{C.YELLOW}[*] Salvando resultados para '{username}' em {filename} (formato CSV)...{C.RESET}")
-    run_sherlock_command(username, f"--output {filename} --csv")
-
-def download_html():
-    username = input(f"{C.BLUE}Digite o nome de usuário que você buscou ou deseja baixar os resultados: {C.RESET}")
-    filename = input(f"{C.BLUE}Digite o nome do arquivo HTML para salvar (ex: resultados.html): {C.RESET}")
-    print(f"\n{C.YELLOW}[*] Salvando resultados detalhados para '{username}' em {filename} (formato HTML)...{C.RESET}")
-    run_sherlock_command(username, f"--output {filename} --html")
-
-def download_pdf():
-    username = input(f"{C.BLUE}Digite o nome de usuário que você buscou ou deseja baixar os resultados: {C.RESET}")
-    filename = input(f"{C.BLUE}Digite o nome do arquivo PDF para salvar (ex: resultados.pdf): {C.RESET}")
-    print(f"\n{C.YELLOW}[*] Gerando relatório PDF para '{username}' em {filename}...{C.RESET}")
-    print(f"{C.RED}[!] O Sherlock não gera PDF diretamente. Considere salvar em HTML e converter manualmente usando ferramentas como wkhtmltopdf (que precisaria ser instalada separadamente).{C.RESET}")
-    press_enter_to_continue()
-
-def download_found_only():
-    username = input(f"{C.BLUE}Digite o nome de usuário que você buscou ou deseja baixar os resultados: {C.RESET}")
-    filename = input(f"{C.BLUE}Digite o nome do arquivo TXT para salvar os usuários encontrados (ex: encontrados.txt): {C.RESET}")
-    print(f"\n{C.YELLOW}[*] Salvando apenas usuários encontrados para '{username}' em {filename}...{C.RESET}")
-    run_sherlock_command(username, f"--output {filename} --found")
-
-# Função principal do menu
-def main_menu():
-    global _sherlock_status # Acessa a variável global
+# ======= Menu =======
+def menu(comando_sherlock):
     while True:
-        clear_screen()
-        display_magnifying_glass_banner()
-        print(f"{C.CYAN}{C.BRIGHT}## Menu Principal{C.RESET}")
-        print("------------------------------------")
+        banner()
+        mostrar_plataformas()
+        verificar_resultados_anteriores()
         
-        # Indica o status do Sherlock
-        if _sherlock_status:
-            print(f"{C.GREEN}[STATUS]{C.RESET} Sherlock: {C.GREEN}INSTALADO{C.RESET}")
-        else:
-            print(f"{C.RED}[STATUS]{C.RESET} Sherlock: {C.RED}NÃO INSTALADO{C.RESET}")
-        print("------------------------------------")
+        print(Fore.CYAN + "\n" + "="*90)
+        print(Fore.MAGENTA + "OPÇÕES:")
+        print(Fore.CYAN + "[01-30] Selecionar plataforma para busca")
+        print(Fore.CYAN + "[U]     Verificar usuário em todas as plataformas")
+        print(Fore.CYAN + "[C]     Comando personalizado do Sherlock")
+        print(Fore.CYAN + "[0]     Sair")
+        print(Fore.CYAN + "="*90)
 
-        print(f"1. {C.GREEN}Buscar Usuário em Sites Específicos{C.RESET}")
-        print(f"2. {C.GREEN}Buscar Usuário em Todos os Sites (Padrão){C.RESET}")
-        print(f"3. {C.GREEN}Buscar Usuário Ignorando Sites{C.RESET}")
-        print(f"4. {C.GREEN}Buscar Usuário com Tempo Limite{C.RESET}")
-        print(f"5. {C.GREEN}Buscar Usuário com Proxy (SOCKS5){C.RESET}")
-        print(f"6. {C.GREEN}Buscar Usuário com Resultado Detalhado{C.RESET}")
-        print("---")
-        print(f"{C.CYAN}{C.BRIGHT}## Opções de Download/Saída{C.RESET}")
-        print("------------------------------------")
-        print(f"7. {C.YELLOW}Salvar Resultados em Arquivo TXT{C.RESET}")
-        print(f"8. {C.YELLOW}Salvar Resultados em Arquivo JSON{C.RESET}")
-        print(f"9. {C.YELLOW}Salvar Resultados em Arquivo CSV{C.RESET}")
-        print(f"10. {C.YELLOW}Salvar Resultados Detalhados (HTML){C.RESET}")
-        print(f"11. {C.RED}Gerar Relatório PDF (Atenção!){C.RESET}")
-        print(f"12. {C.YELLOW}Salvar Apenas Usuários Encontrados{C.RESET}")
-        print("---")
-        
-        # Opção para instalar/reinstalar o Sherlock, se necessário
-        if not _sherlock_status:
-            print(f"13. {C.MAGENTA}Instalar/Reinstalar Sherlock{C.RESET}")
-        
-        print(f"0. {C.RED}Sair{C.RESET}")
-        print("------------------------------------")
+        try:
+            escolha = input(Fore.YELLOW + "\nEscolha uma opção: ").strip().upper()
+            
+            if escolha == '0':
+                print(Fore.GREEN + "Saindo...")
+                sys.exit()
+            elif escolha == 'C':
+                comando_personalizado = input(Fore.YELLOW + "Digite o comando Sherlock personalizado: ").strip()
+                executar_comando(comando_personalizado)
+                input(Fore.GREEN + "\nPressione Enter para continuar...")
+            elif escolha == 'U':
+                username = obter_entrada("Digite o nome de usuário para buscar")
+                comando_final = construir_comando(comando_sherlock, "", username)
+                executar_comando(comando_final)
+                input(Fore.GREEN + "\nPressione Enter para continuar...")
+            else:
+                try:
+                    escolha_num = int(escolha)
+                    if escolha_num in plataformas:
+                        nome_plataforma, codigo_plataforma = plataformas[escolha_num]
+                        username = obter_entrada("Digite o nome de usuário para buscar")
+                        comando_final = construir_comando(comando_sherlock, codigo_plataforma, username)
+                        executar_comando(comando_final)
+                        input(Fore.GREEN + "\nPressione Enter para continuar...")
+                    else:
+                        print(Fore.RED + "Opção inválida.")
+                        time.sleep(1)
+                except ValueError:
+                    print(Fore.RED + "Opção inválida.")
+                    time.sleep(1)
+                    
+        except KeyboardInterrupt:
+            print(Fore.RED + "\n[X] Interrompido pelo usuário.")
+            sys.exit()
+        except Exception as e:
+            print(Fore.RED + f"Erro: {e}")
+            time.sleep(2)
 
-        choice = input(f"{C.BLUE}Escolha uma opção: {C.RESET}")
+# ======= Aviso Legal =======
+def mostrar_aviso():
+    print(Fore.RED + Style.BRIGHT + "\n" + "="*90)
+    print("AVISO LEGAL:")
+    print("Este software é apenas para fins educacionais e de teste de segurança.")
+    print("Só utilize para verificar seus próprios usuários ou com autorização explícita.")
+    print("A verificação de usuários sem autorização pode violar termos de serviço.")
+    print("O uso indevido desta ferramenta é de sua exclusiva responsabilidade.")
+    print("Respeite as leis locais e a privacidade dos outros.")
+    print("="*90)
+    
+    resposta = input(Fore.YELLOW + "\nVocê concorda com os termos? (S/N): ").strip().upper()
+    if resposta != 'S':
+        print(Fore.RED + "Você precisa concordar com os termos para usar este software.")
+        sys.exit(1)
 
-        if choice == '1':
-            search_specific_sites()
-        elif choice == '2':
-            search_all_sites()
-        elif choice == '3':
-            search_ignore_sites()
-        elif choice == '4':
-            search_with_timeout()
-        elif choice == '5':
-            search_with_proxy()
-        elif choice == '6':
-            search_verbose()
-        elif choice == '7':
-            download_txt()
-        elif choice == '8':
-            download_json()
-        elif choice == '9':
-            download_csv()
-        elif choice == '10':
-            download_html()
-        elif choice == '11':
-            download_pdf()
-        elif choice == '12':
-            download_found_only()
-        elif choice == '13' and not _sherlock_status:
-            _sherlock_status = install_sherlock_if_needed() # Tenta instalar e atualiza o status
-        elif choice == '0':
-            print(f"{C.GREEN}[*] Saindo... Até mais!{C.RESET}")
-            sys.exit(0)
-        else:
-            print(f"{C.RED}[!] Opção inválida ou Sherlock não está disponível para esta ação. Tente novamente.{C.RESET}")
-            press_enter_to_continue()
-
-# --- Início do Script ---
+# ======= MAIN =======
 if __name__ == "__main__":
-    clear_screen()
-    # Pergunta ao usuário se ele quer instalar o Sherlock no início
-    _sherlock_status = install_sherlock_if_needed() 
-    main_menu()
+    mostrar_aviso()
+    comando_sherlock = verificar_sherlock()
+    if comando_sherlock:
+        menu(comando_sherlock)
+    else:
+        print(Fore.RED + "[X] Sherlock não está instalado. Abortando.")
+        sys.exit(1)
