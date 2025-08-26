@@ -3,161 +3,229 @@
 
 import os
 import sys
-import time
-import requests
 import subprocess
-import zipfile
-from io import BytesIO
-from colorama import init, Fore, Style
+import time
+from colorama import Fore, Style, init
 
 init(autoreset=True)
 
-class PhishingToolkit:
-    def __init__(self):
-        self.repo_dir = "PhishingTools"
-        self.tools = {
-            "1": {"name": "SocialFish", "repo": "https://github.com/UndeadSec/SocialFish"},
-            "2": {"name": "HiddenEye", "repo": "https://github.com/DarkSecDevelopers/HiddenEye"},
-            "3": {"name": "Zphisher", "repo": "https://github.com/htr-tech/zphisher"},
-            "4": {"name": "BlackPhish", "repo": "https://github.com/iinc0gnit0/BlackPhish"},
-            "5": {"name": "PhishX", "repo": "https://github.com/RevengeComing/PhishX"},
-            "6": {"name": "PyPhisher", "repo": "https://github.com/KasRoudra/PyPhisher"},
-            "7": {"name": "ShellPhish", "repo": "https://github.com/thelinuxchoice/shellphish"},
-            "8": {"name": "NexPhisher", "repo": "https://github.com/htr-tech/nexphisher"},
-            "9": {"name": "AnglerPhish", "repo": "https://github.com/DeepSociety/AnglerPhish"},
-            "10": {"name": "Evilginx2", "repo": "https://github.com/kgretzky/evilginx2"},
-            "11": {"name": "Modlishka", "repo": "https://github.com/drk1wi/Modlishka"},
-            "12": {"name": "Gophish", "repo": "https://github.com/gophish/gophish"},
-            "13": {"name": "KingPhisher", "repo": "https://github.com/rsmusllp/king-phisher"},
-            "14": {"name": "PhishLulz", "repo": "https://github.com/PHISHSECURITY/PhishLulz"},
-            "15": {"name": "iPhish", "repo": "https://github.com/UndeadSec/iPhish"},
-            "16": {"name": "PhishBait", "repo": "https://github.com/An0nUD4Y/PhishBait"},
-            "17": {"name": "PhishMailer", "repo": "https://github.com/BiZken/PhishMailer"},
-            "18": {"name": "PhishX", "repo": "https://github.com/tatanus/PhishX"},
-            "19": {"name": "PhishTales", "repo": "https://github.com/azizaltuntas/PhishTales"},
-            "20": {"name": "PhishStorm", "repo": "https://github.com/An0nUD4Y/PhishStorm"}
-        }
-        self._setup_repository()
-
-    def _setup_repository(self):
-        """Cria a estrutura de diretórios"""
-        if not os.path.exists(self.repo_dir):
-            os.makedirs(self.repo_dir)
-            print(Fore.GREEN + "[+] Diretório criado: " + self.repo_dir)
-
-    def _print_banner(self):
-        """Exibe o banner minimalista"""
-        os.system('cls' if os.name == 'nt' else 'clear')
-        print(Fore.GREEN + r"""
+# ======= Banner =======
+def banner():
+    os.system('clear' if os.name == 'posix' else 'cls')
+    print(Fore.RED + Style.BRIGHT + r"""
 ██████╗ ██╗  ██╗██╗███████╗██╗  ██╗██╗███╗   ██╗ ██████╗ 
 ██╔══██╗██║  ██║██║██╔════╝██║  ██║██║████╗  ██║██╔════╝ 
 ██████╔╝███████║██║███████╗███████║██║██╔██╗ ██║██║  ███╗
 ██╔═══╝ ██╔══██║██║╚════██║██╔══██║██║██║╚██╗██║██║   ██║
 ██║     ██║  ██║██║███████║██║  ██║██║██║ ╚████║╚██████╔╝
 ╚═╝     ╚═╝  ╚═╝╚═╝╚══════╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝ ╚═════╝ 
-""" + Style.RESET_ALL)
+             [ PHISHING MENU - TOP 30 ]
+    """ + Style.RESET_ALL)
 
-    def _download_tool(self, tool):
-        """Baixa e instala a ferramenta"""
+# ======= Ferramentas (Top 30 Phishing GitHub) =======
+ferramentas = {
+    1: ("Zphisher", "https://github.com/htr-tech/zphisher.git", "bash zphisher.sh"),
+    2: ("SocialFish", "https://github.com/An0nUD4Y/SocialFish.git", "python3 SocialFish.py"),
+    3: ("HiddenEye", "https://github.com/DarkSecDevelopers/HiddenEye.git", "python3 HiddenEye.py"),
+    4: ("BlackPhish", "https://github.com/iinc0gnit0/BlackPhish.git", "bash blackphish.sh"),
+    5: ("AdvPhishing", "https://github.com/Ignitetch/AdvPhishing.git", "bash AdvPhishing.sh"),
+    6: ("ShellPhish", "https://github.com/thelinuxchoice/shellphish.git", "bash shellphish.sh"),
+    7: ("PhishX", "https://github.com/WeebSec/PhishX.git", "bash PhishX.sh"),
+    8: ("CamPhish", "https://github.com/techchipnet/CamPhish.git", "bash camphish.sh"),
+    9: ("SayCheese", "https://github.com/hangetzzu/saycheese.git", "bash saycheese.sh"),
+    10: ("QRJacking", "https://github.com/cryptedwolf/qrjacking.git", "python3 qrjacking.py"),
+    11: ("WifiPhisher", "https://github.com/wifiphisher/wifiphisher.git", "python3 wifiphisher.py"),
+    12: ("Evilginx2", "https://github.com/kgretzky/evilginx2.git", "bash install.sh"),
+    13: ("KingPhisher", "https://github.com/securestate/king-phisher.git", "python3 KingPhisher.py"),
+    14: ("Storm-Breaker", "https://github.com/ultrasecurity/Storm-Breaker.git", "bash Storm-Breaker.sh"),
+    15: ("PyPhisher", "https://github.com/KasRoudra/PyPhisher.git", "python3 pyphisher.py"),
+    16: ("Cupp", "https://github.com/Mebus/cupp.git", "python3 cupp.py"),
+    17: ("Seeker", "https://github.com/thewhiteh4t/seeker.git", "python3 seeker.py"),
+    18: ("EvilURL", "https://github.com/UndeadSec/EvilURL.git", "python3 evilurl.py"),
+    19: ("KatPhish", "https://github.com/tsug0d/KatPhish.git", "bash KatPhish.sh"),
+    20: ("FakeMail", "https://github.com/suxsem/FakeMail.git", "python3 fakemail.py"),
+    21: ("Gophish", "https://github.com/gophish/gophish.git", "./gophish"),
+    22: ("Modlishka", "https://github.com/drk1wi/Modlishka.git", "./dist/proxy"),
+    23: ("CredSniper", "https://github.com/ustayready/CredSniper.git", "python3 credsniper.py"),
+    24: ("PhishLulz", "https://github.com/PHISHLULZ/PHISHLULZ.git", "bash PHISHLULZ.sh"),
+    25: ("Lucid", "https://github.com/Lucid-Revenge/Lucid.git", "python3 lucid.py"),
+    26: ("Nexphisher", "https://github.com/htr-tech/nexphisher.git", "bash nexphisher.sh"),
+    27: ("Artemis", "https://github.com/sweetsoftware/Artemis.git", "python3 artemis.py"),
+    28: ("BlackEye", "https://github.com/An0nUD4Y/BlackEye.git", "bash blackeye.sh"),
+    29: ("iSmish", "https://github.com/4L13199/ismish.git", "python2 iSmish.py"),
+    30: ("PhishBait", "https://github.com/pan0pt1c0n/PhishBait.git", "python3 phishbait.py"),
+}
+
+# ======= Pasta padrão =======
+pasta_tools = "Ferramentas"
+
+def checar_pasta():
+    if not os.path.exists(pasta_tools):
+        os.makedirs(pasta_tools)
+        print(Fore.GREEN + f"[+] Pasta '{pasta_tools}' criada com sucesso!")
+
+# ======= Verificar se a ferramenta já existe =======
+def verificar_ferramenta(nome):
+    destino = os.path.join(pasta_tools, nome)
+    return os.path.exists(destino)
+
+# ======= Clonar ferramenta =======
+def clonar(nome, url):
+    destino = os.path.join(pasta_tools, nome)
+    if verificar_ferramenta(nome):
+        print(Fore.YELLOW + f"[!] {nome} já foi baixada anteriormente.")
+        return True
+    else:
         try:
-            tool_dir = os.path.join(self.repo_dir, tool["name"])
-            if not os.path.exists(tool_dir):
-                os.makedirs(tool_dir)
-
-            print(Fore.CYAN + f"\n[+] Baixando {tool['name']}...")
-            
-            # Tenta baixar via git clone
-            if self._git_clone(tool["repo"], tool_dir):
-                print(Fore.GREEN + f"[✓] {tool['name']} instalado com sucesso!")
-                self._run_tool(tool_dir)
+            print(Fore.GREEN + f"[+] Clonando {nome} ...")
+            result = subprocess.run(["git", "clone", url, destino], 
+                                  capture_output=True, text=True, timeout=300)
+            if result.returncode == 0:
+                print(Fore.GREEN + f"[+] {nome} clonada com sucesso!")
+                return True
             else:
-                # Fallback para download ZIP
-                self._download_zip(tool["repo"], tool_dir)
-                
+                print(Fore.RED + f"[X] Erro ao clonar {nome}: {result.stderr}")
+                return False
+        except subprocess.TimeoutExpired:
+            print(Fore.RED + f"[X] Timeout ao clonar {nome}. O processo demorou muito.")
+            return False
         except Exception as e:
-            print(Fore.RED + f"[!] Erro: {str(e)}")
-
-    def _git_clone(self, repo_url, target_dir):
-        """Tenta clonar via git"""
-        try:
-            subprocess.run(["git", "clone", repo_url, target_dir], check=True)
-            return True
-        except:
+            print(Fore.RED + f"[X] Erro ao clonar {nome}: {e}")
             return False
 
-    def _download_zip(self, repo_url, target_dir):
-        """Fallback para download ZIP"""
+# ======= Instalar dependências =======
+def instalar_dependencias(nome):
+    destino = os.path.join(pasta_tools, nome)
+    requisitos_path = os.path.join(destino, "requirements.txt")
+    
+    if os.path.exists(requisitos_path):
+        print(Fore.CYAN + f"[~] Instalando dependências para {nome}...")
         try:
-            zip_url = repo_url + "/archive/master.zip"
-            response = requests.get(zip_url)
-            
-            if response.status_code == 200:
-                with zipfile.ZipFile(BytesIO(response.content)) as zip_ref:
-                    zip_ref.extractall(target_dir)
-                print(Fore.GREEN + f"[✓] {os.path.basename(repo_url)} baixado!")
-                self._run_tool(target_dir)
+            result = subprocess.run(["pip3", "install", "-r", requisitos_path], 
+                                  capture_output=True, text=True, timeout=180)
+            if result.returncode == 0:
+                print(Fore.GREEN + f"[+] Dependências de {nome} instaladas com sucesso!")
             else:
-                print(Fore.RED + "[!] Falha no download. Abrindo navegador...")
-                webbrowser.open(repo_url)
-        except:
-            print(Fore.RED + "[!] Erro no download ZIP. Abrindo navegador...")
-            webbrowser.open(repo_url)
+                print(Fore.YELLOW + f"[!] Alguns erros ao instalar dependências: {result.stderr}")
+        except subprocess.TimeoutExpired:
+            print(Fore.RED + f"[X] Timeout ao instalar dependências para {nome}.")
+        except Exception as e:
+            print(Fore.YELLOW + f"[!] Erro ao instalar dependências: {e}")
 
-    def _run_tool(self, tool_dir):
-        """Tenta executar a ferramenta após instalação"""
-        print(Fore.YELLOW + "\n[i] Procurando arquivo de instalação...")
+# ======= Executar ferramenta =======
+def executar(nome, comando):
+    caminho = os.path.join(pasta_tools, nome)
+    if not os.path.exists(caminho):
+        print(Fore.RED + f"[X] {nome} não foi encontrada. Baixe primeiro.")
+        return
+    
+    # Primeiro instala as dependências
+    instalar_dependencias(nome)
+    
+    print(Fore.CYAN + f"[>] Executando {nome}...")
+    time.sleep(2)
+    
+    try:
+        # Navega para o diretório e executa o comando
+        os.chdir(caminho)
         
-        # Verifica arquivos comuns de instalação
-        possible_files = ["install.sh", "setup.py", "tool.py", "main.py"]
+        # Verifica se o comando específico existe, caso contrário tenta encontrar um executável
+        if not os.path.exists(comando.split()[0]):
+            # Tenta encontrar um script executável
+            scripts = [f for f in os.listdir('.') if os.path.isfile(f) and os.access(f, os.X_OK)]
+            if scripts:
+                comando = f"./{scripts[0]}"
         
-        for file in possible_files:
-            file_path = os.path.join(tool_dir, file)
-            if os.path.exists(file_path):
-                print(Fore.GREEN + f"[+] Arquivo encontrado: {file}")
+        # Executa o comando
+        os.system(comando)
+    except Exception as e:
+        print(Fore.RED + f"[X] Erro ao executar {nome}: {e}")
+    finally:
+        # Volta para o diretório original
+        os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# ======= Mostrar status das ferramentas =======
+def mostrar_status():
+    print(Fore.CYAN + "\n[~] Status das Ferramentas:")
+    print(Fore.CYAN + "-" * 50)
+    for i, (nome, _, _) in ferramentas.items():
+        status = Fore.GREEN + "INSTALADA" if verificar_ferramenta(nome) else Fore.RED + "NÃO INSTALADA"
+        print(f"{Fore.YELLOW}[{i}] {nome}: {status}")
+
+# ======= Menu =======
+def menu():
+    while True:
+        banner()
+        mostrar_status()
+        
+        print(Fore.CYAN + "\n" + "="*50)
+        print(Fore.MAGENTA + "OPÇÕES:")
+        print(Fore.CYAN + "[1-30] Baixar/Executar ferramenta específica")
+        print(Fore.CYAN + "[A]    Baixar todas as ferramentas")
+        print(Fore.CYAN + "[S]    Mostrar status de todas as ferramentas")
+        print(Fore.CYAN + "[0]    Sair")
+        print(Fore.CYAN + "="*50)
+
+        try:
+            escolha = input(f"\n{Fore.YELLOW}investiga{Fore.BLUE}@{Fore.GREEN}phishing {Fore.RED}> {Fore.BLUE}> ").strip().upper()
+            
+            if escolha == '0':
+                print(Fore.GREEN + "Saindo...")
+                sys.exit()
+            elif escolha == 'A':
+                print(Fore.CYAN + "[~] Baixando todas as ferramentas...")
+                for i, (nome, url, _) in ferramentas.items():
+                    print(Fore.CYAN + f"[{i}] Baixando {nome}...")
+                    clonar(nome, url)
+                    time.sleep(1)
+                input(Fore.GREEN + "\n[+] Todas as ferramentas foram baixadas. Pressione Enter para continuar...")
+            elif escolha == 'S':
+                # Já mostramos o status no banner, só precisamos esperar
+                input(Fore.GREEN + "\nPressione Enter para continuar...")
+            else:
                 try:
-                    os.chdir(tool_dir)
-                    if file.endswith(".sh"):
-                        subprocess.run(["bash", file])
-                    elif file.endswith(".py"):
-                        subprocess.run(["python3", file])
-                    return
-                except Exception as e:
-                    print(Fore.RED + f"[!] Erro ao executar: {str(e)}")
-        
-        print(Fore.YELLOW + "[i] Nenhum script de instalação encontrado.")
-        print(Fore.CYAN + "[i] Verifique o README.md para instruções.")
+                    escolha_num = int(escolha)
+                    if escolha_num in ferramentas:
+                        nome, url, comando = ferramentas[escolha_num]
+                        if clonar(nome, url):
+                            executar(nome, comando)
+                    else:
+                        print(Fore.RED + "Opção inválida.")
+                        time.sleep(1)
+                except ValueError:
+                    print(Fore.RED + "Opção inválida.")
+                    time.sleep(1)
+                    
+        except KeyboardInterrupt:
+            print(Fore.RED + "\n[X] Interrompido pelo usuário.")
+            sys.exit()
+        except Exception as e:
+            print(Fore.RED + f"Erro: {e}")
+            time.sleep(2)
 
-    def _show_menu(self):
-        """Exibe o menu de ferramentas"""
-        print(Fore.GREEN + "\n[+] FERRAMENTAS DISPONÍVEIS [+]\n")
-        
-        # Menu em 2 colunas
-        for i in range(0, 20, 2):
-            left = f"{Fore.YELLOW}[{i+1}] {self.tools[str(i+1)]['name']}"
-            right = f"{Fore.YELLOW}[{i+2}] {self.tools[str(i+2)]['name']}" if i+2 <= 20 else ""
-            print(f"{left.ljust(30)}{right}")
-        
-        print(Fore.RED + "\n[0] Sair" + Style.RESET_ALL)
+# ======= Verificar dependências do sistema =======
+def verificar_dependencias():
+    dependencias = ['git', 'python3', 'pip3']
+    print(Fore.CYAN + "[~] Verificando dependências...")
+    
+    for dep in dependencias:
+        try:
+            subprocess.run([dep, '--version'], capture_output=True, check=True)
+            print(Fore.GREEN + f"[+] {dep} encontrado.")
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            print(Fore.RED + f"[X] {dep} não encontrado. Por favor, instale-o.")
+            if dep == 'git':
+                print(Fore.YELLOW + "[!] No Debian/Ubuntu: sudo apt install git")
+            time.sleep(2)
+            return False
+    
+    return True
 
-    def run(self):
-        """Executa o menu principal"""
-        while True:
-            self._print_banner()
-            self._show_menu()
-            
-            choice = input(Fore.BLUE + "\n[?] Selecione uma ferramenta (1-20): " + Style.RESET_ALL)
-            
-            if choice == "0":
-                print(Fore.GREEN + "\n[+] Saindo..." + Style.RESET_ALL)
-                break
-                
-            if choice in self.tools:
-                self._download_tool(self.tools[choice])
-            else:
-                print(Fore.RED + "[!] Opção inválida!")
-            
-            input(Fore.YELLOW + "\n[i] Pressione Enter para continuar..." + Style.RESET_ALL)
-
-if __name__ == '__main__':
-    toolkit = PhishingToolkit()
-    toolkit.run()
+# ======= MAIN =======
+if __name__ == "__main__":
+    if verificar_dependencias():
+        checar_pasta()
+        menu()
+    else:
+        print(Fore.RED + "[X] Dependências necessárias não encontradas. Abortando.")
+        sys.exit(1)
