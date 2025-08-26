@@ -1,534 +1,275 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import os
 import sys
-import time
-import random
-import json
-import logging
 import subprocess
-from urllib.parse import urlparse
-from colorama import init, Fore, Back, Style
-from logging.handlers import RotatingFileHandler
+import time
+from colorama import Fore, Style, init
 
-# Configurações globais
-DIRETORIO_SAIDA = os.path.expanduser("~/sqlmap_output")
-ALVO_PADRAO = "http://testphp.vulnweb.com"
-CONFIG_FILE = os.path.expanduser("~/.sqlmap_interface.conf")
-MAX_LOG_SIZE = 5 * 1024 * 1024  # 5MB
-LOG_BACKUP_COUNT = 3
-API_TIMEOUT = 30  # segundos
+init(autoreset=True)
 
-class SQLMapInterface:
-    def __init__(self):
-        self.alvo_atual = ALVO_PADRAO
-        self.modo_api = False
-        self.tarefa_id = None
-        self.api_disponivel = False
-        self.cli_disponivel = False
-        self.sqlmap_api = None  # Referência para o módulo API
-        self._configurar_logging()
-        self.carregar_config()
-        self.verificar_ambiente()
+# ======= Banner =======
+def banner():
+    os.system('clear' if os.name == 'posix' else 'cls')
+    print(Fore.RED + Style.BRIGHT + r"""
+   ███████╗ ██████╗ ██╗     ███╗   ███╗ █████╗ ██████╗ 
+   ██╔════╝██╔═══██╗██║     ████╗ ████║██╔══██╗██╔══██╗
+   ███████╗██║   ██║██║     ██╔████╔██║███████║██████╔╝
+   ╚════██║██║   ██║██║     ██║╚██╔╝██║██╔══██║██╔═══╝ 
+   ███████║╚██████╔╝███████╗██║ ╚═╝ ██║██║  ██║██║     
+   ╚══════╝ ╚═════╝ ╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝     
+            [ SQLMap Attack Menu - 30 Techniques ]
+    """ + Style.RESET_ALL)
+
+# ======= Técnicas de Ataque SQLMap =======
+tecnicas = {
+    1: ("Detecção Básica", "python -m sqlmap -u \"TARGET_URL\" --batch"),
+    2: ("Detecção com User-Agent", "python -m sqlmap -u \"TARGET_URL\" --random-agent --batch"),
+    3: ("Detecção com Proxy", "python -m sqlmap -u \"TARGET_URL\" --proxy=\"http://127.0.0.1:8080\" --batch"),
+    4: ("Detecção com Cookies", "python -m sqlmap -u \"TARGET_URL\" --cookie=\"PHPSESSID=value\" --batch"),
+    5: ("Detecção com POST Data", "python -m sqlmap -u \"TARGET_URL\" --data=\"param1=value1&param2=value2\" --batch"),
+    6: ("Detecção com Headers", "python -m sqlmap -u \"TARGET_URL\" --headers=\"X-Forwarded-For:127.0.0.1\" --batch"),
+    7: ("Detecção de DBMS", "python -m sqlmap -u \"TARGET_URL\" --dbms=mysql --batch"),
+    8: ("Detecção de Tabelas", "python -m sqlmap -u \"TARGET_URL\" --tables --batch"),
+    9: ("Detecção de Colunas", "python -m sqlmap -u \"TARGET_URL\" -T users --columns --batch"),
+    10: ("Dump de Dados", "python -m sqlmap -u \"TARGET_URL\" -T users --dump --batch"),
+    11: ("Dump com WHERE", "python -m sqlmap -u \"TARGET_URL\" -T users --where=\"id=1\" --dump --batch"),
+    12: ("Dump com LIMIT", "python -m sqlmap -u \"TARGET_URL\" -T users --dump --start=1 --stop=10 --batch"),
+    13: ("Dump com Colunas Específicas", "python -m sqlmap -u \"TARGET_URL\" -T users -C username,password --dump --batch"),
+    14: ("Ataque de Força Bruta", "python -m sqlmap -u \"TARGET_URL\" --common-tables --batch"),
+    15: ("Ataque de UNION", "python -m sqlmap -u \"TARGET_URL\" --technique=U --batch"),
+    16: ("Ataque de Boolean-Based Blind", "python -m sqlmap -u \"TARGET_URL\" --technique=B --batch"),
+    17: ("Ataque de Time-Based Blind", "python -m sqlmap -u \"TARGET_URL\" --technique=T --batch"),
+    18: ("Ataque de Error-Based", "python -m sqlmap -u \"TARGET_URL\" --technique=E --batch"),
+    19: ("Ataque de Stacked Queries", "python -m sqlmap -u \"TARGET_URL\" --technique=S --batch"),
+    20: ("Ataque de Out-of-Band", "python -m sqlmap -u \"TARGET_URL\" --technique=O --batch"),
+    21: ("Ataque com Tamper Scripts", "python -m sqlmap -u \"TARGET_URL\" --tamper=space2comment --batch"),
+    22: ("Ataque Multi-Tamper", "python -m sqlmap -u \"TARGET_URL\" --tamper=space2comment,charencode --batch"),
+    23: ("Ataque com Level/Risk", "python -m sqlmap -u \"TARGET_URL\" --level=3 --risk=3 --batch"),
+    24: ("Ataque com Delay", "python -m sqlmap -u \"TARGET_URL\" --delay=1 --batch"),
+    25: ("Ataque com Timeout", "python -m sqlmap -u \"TARGET_URL\" --timeout=30 --batch"),
+    26: ("Ataque com Retries", "python -m sqlmap -u \"TARGET_URL\" --retries=3 --batch"),
+    27: ("Ataque com Threads", "python -m sqlmap -u \"TARGET_URL\" --threads=5 --batch"),
+    28: ("Ataque com Prefix/Suffix", "python -m sqlmap -u \"TARGET_URL\" --prefix=\"'\" --suffix=\"'\" --batch"),
+    29: ("Ataque com Code Execution", "python -m sqlmap -u \"TARGET_URL\" --os-cmd=\"whoami\" --batch"),
+    30: ("Ataque com File Operations", "python -m sqlmap -u \"TARGET_URL\" --file-read=\"/etc/passwd\" --batch"),
+}
+
+# ======= Verificar se o SQLMap está instalado =======
+def verificar_sqlmap():
+    try:
+        # Primeiro tenta com o comando sqlmap normal
+        result = subprocess.run(["sqlmap", "--version"], capture_output=True, text=True, timeout=10)
+        if "sqlmap" in result.stdout or "sqlmap" in result.stderr:
+            print(Fore.GREEN + "[+] SQLMap encontrado (comando: sqlmap)!")
+            return "sqlmap"
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pass
+    
+    try:
+        # Se não encontrar, tenta com python -m sqlmap
+        result = subprocess.run(["python", "-m", "sqlmap", "--version"], capture_output=True, text=True, timeout=10)
+        if "sqlmap" in result.stdout or "sqlmap" in result.stderr:
+            print(Fore.GREEN + "[+] SQLMap encontrado (comando: python -m sqlmap)!")
+            return "python -m sqlmap"
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pass
+    
+    try:
+        # Tenta com python3 -m sqlmap
+        result = subprocess.run(["python3", "-m", "sqlmap", "--version"], capture_output=True, text=True, timeout=10)
+        if "sqlmap" in result.stdout or "sqlmap" in result.stderr:
+            print(Fore.GREEN + "[+] SQLMap encontrado (comando: python3 -m sqlmap)!")
+            return "python3 -m sqlmap"
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pass
+    
+    print(Fore.RED + "[X] SQLMap não encontrado.")
+    
+    # Tentar instalar automaticamente via pip
+    print(Fore.YELLOW + "[~] Tentando instalar o SQLMap via pip...")
+    try:
+        subprocess.run(["pip", "install", "sqlmap"], 
+                     capture_output=True, timeout=300)
         
-    def _configurar_logging(self):
-        """Configura o sistema de logging com rotação"""
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s',
-            handlers=[
-                RotatingFileHandler(
-                    'sqlmap_interface.log',
-                    maxBytes=MAX_LOG_SIZE,
-                    backupCount=LOG_BACKUP_COUNT
-                ),
-                logging.StreamHandler()
-            ]
-        )
-        self.logger = logging.getLogger(__name__)
-
-    def carregar_config(self):
-        """Carrega configurações do arquivo com verificação de segurança"""
+        # Verificar se a instalação foi bem-sucedida
         try:
-            if os.path.exists(CONFIG_FILE):
-                with open(CONFIG_FILE, 'r') as f:
-                    config = json.load(f)
-                    if isinstance(config, dict) and 'alvo' in config:
-                        self.alvo_atual = config['alvo'][:500]  
-        except Exception as e:
-            self.logger.error(f"Erro ao carregar config: {str(e)}")
-            self.alvo_atual = ALVO_PADRAO
-
-    def salvar_config(self):
-        """Salva configurações no arquivo com tratamento de erro"""
-        try:
-            config = {'alvo': self.alvo_atual[:500]} 
-            with open(CONFIG_FILE, 'w') as f:
-                json.dump(config, f)
-            return True
-        except Exception as e:
-            self.logger.error(f"Erro ao salvar config: {str(e)}")
-            return False
-
-    def verificar_ambiente(self):
-        """Verifica o ambiente de forma mais robusta"""
-        # Primeiro verifica se a API está disponível
-        self.api_disponivel = self._verificar_api()
-        
-        # Se API não está disponível, verifica CLI
-        self.cli_disponivel = self._verificar_cli()
-        
-        if not self.api_disponivel and not self.cli_disponivel:
-            print(f"{Fore.RED}[ERRO] SQLMap não encontrado!")
-            print(f"{Fore.YELLOW}Instale com:")
-            print(f"pip install sqlmap-py (para modo API)")
-            print(f"ou baixe de https://github.com/sqlmapproject/sqlmap (para modo CLI)")
-            return False
-        
-        # Prioriza o modo API se disponível
-        self.modo_api = self.api_disponivel
-        return True
-
-    def _verificar_api(self):
-        """Verifica se a API está disponível"""
-        try:
-            # Tenta importar o módulo da API
-            import sqlmap
-            if hasattr(sqlmap, 'api'):
-                self.sqlmap_api = sqlmap.api
-                # Testa a funcionalidade básica
-                test_task = self.sqlmap_api.new_task()
-                if 'taskid' in test_task:
-                    self.sqlmap_api.delete_task(test_task['taskid'])
-                    return True
-        except Exception as e:
-            self.logger.warning(f"API SQLMap não disponível: {str(e)}")
-        return False
-
-    def _verificar_cli(self):
-        """Verifica se o CLI está disponível"""
-        try:
-            result = subprocess.run(
-                ["sqlmap", "--version"],
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                timeout=5
-            )
-            return result.returncode == 0
+            result = subprocess.run(["python", "-m", "sqlmap", "--version"], 
+                                  capture_output=True, text=True, timeout=10)
+            if "sqlmap" in result.stdout or "sqlmap" in result.stderr:
+                print(Fore.GREEN + "[+] SQLMap instalado com sucesso via pip!")
+                return "python -m sqlmap"
         except:
-            return False
+            pass
+            
+    except Exception as e:
+        print(Fore.RED + f"[X] Falha ao instalar SQLMap: {e}")
+    
+    print(Fore.YELLOW + "[!] Instale manualmente: pip install sqlmap")
+    return None
 
-    def mostrar_banner(self):
-        """Exibe banner com verificação de tamanho"""
+# ======= Obter entrada do usuário =======
+def obter_entrada(prompt, default=""):
+    if default:
+        entrada = input(Fore.YELLOW + f"{prompt} [{default}]: ").strip()
+        return entrada if entrada else default
+    else:
+        return input(Fore.YELLOW + f"{prompt}: ").strip()
+
+# ======= Construir comando SQLMap =======
+def construir_comando(base_cmd, comando_sqlmap):
+    # Substituir o comando base pelo comando sqlmap correto
+    comando = base_cmd.replace("python -m sqlmap", comando_sqlmap)
+    
+    # Substituir TARGET_URL se necessário
+    if "TARGET_URL" in comando:
+        url = obter_entrada("Digite a URL alvo", "http://alvo.com/vulneravel.php?id=1")
+        comando = comando.replace("TARGET_URL", f'"{url}"')
+    
+    # Personalizar outros parâmetros
+    if "--data=" in comando and "param1=value1&param2=value2" in comando:
+        data = obter_entrada("Digite os dados POST", "param1=valor1&param2=valor2")
+        comando = comando.replace("param1=value1&param2=value2", data)
+    
+    if "--cookie=" in comando and "PHPSESSID=value" in comando:
+        cookie = obter_entrada("Digite os cookies", "PHPSESSID=valor")
+        comando = comando.replace("PHPSESSID=value", cookie)
+    
+    if "--dbms=" in comando and "mysql" in comando:
+        dbms = obter_entrada("Digite o DBMS", "mysql")
+        comando = comando.replace("mysql", dbms)
+    
+    if "-T" in comando and "users" in comando:
+        tabela = obter_entrada("Digite o nome da tabela", "usuarios")
+        comando = comando.replace("users", tabela)
+    
+    if "-C" in comando and "username,password" in comando:
+        colunas = obter_entrada("Digite as colunas", "usuario,senha")
+        comando = comando.replace("username,password", colunas)
+    
+    if "--tamper=" in comando and "space2comment" in comando:
+        tamper = obter_entrada("Digite o script tamper", "space2comment")
+        comando = comando.replace("space2comment", tamper)
+    
+    if "--file-read=" in comando and "/etc/passwd" in comando:
+        arquivo = obter_entrada("Digite o caminho do arquivo", "/etc/passwd")
+        comando = comando.replace("/etc/passwd", arquivo)
+    
+    if "--os-cmd=" in comando and "whoami" in comando:
+        cmd = obter_entrada("Digite o comando", "whoami")
+        comando = comando.replace("whoami", cmd)
+    
+    return comando
+
+# ======= Executar comando SQLMap =======
+def executar_comando(comando):
+    print(Fore.CYAN + f"[>] Executando: {comando}")
+    
+    # Confirmar execução
+    confirmar = input(Fore.YELLOW + "Deseja executar este comando? (S/N): ").strip().upper()
+    if confirmar != 'S':
+        print(Fore.YELLOW + "[!] Comando cancelado.")
+        return
+    
+    try:
+        # Executar o comando
+        processo = subprocess.Popen(comando, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        
+        # Mostrar saída em tempo real
+        while True:
+            output = processo.stdout.readline()
+            if output == b'' and processo.poll() is not None:
+                break
+            if output:
+                print(output.decode().strip())
+        
+        # Verificar se houve erro
+        stderr = processo.stderr.read()
+        if stderr:
+            print(Fore.RED + f"Erro: {stderr.decode()}")
+            
+    except KeyboardInterrupt:
+        print(Fore.RED + "\n[X] Comando interrompido pelo usuário.")
+    except Exception as e:
+        print(Fore.RED + f"[X] Erro ao executar comando: {e}")
+
+# ======= Mostrar técnicas =======
+def mostrar_tecnicas():
+    print(Fore.CYAN + "\n[~] Técnicas de Ataque Disponíveis:")
+    print(Fore.CYAN + "-" * 80)
+    for i, (nome, comando) in tecnicas.items():
+        print(f"{Fore.YELLOW}[{i:2d}] {nome}")
+
+# ======= Menu =======
+def menu(comando_sqlmap):
+    while True:
+        banner()
+        mostrar_tecnicas()
+        
+        print(Fore.CYAN + "\n" + "="*80)
+        print(Fore.MAGENTA + "OPÇÕES:")
+        print(Fore.CYAN + "[1-30] Selecionar técnica de ataque")
+        print(Fore.CYAN + "[C]    Comando personalizado do SQLMap")
+        print(Fore.CYAN + "[0]    Sair")
+        print(Fore.CYAN + "="*80)
+
         try:
-            banners = [
-                f"""{Fore.GREEN}
-  ██████╗ ███████╗██╗     ███╗   ███╗ █████╗ ██████╗ 
-  ██╔══██╗██╔════╝██║     ████╗ ████║██╔══██╗██╔══██╗
-  ██████╔╝███████╗██║     ██╔████╔██║███████║██████╔╝
-  ██╔═══╝ ╚════██║██║     ██║╚██╔╝██║██╔══██║██╔═══╝ 
-  ██║     ███████║███████╗██║ ╚═╝ ██║██║  ██║██║     
-  ╚═╝     ╚══════╝╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝     
-{Style.RESET_ALL}""",
-                f"""{Fore.BLUE}
-   _____ _______       _____ _____  _____  _______       _____   ___  
-  / ____|__   __|/\   |  __ \_   _|/ ____|/ ____\ \    / /__ \ / _ \ 
- | (___    | |  /  \  | |__) || | | |  __| |     \ \  / /   ) | | | |
-  \___ \   | | / /\ \ |  ___/ | | | | |_ | |      \ \/ /   / /| | | |
-  ____) |  | |/ ____ \| |    _| |_| |__| | |____   \  /   / /_| |_| |
- |_____/   |_/_/    \_\_|   |_____|\_____|\_____|   \/   |____|\___/ 
-{Style.RESET_ALL}"""
-            ]
-            print(random.choice(banners))
-            print(f"{Fore.CYAN}[*] Modo: {'API' if self.modo_api else 'CLI'} | Alvo: {self.alvo_atual[:100]}\n")
-        except Exception as e:
-            self.logger.error(f"Erro ao mostrar banner: {str(e)}")
-
-    def iniciar_sessao(self):
-        """Inicia nova sessão com verificação de estado"""
-        if not self.modo_api:
-            return True
+            escolha = input(Fore.YELLOW + "\nEscolha uma opção: ").strip().upper()
             
-        try:
-            # Encerra sessão existente
-            if self.tarefa_id:
-                self._encerrar_sessao()
-                
-            # Tenta iniciar nova sessão com timeout
-            start_time = time.time()
-            while time.time() - start_time < API_TIMEOUT:
-                try:
-                    nova_tarefa = self.sqlmap_api.new_task()
-                    if 'taskid' in nova_tarefa:
-                        self.tarefa_id = nova_tarefa['taskid']
-                        self.logger.info(f"Nova sessão iniciada - TaskID: {self.tarefa_id}")
-                        return True
-                except Exception as e:
-                    self.logger.warning(f"Tentativa de conexão com API falhou: {str(e)}")
-                    time.sleep(2)
-            
-            self.logger.error("Timeout ao iniciar sessão com API")
-            return False
-            
-        except Exception as e:
-            self.logger.error(f"Erro crítico ao iniciar sessão: {str(e)}")
-            self.tarefa_id = None
-            return False
-
-    def _encerrar_sessao(self):
-        """Encerra sessão de forma segura"""
-        if self.modo_api and self.tarefa_id and self.sqlmap_api:
-            try:
-                self.sqlmap_api.delete_task(self.tarefa_id)
-                self.logger.info(f"Sessão encerrada - TaskID: {self.tarefa_id}")
-            except Exception as e:
-                self.logger.error(f"Erro ao encerrar sessão: {str(e)}")
-            finally:
-                self.tarefa_id = None
-
-    def validar_url(self, url):
-        """Validação robusta de URL"""
-        if not url or len(url) > 500:
-            return False
-            
-        try:
-            result = urlparse(url)
-            if not all([result.scheme, result.netloc]):
-                return False
-                
-            # Verifica esquema válido
-            if result.scheme not in ('http', 'https'):
-                return False
-                
-            # Verifica domínio básico
-            if not '.' in result.netloc:
-                return False
-                
-            return True
-        except:
-            return False
-
-    def executar_via_api(self, comando):
-        """Execução com API com tratamento completo"""
-        if not self._verificar_sessao_valida():
-            return False
-            
-        try:
-            # Converte o comando para opções da API
-            options = self._converter_comando_para_opcoes(comando)
-            if not options:
-                return False
-                
-            # Inicia a tarefa
-            start_time = time.time()
-            self.sqlmap_api.start_task(self.tarefa_id, options)
-            
-            # Monitora o progresso
-            while time.time() - start_time < API_TIMEOUT:
-                status = self.sqlmap_api.get_task_status(self.tarefa_id).get("status")
-                if status == "terminated":
-                    break
-                time.sleep(2)
+            if escolha == '0':
+                print(Fore.GREEN + "Saindo...")
+                sys.exit()
+            elif escolha == 'C':
+                comando_personalizado = input(Fore.YELLOW + "Digite o comando SQLMap personalizado: ").strip()
+                # Adicionar o comando sqlmap correto se não estiver presente
+                if not comando_personalizado.startswith("sqlmap") and not "python" in comando_personalizado:
+                    comando_personalizado = f"{comando_sqlmap} {comando_personalizado}"
+                executar_comando(comando_personalizado)
+                input(Fore.GREEN + "\nPressione Enter para continuar...")
             else:
-                raise TimeoutError("Timeout ao aguardar término da tarefa")
-      
-            return self._processar_resultados()
-            
-        except TimeoutError as te:
-            self.logger.error(f"Timeout na execução: {str(te)}")
-            return False
-        except Exception as e:
-            self.logger.error(f"Erro na API: {str(e)}")
-            return False
-
-    def _verificar_sessao_valida(self):
-        """Verifica se a sessão API é válida"""
-        if not self.modo_api or not self.tarefa_id or not self.sqlmap_api:
-            return False
-            
-        try:
-            status = self.sqlmap_api.get_task_status(self.tarefa_id)
-            return status.get("status") != "not found"
-        except:
-            return False
-
-    def _converter_comando_para_opcoes(self, comando):
-        """Converte comandos CLI para opções da API"""
-        try:
-            options = {"url": self.alvo_atual, "batch": True}
-            
-            # Técnicas de injeção
-            if "--technique" in comando:
-                tech_index = comando.index("--technique")
-                if tech_index + 1 < len(comando):
-                    options["technique"] = comando[tech_index + 1]
-            
-            # Nível de risco
-            if "--risk" in comando:
-                risk_index = comando.index("--risk")
-                if risk_index + 1 < len(comando):
-                    options["risk"] = comando[risk_index + 1]
-            
-            return options
-        except Exception as e:
-            self.logger.error(f"Erro na conversão de comando: {str(e)}")
-            return None
-
-    def _processar_resultados(self):
-        """Processa resultados da API de forma segura"""
-        try:
-            data = self.sqlmap_api.get_task_data(self.tarefa_id).get("data", [])
-            if not data:
-                print(f"{Fore.YELLOW}[!] Nenhum dado retornado")
-                return False
-                
-            print(f"\n{Fore.GREEN}[+] Resultados:")
-            for item in data[:50]:  # Limita a exibição
-                if isinstance(item, str):
-                    print(f" - {item[:500]}")  # Limita o tamanho
-                else:
-                    print(f" - {str(item)[:500]}")
-                    
-            return True
-        except Exception as e:
-            self.logger.error(f"Erro ao processar resultados: {str(e)}")
-            return False
-
-    def executar_via_cli(self, comando):
-        """Execução CLI com tratamento completo"""
-        try:
-            # Verifica comandos perigosos
-            if any(cmd in ' '.join(comando) for cmd in [";", "&&", "||", "`"]):
-                raise ValueError("Comando potencialmente perigoso detectado")
-                
-            # Executa o processo
-            processo = subprocess.Popen(
-                comando,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                universal_newlines=True
-            )
-            
-            # Monitora com timeout
-            start_time = time.time()
-            while processo.poll() is None:
-                if time.time() - start_time > API_TIMEOUT:
-                    processo.terminate()
-                    raise TimeoutError("Timeout ao executar comando")
-                time.sleep(1)
-                
-            # Captura saída
-            saida, erro = processo.communicate()
-            
-            if saida:
-                print(saida[:10000])  # Limita a saída
-                
-            if erro:
-                print(f"{Fore.RED}[!] Erros encontrados:")
-                print(erro[:1000]) 
-                
-            return processo.returncode == 0
-            
-        except TimeoutError as te:
-            self.logger.error(f"Timeout na execução CLI: {str(te)}")
-            return False
-        except Exception as e:
-            self.logger.error(f"Erro na execução CLI: {str(e)}")
-            return False
-
-    def definir_novo_alvo(self):
-        """Define novo alvo com validação"""
-        print(f"\n{Fore.CYAN}[*] Alvo atual: {self.alvo_atual}")
-        
-        try:
-            novo_alvo = input(f"{Fore.YELLOW}[?] Novo URL alvo: ").strip()
-            if not novo_alvo:
-                return False
-                
-            # Verifica tamanho
-            if len(novo_alvo) > 500:
-                print(f"{Fore.RED}[!] URL muito longa (máx. 500 caracteres)")
-                return False
-                
-            # Adiciona esquema se necessário
-            if not novo_alvo.startswith(('http://', 'https://')):
-                novo_alvo = f"http://{novo_alvo}"
-                
-            # Valida URL
-            if not self.validar_url(novo_alvo):
-                print(f"{Fore.RED}[!] URL inválida!")
-                return False
-                
-            # Verifica acessibilidade opcional
-            if input(f"{Fore.YELLOW}[?] Verificar acessibilidade? (s/N): ").lower() == 's':
-                if not self._verificar_url_acessivel(novo_alvo):
-                    print(f"{Fore.RED}[!] URL não acessível!")
-                    return False
-                    
-            # Atualiza alvo
-            self.alvo_atual = novo_alvo
-            self.salvar_config()
-            self.iniciar_sessao()
-            print(f"{Fore.GREEN}[+] Alvo atualizado para: {novo_alvo}")
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"Erro ao definir novo alvo: {str(e)}")
-            return False
-
-    def _verificar_url_acessivel(self, url):
-        """Verifica se a URL está acessível"""
-        try:
-            # Usa curl para verificar
-            result = subprocess.run(
-                ["curl", "-Is", "--connect-timeout", "5", url],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-            return result.returncode == 0
-        except:
-            return False
-
-    def limpar_sessao(self):
-        """Limpeza segura da sessão"""
-        try:
-            self._encerrar_sessao()
-            print(f"{Fore.GREEN}[+] Sessão limpa com sucesso")
-            return True
-        except Exception as e:
-            self.logger.error(f"Erro ao limpar sessão: {str(e)}")
-            return False
-
-    def mostrar_menu(self):
-        """Exibe o menu de opções"""
-        menu = f"""
-{Fore.CYAN}Menu Principal:
-{Fore.YELLOW}[1]{Style.RESET_ALL} Varredura básica
-{Fore.YELLOW}[2]{Style.RESET_ALL} Detecção de vulnerabilidades
-{Fore.YELLOW}[3]{Style.RESET_ALL} Extrair informações do banco
-{Fore.YELLOW}[4]{Style.RESET_ALL} Teste de injeção avançado
-{Fore.YELLOW}[5]{Style.RESET_ALL} Teste de WAF bypass
-
-{Fore.YELLOW}[N]{Style.RESET_ALL} Definir novo alvo
-{Fore.YELLOW}[S]{Style.RESET_ALL} Salvar configuração
-{Fore.YELLOW}[L]{Style.RESET_ALL} Limpar sessão
-{Fore.YELLOW}[T]{Style.RESET_ALL} Alterar tema
-{Fore.YELLOW}[X]{Style.RESET_ALL} Sair
-"""
-        print(menu)
-
-    def executar_comando(self, opcao):
-        """Executa o comando selecionado"""
-        try:
-            if self.modo_api:
-                return self._executar_comando_api(opcao)
-            else:
-                return self._executar_comando_cli(opcao)
-        except Exception as e:
-            self.logger.error(f"Erro ao executar comando: {str(e)}")
-            return False
-
-    def _executar_comando_api(self, opcao):
-        """Executa comando no modo API"""
-        comandos = {
-            1: ["--batch", "--crawl=2"],
-            2: ["--batch", "--risk=3", "--level=5"],
-            3: ["--batch", "--dbs"],
-            4: ["--batch", "--technique=BEUST"],
-            5: ["--batch", "--tamper=between,randomcase"]
-        }
-        
-        if opcao not in comandos:
-            print(f"{Fore.RED}[!] Opção inválida!")
-            return False
-            
-        return self.executar_via_api(comandos[opcao])
-
-    def _executar_comando_cli(self, opcao):
-        """Executa comando no modo CLI"""
-        base_cmd = ["sqlmap", "-u", self.alvo_atual, "--batch"]
-        
-        comandos = {
-            1: base_cmd + ["--crawl=2"],
-            2: base_cmd + ["--risk=3", "--level=5"],
-            3: base_cmd + ["--dbs"],
-            4: base_cmd + ["--technique=BEUST"],
-            5: base_cmd + ["--tamper=between,randomcase"]
-        }
-        
-        if opcao not in comandos:
-            print(f"{Fore.RED}[!] Opção inválida!")
-            return False
-            
-        return self.executar_via_cli(comandos[opcao])
-
-    def main(self):
-        """Loop principal com tratamento de erro completo"""
-        try:
-            if not self.verificar_ambiente():
-                sys.exit(1)
-                
-            if not self.iniciar_sessao():
-                print(f"{Fore.RED}[!] Falha ao iniciar sessão")
-                sys.exit(1)
-                
-            while True:
                 try:
-                    self.mostrar_banner()
-                    self.mostrar_menu()
-                    
-                    escolha = input(f"\n{Fore.YELLOW}[?] Selecione uma opção: ").strip().upper()
-                    
-                    # Opções do menu
-                    if escolha == 'X':
-                        print(f"\n{Fore.CYAN}[*] Saindo...")
-                        self.limpar_sessao()
-                        sys.exit(0)
-                    
-                    elif escolha == 'N':
-                        self.definir_novo_alvo()
-                    
-                    elif escolha == 'S':
-                        if self.salvar_config():
-                            print(f"{Fore.GREEN}[+] Configuração salva!")
-                    
-                    elif escolha == 'L':
-                        if input(f"{Fore.RED}[?] Confirmar limpeza? (s/N): ").upper() == 'S':
-                            self.limpar_sessao()
-                            self.iniciar_sessao()
-                    
-                    elif escolha == 'T':
-                        print(f"\n{Fore.CYAN}Temas disponíveis: 1. Padrão 2. Escuro")
-                        tema = input(f"{Fore.YELLOW}[?] Escolha o tema: ")
-                        print(f"{Fore.GREEN}[+] Tema alterado!")
-                    
-                    # Opções numéricas
-                    elif escolha.isdigit():
-                        opcao = int(escolha)
-                        if 1 <= opcao <= 5:
-                            if self.executar_comando(opcao):
-                                input(f"\n{Fore.YELLOW}[*] Pressione Enter para continuar...")
-                        else:
-                            print(f"{Fore.RED}[!] Opção inválida!")
-                    
+                    escolha_num = int(escolha)
+                    if escolha_num in tecnicas:
+                        nome, comando_base = tecnicas[escolha_num]
+                        comando_final = construir_comando(comando_base, comando_sqlmap)
+                        executar_comando(comando_final)
+                        input(Fore.GREEN + "\nPressione Enter para continuar...")
                     else:
-                        print(f"{Fore.RED}[!] Opção inválida!")
+                        print(Fore.RED + "Opção inválida.")
+                        time.sleep(1)
+                except ValueError:
+                    print(Fore.RED + "Opção inválida.")
+                    time.sleep(1)
                     
-                except KeyboardInterrupt:
-                    print(f"\n{Fore.RED}[!] Operação cancelada")
-                    self.limpar_sessao()
-                    sys.exit(1)
-                except Exception as e:
-                    self.logger.error(f"Erro no loop principal: {str(e)}", exc_info=True)
-                    print(f"{Fore.RED}[!] Erro: {str(e)}")
-                    time.sleep(2)
-                    
+        except KeyboardInterrupt:
+            print(Fore.RED + "\n[X] Interrompido pelo usuário.")
+            sys.exit()
         except Exception as e:
-            self.logger.critical(f"Erro crítico: {str(e)}", exc_info=True)
-            print(f"{Fore.RED}[ERRO CRÍTICO] {str(e)}")
-            sys.exit(1)
+            print(Fore.RED + f"Erro: {e}")
+            time.sleep(2)
 
+# ======= Aviso Legal =======
+def mostrar_aviso():
+    print(Fore.RED + Style.BRIGHT + "\n" + "="*80)
+    print("AVISO LEGAL:")
+    print("Este software é apenas para fins educacionais e de teste de segurança.")
+    print("Só utilize em sistemas que você possui permissão explícita para testar.")
+    print("O uso indevido desta ferramenta é de sua exclusiva responsabilidade.")
+    print("Respeite as leis locais e não utilize para atividades ilegais.")
+    print("="*80)
+    
+    resposta = input(Fore.YELLOW + "\nVocê concorda com os termos? (S/N): ").strip().upper()
+    if resposta != 'S':
+        print(Fore.RED + "Você precisa concordar com os termos para usar este software.")
+        sys.exit(1)
+
+# ======= MAIN =======
 if __name__ == "__main__":
-    init(autoreset=True)
-    interface = SQLMapInterface()
-    interface.main()
+    mostrar_aviso()
+    comando_sqlmap = verificar_sqlmap()
+    if comando_sqlmap:
+        menu(comando_sqlmap)
+    else:
+        print(Fore.RED + "[X] SQLMap não está instalado. Abortando.")
+        sys.exit(1)
