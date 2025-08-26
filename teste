@@ -47,7 +47,7 @@ class Banners:
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠀⠀⠀⠉⠛⠷⢦⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣠⣴⠶⠟⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠉⠉⠛⠛⠿⠿⠿⠿⠿⠿⠿⠿⠿⠟⠛⠋⠉⠁⠀
             
-     v 9.3 data: 24/8/2025               ass: Erik | made: Brasil⠀⠀⠀⠀
+     v 9.4 data: 26/8/2025               ass: Erik | made: Brasil⠀⠀⠀⠀
                           desde: 10/7/2025⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀               
         [/bold red]"""
 
@@ -451,7 +451,8 @@ class HackerMenu:
                 "Binary-Padding.py": "depois eu explico"
             },
             "scanner": {
-                "scanner.py": "Ferramenta de varredura de portas e redes nmap"
+                "scanner.py": "Ferramenta de varredura de portas",
+                "nmap.py": "menu pra nmap"
             },
             "brute": {
                 "dictionary-attack.py": "Ataque de dicionário a senhas",
@@ -459,7 +460,8 @@ class HackerMenu:
                 "puro.py": "Força bruta pura",
                 "sites.py": "Força bruta em sites",
                 "hydra.py": "Ferramenta Hydra para força bruta",
-                "pin.py": "quebrar pin de celular"
+                "pin.py": "quebrar pin de celular",
+                "jhon-the-ripper.py": "quebra de hashes"
             },
             "sql-inject": {
                 "sqlmap.py": "Ferramenta automatizada de SQL injection",
@@ -474,6 +476,7 @@ class HackerMenu:
                 "trolar-amigo.py": "Ferramenta para trollar amigos",
                 "git.span-menu.py": "varias ferramentas de span",
                 "discord-span.py": "span de discord",
+                "mensagem-sms.py": "span de mensagem de sms"
             },
             "phishing": {
                 "menu-phishing.py": "Menu completo de ferramentas de phishing",
