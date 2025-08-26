@@ -47,7 +47,7 @@ class Banners:
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠀⠀⠀⠉⠛⠷⢦⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣠⣴⠶⠟⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠉⠉⠛⠛⠿⠿⠿⠿⠿⠿⠿⠿⠿⠟⠛⠋⠉⠁⠀
             
-     v 9.4 data: 26/8/2025               ass: Erik | made: Brasil⠀⠀⠀⠀
+     v 9.5 data: 26/8/2025               ass: Erik | made: Brasil⠀⠀⠀⠀
                           desde: 10/7/2025⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀               
         [/bold red]"""
 
@@ -452,7 +452,9 @@ class HackerMenu:
             },
             "scanner": {
                 "scanner.py": "Ferramenta de varredura de portas",
-                "nmap.py": "menu pra nmap"
+                "nmap.py": "menu pra nmap",
+                "porte-v.py": "procura portas vuneraveis como adb",
+                "scan-massa.py": "faz escaners em massa",
             },
             "brute": {
                 "dictionary-attack.py": "Ataque de dicionário a senhas",
@@ -488,8 +490,9 @@ class HackerMenu:
                 "phishing-games.py": "phishing pra jogo",
                 "phishing-social.py": "phishing pra redes sociais",
                 "phishing-banco.py": "phishing pra banco",
-                "phishing-shell.py": "pagina com malware que cria shell",
-                "phishing-discord.py": "cria pagina pra roubar token"
+                "phisDrive-by-social.py": "pagina com malware que cria shell",
+                "phishing-discord.py": "cria pagina pra roubar token",
+                "phishing-apk.py": "cria uma pagina que recomenda um malware pra apk,
             },
             "xss": {
                 "xss.py": "Ferramenta de ataque XSS",
