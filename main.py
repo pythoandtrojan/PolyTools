@@ -453,8 +453,10 @@ class HackerMenu:
             "scanner": {
                 "scanner.py": "Ferramenta de varredura de portas",
                 "nmap.py": "menu pra nmap",
-                "porte-v.py": "procura portas vuneraveis como adb",
+                "scan-perigo.py": "procura portas vuneraveis como adb",
                 "scan-massa.py": "faz escaners em massa",
+                "scan-real.py": "scaner real",
+                "nmap-script.py": "usa os scripts do nmap"
             },
             "brute": {
                 "dictionary-attack.py": "Ataque de dicionário a senhas",
