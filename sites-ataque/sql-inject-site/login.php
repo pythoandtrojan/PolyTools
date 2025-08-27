@@ -1,20 +1,15 @@
 <?php
-// Configurações do "banco de dados" simulado (usando SQLite para facilitar)
+
 $db_file = 'test_db.sqlite';
 
-// Criar tabela e dados iniciais se não existirem
 if (!file_exists($db_file)) {
     $db = new SQLite3($db_file);
-    
-    // Tabela de usuários
+
     $db->exec('CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT, password TEXT, is_admin INTEGER)');
-    
-    // Inserir alguns usuários
+
     $db->exec("INSERT INTO users (username, password, is_admin) VALUES ('admin', 'admin123', 1)");
     $db->exec("INSERT INTO users (username, password, is_admin) VALUES ('user1', 'password1', 0)");
     $db->exec("INSERT INTO users (username, password, is_admin) VALUES ('test', 'test123', 0)");
-    
-    // Tabela de dados sensíveis (para demonstração)
     $db->exec('CREATE TABLE sensitive_data (id INTEGER PRIMARY KEY, name TEXT, credit_card TEXT, ssn TEXT)');
     $db->exec("INSERT INTO sensitive_data (name, credit_card, ssn) VALUES ('John Doe', '4111111111111111', '123-45-6789')");
     $db->exec("INSERT INTO sensitive_data (name, credit_card, ssn) VALUES ('Jane Smith', '5555555555554444', '987-65-4321')");
@@ -22,12 +17,9 @@ if (!file_exists($db_file)) {
     $db = new SQLite3($db_file);
 }
 
-// Processar login (vulnerável a SQL Injection)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username']) && isset($_POST['password'])) {
     $username = $_POST['username'];
     $password = $_POST['password'];
-    
-    // Consulta EXTREMAMENTE vulnerável a SQL Injection
     $query = "SELECT * FROM users WHERE username = '$username' AND password = '$password'";
     $result = $db->query($query);
     
@@ -39,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username']) && isset(
     }
 }
 
-// Pesquisa vulnerável (para demonstrar UNION attacks)
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search'])) {
     $search_term = $_GET['search'];
     $search_query = "SELECT * FROM sensitive_data WHERE name LIKE '%$search_term%'";
