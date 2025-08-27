@@ -794,3 +794,4 @@ if __name__ == "__main__":
 #entre a saudade e a gravidade.
 
 #minha musica Habits-vitage 1930 jazz
+#obgd por me molestar na infancia
