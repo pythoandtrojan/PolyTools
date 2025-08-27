@@ -494,7 +494,7 @@ class HackerMenu:
                 "phishing-banco.py": "phishing pra banco",
                 "phisDrive-by-social.py": "pagina com malware que cria shell",
                 "phishing-discord.py": "cria pagina pra roubar token",
-                "phishing-apk.py": "cria uma pagina que recomenda um malware pra apk,
+                "phishing-apk.py": "cria uma pagina que recomenda um malware pra apk",
             },
             "xss": {
                 "xss.py": "Ferramenta de ataque XSS",
