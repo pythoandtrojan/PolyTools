@@ -41,11 +41,14 @@ class Banners:
 ⠀⠀  ⠀     ⠈⢷⡈⠻⣿⣶⣤⡁⠸⣿⣆⠡⡀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⢀⣾⡟⠀⣡⣴⣾⡿⠁⣴⠏⠀⠀⠀⠀
 ⠀⠀  ⠀     ⠀⠈⢿⣄⠈⢙⠿⢿⣷⣼⣿⣦⠹⣶⣽⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡄⢡⣾⣿⣶⣿⠿⢛⠉⢀⣾⠏⠀⠀⠀⠀⠀
 ⠀⠀  ⠀⠀     ⠀⠀⠹⣧⡀⠳⣦⣌⣉⣙⠛⠃⠈⠻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠋⠐⠛⠋⣉⣉⣤⡶⠁⣰⡿⠁⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀       ⠀⠀⠈⠻⣦⡀⠙⠛⠿⠿⠿⠿⠟⠛⠛⣹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣟⠙⠟⠛⠿⠿⠿⠿⠟⠛⠁⣠⡾⠋⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀       ⠀⠀⠈⠻⣦⡀⠙⠛⠿⠿⠿⠿⠿⠟⠛⠛⣹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣟⠙⠟⠛⠿⠿⠿⠿⠟⠛⠁⣠⡾⠋⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀  ⠀     ⠀⠀⠈⠛⢶⣄⠙⠶⣦⣤⣶⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣶⣦⣤⡶⠖⣁⣴⠟⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠀⠀⠙⠻⣶⣄⡉⠉⠉⠉⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠉⠉⠉⠉⣡⣴⡾⠛⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠀⠀⠀⠉⠛⠷⢦⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣠⣴⠶⠟⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠉⠉⠛⠛⠿⠿⠿⠿⠿⠿⠿⠿⠿⠟⠛⠋⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀               
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠉⠉⠛⠛⠿⠿⠿⠿⠿⠿⠿⠿⠿⠟⠛⠋⠉⠁⠀
+            
+     v 9.5 data: 26/8/2025               ass: Erik | made: Brasil⠀⠀⠀⠀
+                          desde: 10/7/2025⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀               
         [/bold red]"""
 
     @staticmethod
@@ -115,15 +118,15 @@ class Banners:
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣿⣿⣿⣿⣿⣿⡏⠀⠀⣰⠟⠉⠉⠙⢿⣿⣿⣇⢻⣿⣿⣿⣿⠆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⣿⣿⣿⣿⣿⡟⠀⠀⠀⠁⠀⠀⠀⠀⢸⣿⣿⣿⣦⡙⠿⣿⠟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠿⢋⣩⣭⣉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⣿⣿⣿⣿⣿⣿⡖⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣰⣿⣿⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀⢠⣴⡾⣿⣿⡛⢋⠉⣠⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⠟⣉⣤⣶⣤⣤⡀⠀⠀⣴⣿⠟⠁⣩⣿⣿⣿⣿⣿⣻⣷⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢻⣿⢇⣾⣿⣿⣿⣿⣿⣿⡆⠺⠿⠋⢀⣾⣿⡿⢫⣾⣿⠟⢮⣝⠿⣷⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣶⣳⣾⣷⡄⠀⠈⢿⢸⣿⣿⣿⡿⣫⣶⣿⣿⣿⣷⣄⢻⡿⢋⣴⣿⣿⠟⣠⣴⡿⠷⣟⣯⣤⣶⡶⣶⣄⡀⠀⣀⣀⣀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣰⣿⣿⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀⢠⣴⡾⣿⣿⡛⢋⠉⣠⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⠟⣉⣤⣶⣤⣤⡀⠀⠀⣴⣿⠟⠁⣩⣿⣿⣿⣿⣿⣻⣷⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢻⣿⢇⣾⣿⣿⣿⣿⣿⣿⡆⠺⠿⠋⢀⣾⣿⡿⢫⣾⣿⠟⢮⣝⠿⣷⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣶⣳⣾⣷⣷⡄⠀⠈⢿⢸⣿⣿⣿⡿⣫⣶⣿⣿⣿⣷⣄⢻⡿⢋⣴⣿⣿⠟⣠⣴⡿⠷⣟⣯⣤⣶⡶⣶⣄⡀⠀⣀⣀⣀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⢀⣠⣴⣾⡿⠃⠈⠛⢿⣦⣀⣈⡈⢿⣿⡟⣼⣿⣿⣿⣿⣿⠿⣛⣃⣀⣘⠿⠟⢣⣾⣿⡿⠃⣴⣿⣿⣿⣿⣿⢸⣿⣿⣿⣿⣿⣿⣿⠆⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⢀⣾⣼⡿⠋⠉⠀⠀⠀⠀⠀⠘⠿⣸⠧⡄⠻⠁⣿⣿⣿⣿⢏⣴⣿⣿⣿⣿⣿⣷⣄⢻⡟⠋⠀⣼⣿⣿⣿⠋⠉⠵⠿⣿⣿⣿⣿⣿⢋⣷⣿⣦⡀⠀⠀⠀
-⠀⠀⠀⠀⣼⣿⠋⠀⢠⣶⣶⣶⣾⣿⣿⣿⣿⣷⡄⣶⣶⣆⣻⣿⣿⢯⣿⣿⣿⣿⣿⣿⣿⣿⣿⣇⠁⣀⣠⣴⣮⢻⠇⠀⣷⡄⠀⠀⠹⣿⣿⣷⣿⣿⣿⣿⣷⣤⡀⠀
-⠀⠀⠀⠀⣿⡇⠀⢰⣯⣽⠉⠉⢩⣍⣉⣉⣩⣭⣥⣭⣍⣻⣥⣭⣭⣜⠿⣿⣿⣿⣿⣿⣿⣿⠿⢛⡸⢿⣿⣿⡿⠀⠀⠀⢹⣷⣀⣀⠀⠀⠁⢿⣿⣿⣿⣿⣿⣿⣿⣆
-⠀⠀⢀⣼⠿⠃⠀⢸⣿⡇⠀⢸⣿⠻⠟⠿⠿⠿⠿⢿⣿⣿⠋⠛⣻⣭⣴⣶⣄⠉⠛⠿⠟⢫⣾⣿⣿⣆⣀⡈⠀⠀⠀⠀⠀⠉⠛⠉⠀⠀⠀⢘⣿⣿⣿⣿⣿⣿⣿⣿
+⠀⠀⠀⠀⠀⢀⣾⣼⡿⠋⠉⠀⠀⠀⠀⠀⠘⠿⣸⠧⡄⠻⠁⣿⣿⣿⣿⢏⣴⣿⣿⣿⣿⣿⣷⣄⢻⡟⠋⠀⣼⣿⣿⣿⠋⠉⠵⠿⣿⣿⣿⣿⢋⣷⣿⣦⡀⠀⠀⠀
+⠀⠀⠀⠀⠀⣼⣿⠋⠀⢠⣶⣶⣶⣾⣿⣿⣿⣿⣷⡄⣶⣶⣆⣻⣿⣿⢯⣿⣿⣿⣿⣿⣿⣿⣿⣿⣇⠁⣀⣠⣴⣮⢻⠇⠀⣷⡄⠀⠀⠹⣿⣷⣿⣿⣿⣿⣷⣤⡀⠀
+⠀⠀⠀⠀⠀⣿⡇⠀⢰⣯⣽⠉⠉⢩⣍⣉⣉⣩⣭⣥⣭⣍⣻⣥⣭⣭⣜⠿⣿⣿⣿⣿⣿⣿⣿⠿⢛⡸⢿⣿⣿⡿⠀⠀⠀⢹⣷⣀⣀⠀⠀⠁⢿⣿⣿⣿⣿⣿⣿⣿⣆
+⠀⠀⢀⣼⠿⠃⠀⢸⣿⡇⠀⢸⣿⠻⠟⠿⠿⠿⠿⢿⣿⣿⠋⠛⣻⣭⣴⣶⣄⠉⠛⠿⠟⢫⣾⣿⣿⣿⣆⣀⡈⠀⠀⠀⠀⠀⠉⠛⠉⠀⠀⠀⢘⣿⣿⣿⣿⣿⣿⣿⣿
 ⣠⡴⠟⠛⠁⠀⠀⢸⣿⡧⠀⣾⣿⡀⠀⢠⣼⡻⣿⣿⣿⣿⣿⣿⠎⣿⠿⠟⠃⣀⣴⣿⣿⠈⣙⡻⠿⠃⢾⣷⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⠟
 ⠀⠀⠀⠀⠀⠀⠀⠀⢿⡇⠀⢿⣿⡇⠀⣼⣿⡇⠉⠙⠛⠋⠉⠀⠀⠀⠀⠀⣾⡛⠻⣿⡇⠀⣿⣧⠀⠀⠘⠁⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⠿⠿⠃⠀⢠⣤⣴⡆
 ⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⡇⢸⣿⡇⠀⣿⣿⡇⠀⠀⠀⣠⠾⠛⢿⣿⣷⣿⣿⣿⣧⠹⠃⠀⠈⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⠇⠀⠀⠀⠀⣼⣿⣿⠃
@@ -214,10 +217,10 @@ class Banners:
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠐⣶⣶⣦⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⡇⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⡿⠿⠆⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⡇⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⢉⣡⣤⣶⣶⣶⣶⣶⣶⣶⣶⣤⠀⠀⢸⣇⠀⠀
-⠀⠙⣿⣷⣦⡀⠀⠀⠀⣀⣴⣾⣿⣿⣿⣿⣿⣿⣿⠋⠉⣿⠟⠁⠀⠀⢸⡟⠀⠀
-⠀⠀⢸⣿⡿⠋⢀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⠖⠁⠀⠀⣷⡄⢸⡇⠀⠀
-⠀⠀⠀⣿⠁⢴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡀⠀⠀⠀⢿⣀⣸⡇⠀⠀
-⠀⠀⠀⣿⣷⣤⣈⠛⠻⢿⣿⡿⢁⣼⣿⣿⡿⠛⣿⣿⣿⣦⣄⡀⠈⠉⠉⠁⠀⠀
+⠀⠙⣿⣷⣦⡀⠀⠀⠀⣀⣴⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⠋⠉⣿⠟⠁⠀⠀⢸⡟⠀⠀
+⠀⠀⢸⣿⡿⠋⢀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⠖⠁⠀⠀⣷⡄⢸⡇⠀⠀
+⠀⠀⠀⣿⠁⢴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡀⠀⠀⠀⢿⣀⣸⡇⠀⠀
+⠀⠀⠀⣿⣷⣤⣈⠛⠻⢿⣿⡿⢁⣼⣿⣿⡿⠛⣿⣿⣿⣦⣄⡀⠈⠉⠉⠉⠁⠀⠀
 ⠀⠀⢀⣿⡿⠟⠁⠀⠀⠀⠀⠀⠛⠉⠉⠠⠤⠾⠿⠿⠿⠿⠟⠛⠋⠁⠀⠀⠀⠀
 ⠀⠀⠈⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -261,7 +264,7 @@ class Banners:
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣤⣤⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣿⣿⣿⣿⣿⣿⣿⣿⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⢿⣿⣿⣿⣿⣿⣿⡿⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⢀⣀⣠⠀⣶⣤⣄⣉⣉⣉⣉⣠⣤⣶⠀⣄⣀⡀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⢀⣀⣠⠀⣶⣤⣄⣉⣉⣉⣉⣉⣠⣤⣶⠀⣄⣀⡀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⣶⣾⣿⣿⣿⣿⣦⣄⣉⣙⣛⣛⣛⣛⣋⣉⣠⣴⣿⣿⣿⣿⣷⣶⠀⠀⠀
 ⠀⠀⠀⠀⠈⠉⠉⠛⠛⠛⠻⠿⠿⠿⠿⠿⠿⠿⠿⠟⠛⠛⠛⠉⠉⠁⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⣷⣆⠀⠀⠀⢠⡄⠀⠀⠀⣰⣾⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -317,11 +320,11 @@ class Banners:
 ⠀⠀⠀⠀⠀⠀⠈⠛⢻⣿⣿⣿⣿⡏⢁⣀⣀⣠⣤⣤⡤⠀⢀⠀⠀⢀⡀⣀⣠⣤⣿⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠿⠿⢿⠟⠛⠋⠉⠉⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⢻⣿⣿⣿⣿⣿⡿⠿⠛⠛⠉⠀⠀⠒⢾⠤⠤⠤⠀⠚⠛⠉⢩⠙⠛⠛⠟⠿⣿⡿⢿⡿⣿⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⣀⣿⣿⠟⢻⠁⠀⠀⢀⣀⣀⣀⣀⠤⠀⠀⠀⠀⠀⢀⣤⡤⠼⣴⣤⣤⣤⣤⣿⡿⠿⠛⠛⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠠⢶⣶⣶⣿⣦⣤⣠⣿⣿⣶⣾⣿⣶⣿⣿⠿⠿⠛⠁⠀⠀⠀⠀⠤⠤⠶⠿⢿⣿⣿⣿⣿⣿⣿⣿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠉⠛⠿⣿⣿⣿⣿⣿⣿⣿⣿⣤⣄⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣾⠿⠿⠿⠿⠙⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⣿⠟⢿⣿⣿⣿⣿⡿⢻⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣾⠟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⣸⡇⠀⣿⣿⣿⣿⠟⠀⢸⠋⠀⠀⠀⠀⠠⣤⣀⣄⣴⡿⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⢀⡟⠀⢠⣿⣿⡟⠁⠀⠀⡸⠁⠀⠠⠀⠀⠁⠀⢉⣿⠟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠠⢶⣶⣶⣶⣿⣦⣤⣠⣿⣿⣶⣾⣿⣶⣿⣿⠿⠿⠛⠁⠀⠀⠀⠀⠤⠤⠶⠿⢿⣿⣿⣿⣿⣿⣿⣿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠉⠛⠿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣤⣄⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣾⠿⠿⠿⠿⠙⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⣿⠟⢿⣿⣿⣿⣿⡿⢻⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣾⠟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⣸⡇⠀⣿⣿⣿⣿⠟⠀⢸⠋⠀⠀⠀⠀⠠⣤⣀⣄⣴⡿⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⢀⡟⠀⢠⣿⣿⡟⠁⠀⠀⡸⠁⠀⠠⠀⠀⠁⠀⢉⣿⠟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⣾⠀⠀⣼⡟⠁⠀⠀⠀⢠⡇⢀⢄⡞⠀⠀⡳⣴⡿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠈⠙⠚⠋⠀⠀⠀⠀⢀⣾⠇⠡⠈⠀⠀⢀⣾⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⠿⡆⠀⠀⢀⣴⠏⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -334,14 +337,14 @@ class Banners:
      ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
      ⠀⢹⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⡇⠀
      ⠀⢸⣿⣄⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀⣠⣿⡇⠀
-     ⠀⠸⣿⣿⣷⣦⣀⡴⢶⣿⣿⣿⣿⣿⣿⣿⣿⣷⣦⣄⣴⣾⣿⣿⠇⠀
+     ⠀⠸⣿⣿⣷⣦⣀⡴⢶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣦⣄⣴⣾⣿⣿⠇⠀
      ⠀⠀⢻⣿⣿⣿⣿⣿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣇⣿⣿⣿⣿⣿⡟⠀⠀
 ⠀     ⠀⣠⣻⡿⠿⢿⣫⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣻⣿⣿⣻⣥⠀⠀
      ⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⡿⣟⣿⣿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡆⠀
      ⠀⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⡹⡜⠋⡾⣼⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀
      ⠀⠀⣿⣻⣾⣭⣝⣛⣛⣛⣛⣃⣿⣾⣇⣛⣛⣛⣛⣯⣭⣷⣿⣿⡇⠀
 ⠀     ⠰⢿⣿⣎⠙⠛⢻⣿⡿⠿⠟⣿⣿⡟⠿⠿⣿⡛⠛⠋⢹⣿⡿⢳⠀
-     ⠀⠘⣦⡙⢿⣦⣀⠀⠀⠀⢀⣼⣿⣿⣳⣄⠀⠀⠀⢀⣠⡿⢛⣡⡏⠀
+     ⠀⠘⣦⡙⢿⣦⣀⠀⠀⠀⢀⣼⣿⣿⣿⣳⣄⠀⠀⠀⢀⣠⡿⢛⣡⡏⠀
 ⠀     ⠀⠹⣟⢿⣾⣿⣿⣿⣿⣿⣧⣿⣿⣧⣿⣿⣿⣿⣿⣿⣿⣿⡿⠀⠀
 ⠀     ⠀⢰⣿⣣⣿⣭⢿⣿⣱⣶⣿⣿⣿⣿⣷⣶⢹⣿⣭⣻⣶⣿⣿⠀⠀
 ⠀     ⠀⠈⣿⢿⣿⣿⠏⣿⣾⣛⠿⣿⣿⣿⠟⣻⣾⡏⢿⣿⣯⡿⡏⠀⠀
@@ -351,6 +354,50 @@ class Banners:
 ⠀⠀⠀⠀⠀     ⠘⣿⣷⣻⣿⢷⢶⢶⢶⢆⣗⡿⣇⣷⣿⡿⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀     ⠈⠻⣿⣿⣛⣭⣭⣭⣭⣭⣻⣿⡿⠛⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀     ⠀⠀⠈⠻⠿⠟⠛⠛⠛⠻⠿⠟⠀⠀⠀⠀⠀⠀⠀⠀
+        """
+
+    @staticmethod
+    def teste_rede():
+        return """
+        ████████╗███████╗███████╗████████╗███████╗
+        ╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝██╔════╝
+           ██║   █████╗  ███████╗   ██║   ███████╗
+           ██║   ██╔══╝  ╚════██║   ██║   ╚════██║
+           ██║   ███████╗███████║   ██║   ███████║
+           ╚═╝   ╚══════╝╚══════╝   ╚═╝   ╚══════╝
+        """
+
+    @staticmethod
+    def linux():
+        return """
+        ██╗     ██╗███╗   ██╗██╗   ██╗██╗  ██╗
+        ██║     ██║████╗  ██║██║   ██║╚██╗██╔╝
+        ██║     ██║██╔██╗ ██║██║   ██║ ╚███╔╝ 
+        ██║     ██║██║╚██╗██║██║   ██║ ██╔██╗ 
+        ███████╗██║██║ ╚████║╚██████╔╝██╔╝ ██╗
+        ╚══════╝╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝
+        """
+
+    @staticmethod
+    def vpn():
+        return """
+        ██╗   ██╗██████╗ ███╗   ██╗
+        ██║   ██║██╔══██╗████╗  ██║
+        ██║   ██║██████╔╝██╔██╗ ██║
+        ██║   ██║██╔═══╝ ██║╚██╗██║
+        ╚██████╔╝██║     ██║ ╚████║
+         ╚═════╝ ╚═╝     ╚═╝  ╚═══╝
+        """
+
+    @staticmethod
+    def wifi():
+        return """
+        ██╗    ██╗██╗███████╗██╗
+        ██║    ██║██║██╔════╝██║
+        ██║ █╗ ██║██║█████╗  ██║
+        ██║███╗██║██║██╔══╝  ██║
+        ╚███╔███╔╝██║██║     ██║
+         ╚══╝╚══╝ ╚═╝╚═╝     ╚═╝
         """
 
 class HackerMenu:
@@ -387,7 +434,6 @@ class HackerMenu:
             "malwer": {
                 "c2.py": "Servidor de Comando e Controle",
                 "malwer.py": "Ferramentas de malware",
-                "dependencias.py": "Instalador de dependências",
                 "malwer-assembly": "Malware em Assembly",
                 "malwer-c.py": "Malware em C",
                 "malwerPowerShell.py": "Malware em PowerShell",
@@ -399,17 +445,25 @@ class HackerMenu:
                 "malware-js.py": "malware feito em js",
                 "malware-ruby.py": "malware feito em ruby",
                 "malwer-java.py": "malware feito em java",
-                "malware-bash.py": "malwares em bash"
+                "malware-bash.py": "malwares em bash",
+                "malware-discord.py": "malware pra roubo de token discord",
+                "malwer-troll.py": "nao execulte isso",
+                "Binary-Padding.py": "depois eu explico"
             },
             "scanner": {
-                "scanner.py": "Ferramenta de varredura de portas e redes nmap"
+                "scanner.py": "Ferramenta de varredura de portas",
+                "nmap.py": "menu pra nmap",
+                "porte-v.py": "procura portas vuneraveis como adb",
+                "scan-massa.py": "faz escaners em massa",
             },
             "brute": {
                 "dictionary-attack.py": "Ataque de dicionário a senhas",
                 "hash-cracker.c": "Quebrador de hashes em C",
                 "puro.py": "Força bruta pura",
                 "sites.py": "Força bruta em sites",
-                "hydra.py": "Ferramenta Hydra para força bruta"
+                "hydra.py": "Ferramenta Hydra para força bruta",
+                "pin.py": "quebrar pin de celular",
+                "jhon-the-ripper.py": "quebra de hashes"
             },
             "sql-inject": {
                 "sqlmap.py": "Ferramenta automatizada de SQL injection",
@@ -424,6 +478,7 @@ class HackerMenu:
                 "trolar-amigo.py": "Ferramenta para trollar amigos",
                 "git.span-menu.py": "varias ferramentas de span",
                 "discord-span.py": "span de discord",
+                "mensagem-sms.py": "span de mensagem de sms"
             },
             "phishing": {
                 "menu-phishing.py": "Menu completo de ferramentas de phishing",
@@ -431,14 +486,21 @@ class HackerMenu:
                 "site-clone.py": "Clonador de sites para phishing",
                 "info-phishing.py": "Ferramenta de phishing com informações",
                 "mascara.py": "Mascaramento de URLs para phishing",
-                "Clickjacking.py": "Ataques de Clickjacking"
+                "Clickjacking.py": "Ataques de Clickjacking",
+                "phishing-games.py": "phishing pra jogo",
+                "phishing-social.py": "phishing pra redes sociais",
+                "phishing-banco.py": "phishing pra banco",
+                "phisDrive-by-social.py": "pagina com malware que cria shell",
+                "phishing-discord.py": "cria pagina pra roubar token",
+                "phishing-apk.py": "cria uma pagina que recomenda um malware pra apk,
             },
             "xss": {
                 "xss.py": "Ferramenta de ataque XSS",
                 "xss-scan.py": "Scanner de vulnerabilidades XSS"
             },
             "git-exposto": {
-                "git.py": "Scanner de repositórios Git expostos"
+                "git.py": "Scanner de repositórios Git expostos",
+                "baixar-git.py": "abaixar git"
             },
             "dos": {
                 "dos.py": "Ferramentas de Denial of Service",
@@ -450,11 +512,26 @@ class HackerMenu:
             },
             "dox": {
                 "dox.py": "Ferramentas de coleta de informações pessoais",
-                "dox-toolkit.py": "Kit completo para doxing"
             },
-            "zero-day": {
+            "zero-day-leve": {
                 "zero-day.py": "Exploits de dia zero",
                 "zero-day-scanner.py": "Scanner de vulnerabilidades zero-day"
+            },
+            "testes-rede": {
+                "rede.py": "Ferramentas de teste de rede",
+                "my-wireshark.py": "copia do wireshark"
+            },
+            "linux": {
+                "distro.py": "Ferramentas para distribuições Linux"
+            },
+            "vpn": {
+                "vpn.py": "Ferramentas de VPN",
+                "tor.py": "tor pra anonimato"
+            },
+            "wi-fi": {
+                "wi-fi.py": "Ferramentas de análise Wi-Fi",
+                "clonar-wi_fi.py": "clonar wi-fi",
+                "quebrar-senha.py": "quebrar senha de wi-fi"
             }
         }
 
@@ -484,6 +561,10 @@ class HackerMenu:
         table.add_row("11", "DDoS", "Ataques Distribuídos de Denial of Service")
         table.add_row("12", "DOX", "Ferramentas de coleta de informações pessoais")
         table.add_row("13", "ZERO-DAY", "Exploits de dia zero")
+        table.add_row("14", "TESTE-REDE", "Ferramentas de teste de rede")
+        table.add_row("15", "LINUX", "Ferramentas para distribuições Linux")
+        table.add_row("16", "VPN", "Ferramentas de VPN")
+        table.add_row("17", "WI-FI", "Ferramentas de análise Wi-Fi")
         table.add_row("0", "SAIR", "Sair do sistema")
 
         console.print(table)
@@ -521,6 +602,14 @@ class HackerMenu:
                 console.print(Panel.fit(Banners.dox(), style="bold dark_blue"))
             elif category == "zero-day":
                 console.print(Panel.fit(Banners.zero_day(), style="bold dark_purple"))
+            elif category == "teste-rede":
+                console.print(Panel.fit(Banners.teste_rede(), style="bold cyan"))
+            elif category == "linux":
+                console.print(Panel.fit(Banners.linux(), style="bold green"))
+            elif category == "vpn":
+                console.print(Panel.fit(Banners.vpn(), style="bold blue"))
+            elif category == "wi-fi":
+                console.print(Panel.fit(Banners.wifi(), style="bold yellow"))
             
             console.print(f"\n[bold]{category.upper()} TOOLS[/bold]\n")
             
@@ -665,6 +754,14 @@ class HackerMenu:
                 self.show_category_menu("dox")
             elif choice == "13":
                 self.show_category_menu("zero-day-leve")
+            elif choice == "14":
+                self.show_category_menu("testes-rede")
+            elif choice == "15":
+                self.show_category_menu("linux")
+            elif choice == "16":
+                self.show_category_menu("vpn")
+            elif choice == "17":
+                self.show_category_menu("wi-fi")
             elif choice == "0":
                 console.print("[bold red]Saindo do sistema...[/bold red]")
                 time.sleep(1)
@@ -681,12 +778,6 @@ if __name__ == "__main__":
         console.print("\n[bold red]Interrompido pelo usuário[/bold red]")
         sys.exit(0)
 
-
-
-
-
-
-
 #Além do tempo, além do espaço,
 #navego na sombra de um sonho voraz.
 #A luz de um buraco, o frio do vazio,
@@ -701,3 +792,5 @@ if __name__ == "__main__":
 #de um canto da eternidade.
 #Mas eu sigo caindo na escuridão,
 #entre a saudade e a gravidade.
+
+#minha musica Habits-vitage 1930 jazz
