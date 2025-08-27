@@ -68,7 +68,7 @@ def password_check():
             animate_verification()
             time.sleep(1)
             os.system('clear')
-            os.system('python teste')
+            os.system('python main.py')
             return
         else:
             attempts -= 1
