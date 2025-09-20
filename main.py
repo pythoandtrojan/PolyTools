@@ -448,7 +448,9 @@ class HackerMenu:
                 "malware-bash.py": "malwares em bash",
                 "malware-discord.py": "malware pra roubo de token discord",
                 "malwer-troll.py": "nao execulte isso",
-                "Binary-Padding.py": "depois eu explico"
+                "Binary-Padding.py": "depois eu explico",
+                "c2-interativo.py": "c2 com comandos",
+                
             },
             "scanner": {
                 "scanner.py": "Ferramenta de varredura de portas",
