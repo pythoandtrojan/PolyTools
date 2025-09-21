@@ -61,7 +61,7 @@ class Banners:
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠀⠀⠀⠉⠛⠷⢦⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣠⣴⠶⠟⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠉⠉⠛⠛⠿⠿⠿⠿⠿⠿⠿⠿⠿⠟⠛⠋⠉⠁⠀
             
-     v 9.6.0 data: 20/9/2025                  ass: Erik | made: Brasil⠀⠀⠀⠀
+     v 9.6.1 data: 21/9/2025                  ass: Erik | made: Brasil⠀⠀⠀⠀
                              desde: 10/7/2025⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀               
         [/bold red]"""
 
@@ -598,7 +598,10 @@ class HackerMenu:
             "extras": {
                 "atualizações.py": "Atualizações do sistema",
                 "abaixar-dependencias.py": "Instalar dependências",
-                "definir-usuario.py": "Definir nome de usuário"
+                "definir-usuario.py": "Definir nome de usuário",
+                "aleatorio.py": "gera numeros aleatorios",
+                "gerador-de-senhas.py": "gera senhas fortes",
+                "Conversor-moeda.py": "valor da sua moeda moedas",
             }
         }
 
