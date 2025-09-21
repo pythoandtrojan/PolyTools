@@ -3,7 +3,7 @@ import os
 import json
 
 def verificar_updates(repo, arquivo_cache="ultimo_commit.json"):
-    url = f"https://api.github.com/repos/{repo}/commits/main"
+    url = f"https://api.github.com/repos/https://github.com/pythoandtrojan/PolyTools/commits/main"
     resp = requests.get(url)
 
     if resp.status_code == 200:
