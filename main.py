@@ -47,8 +47,8 @@ class Banners:
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠀⠀⠀⠉⠛⠷⢦⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣠⣴⠶⠟⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠉⠉⠛⠛⠿⠿⠿⠿⠿⠿⠿⠿⠿⠟⠛⠋⠉⠁⠀
             
-     v 9.6.0 data: 20/9/2025               ass: Erik | made: Brasil⠀⠀⠀⠀
-                          desde: 10/7/2025⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀               
+     v 9.6.0 data: 20/9/2025                        ass: Erik | made: Brasil⠀⠀⠀⠀
+                                 desde: 10/7/2025⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀               
         [/bold red]"""
 
     @staticmethod
@@ -530,7 +530,7 @@ class HackerMenu:
             },
             "vpn": {
                 "vpn.py": "Ferramentas de VPN",
-                "tor.py": "tor pra anonimato"
+                "tor.py": "tor para anonimato"
             },
             "wi-fi": {
                 "wi-fi.py": "Ferramentas de análise Wi-Fi",
