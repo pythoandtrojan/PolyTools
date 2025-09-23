@@ -38,6 +38,5 @@ Clone o repositório com:
 ```bash
 git clone https://github.com/pythoandtrojan/PolyTools.git
 cd PolyTools
-python install-osint.py
-python install-malwer.py
+python install.py
 python menu-real.py
