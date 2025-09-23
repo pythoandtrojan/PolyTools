@@ -868,3 +868,22 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         console.print("\n[bold red]Interrompido pelo usuário[/bold red]")
         sys.exit(0)
+
+
+#Além do tempo, além do espaço,
+#navego na sombra de um sonho voraz.
+#A luz de um buraco, o frio do vazio,
+#me chamam sem voz, me puxam pra trás.
+
+#Giram os planetas, o destino se rompe,
+#num mar de estrelas que esqueceu seu final.
+#O amor é um código, um ponto no mapa,
+#uma equação que não soube decifrar.
+
+#—Espera, espera—, sussurra o eco,
+#de um canto da eternidade.
+#Mas eu sigo caindo na escuridão,
+#entre a saudade e a gravidade.
+
+#minha musica Habits-vitage 1930 jazz
+#obgd por me molestar na infancia
