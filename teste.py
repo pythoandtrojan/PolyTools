@@ -598,7 +598,7 @@ class HackerMenu:
             },
             "extras": {
                 "atualizações.py": "Atualizações do sistema",
-                "abaixar-dependencias.py": "Instalar dependências",
+                "install.py": "Instalar dependências",
                 "definir-usuario.py": "Definir nome de usuário",
                 "aleatorio.py": "gera numeros aleatorios",
                 "gerador-senhas.py": "gera senhas fortes",
