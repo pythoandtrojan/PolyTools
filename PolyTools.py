@@ -483,7 +483,7 @@ class HackerMenu:
                 "holehe.py": "procura redes sociais vinculado a um gmail",
                 "FOTO.py": "procura meta dados de foto",
                 "whois.py": "busca com whois",
-                "osint-web.py": "apis em pagina web"
+                "apis-web.py": "apis em pagina web"
                 
             },
             "malwer": {
