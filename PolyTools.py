@@ -13,6 +13,20 @@ import webbrowser
 
 console = Console()
 
+# Configuração do usuário
+USER_FILE = ".user"
+def get_username():
+    if os.path.exists(USER_FILE):
+        with open(USER_FILE, 'r') as f:
+            return f.read().strip()
+    return "guest"
+
+def set_username():
+    username = console.input("[bold green]Defina seu nome de usuário: [/bold green]")
+    with open(USER_FILE, 'w') as f:
+        f.write(username)
+    return username
+
 class Banners:
     @staticmethod
     def main_menu():
@@ -22,8 +36,8 @@ class Banners:
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⣀⣴⠞⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠻⢶⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⢀⣠⠾⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀  ⠀⠀⠀⠀⠀⠀⠈⠻⣦⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀       ⠀⠀⣴⠟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢷⣆⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀       ⠀⣠⡞⠁⠀⠀⠀⠀⢀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡀⠀⠀⠀⠀⠈⠹⣦⡀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀       ⠀⢀⣼⠋⠀⠀⠀⢀⣤⣾⠟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⣷⣦⣀⠀⠀⠀⠈⢿⣄⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀       ⠀⣠⡞⠁⠀⠀⠀⠀⢀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡀⠀⠀⠀⠀   ⠈⠹⣦⡀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀       ⠀⢀⣼⠋⠀⠀⠀⢀⣤⣾⠟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⣷⣦⣀⠀⠀   ⠀⠈⢿⣄⠀⠀⠀⠀⠀
 ⠀⠀⠀       ⢀⡾⠁⠀⣠⡾⢁⣾⡿⡋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⢿⣿⣆⠹⣦⠀⠀⢻⣆⠀⠀⠀⠀
 ⠀       ⠀⢀⡾⠁⢀⢰⣿⠃⠾⢋⡔⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠰⣿⠀⢹⣿⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⡌⠻⠆⢿⣧⢀⠀⢻⣆⠀⠀⠀
 ⠀       ⠀⣾⠁⢠⡆⢸⡟⣠⣶⠟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⠞⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢷⣦⡸⣿⠀⣆⠀⢿⡄⠀⠀
@@ -41,14 +55,14 @@ class Banners:
 ⠀⠀  ⠀     ⠈⢷⡈⠻⣿⣶⣤⡁⠸⣿⣆⠡⡀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⢀⣾⡟⠀⣡⣴⣾⡿⠁⣴⠏⠀⠀⠀⠀
 ⠀⠀  ⠀     ⠀⠈⢿⣄⠈⢙⠿⢿⣷⣼⣿⣦⠹⣶⣽⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡄⢡⣾⣿⣶⣿⠿⢛⠉⢀⣾⠏⠀⠀⠀⠀⠀
 ⠀⠀  ⠀⠀     ⠀⠀⠹⣧⡀⠳⣦⣌⣉⣙⠛⠃⠈⠻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠋⠐⠛⠋⣉⣉⣤⡶⠁⣰⡿⠁⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀       ⠀⠀⠈⠻⣦⡀⠙⠛⠿⠿⠿⠿⠿⠟⠛⠛⣹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣟⠙⠟⠛⠿⠿⠿⠿⠟⠛⠁⣠⡾⠋⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀       ⠀⠀⠈⠻⣦⡀⠙⠛⠿⠿⠿⠿⠿⠟⠛⠛⣹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣟⠙⠟⠛⠿⠿⠿⠿⠟⠛⣠⡾⠋⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀  ⠀     ⠀⠀⠈⠛⢶⣄⠙⠶⣦⣤⣶⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣶⣦⣤⡶⠖⣁⣴⠟⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠀⠀⠙⠻⣶⣄⡉⠉⠉⠉⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠉⠉⠉⠉⣡⣴⡾⠛⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠀⠀⠀⠉⠛⠷⢦⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣠⣴⠶⠟⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠉⠉⠛⠛⠿⠿⠿⠿⠿⠿⠿⠿⠿⠟⠛⠋⠉⠁⠀
             
-     v 9.6.0 data: 20/9/2025                        ass: Erik | made: Brasil⠀⠀⠀⠀
-                                 desde: 10/7/2025⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀               
+     v 9.6.5 data: 23/9/2025                  ass: Erik | made: Brasil⠀⠀⠀⠀
+                             desde: 10/7/2025⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀               
         [/bold red]"""
 
     @staticmethod
@@ -117,10 +131,10 @@ class Banners:
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣴⣶⣤⣉⠛⣛⣉⠁⠀⠀⢀⣤⣴⣦⣤⣀⣶⡆⣾⣿⣿⣿⣯⠛⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣿⣿⣿⣿⣿⣿⡏⠀⠀⣰⠟⠉⠉⠙⢿⣿⣿⣇⢻⣿⣿⣿⣿⠆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⣿⣿⣿⣿⣿⡟⠀⠀⠀⠁⠀⠀⠀⠀⢸⣿⣿⣿⣦⡙⠿⣿⠟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠿⢋⣩⣭⣉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⣿⣿⣿⣿⣿⣿⡖⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠿⢋⣩⣭⣉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⣿⣿⣿⣿⣿⡖⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣰⣿⣿⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀⢠⣴⡾⣿⣿⡛⢋⠉⣠⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⠟⣉⣤⣶⣤⣤⡀⠀⠀⣴⣿⠟⠁⣩⣿⣿⣿⣿⣿⣻⣷⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢻⣿⢇⣾⣿⣿⣿⣿⣿⣿⡆⠺⠿⠋⢀⣾⣿⡿⢫⣾⣿⠟⢮⣝⠿⣷⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⠟⣉⣤⣶⣤⣤⣤⡀⠀⠀⣴⣿⠟⠁⣩⣿⣿⣿⣿⣿⣻⣷⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢻⣿⢇⣾⣿⣿⣿⣿⣿⣿⣿⡆⠺⠿⠋⢀⣾⣿⡿⢫⣾⣿⠟⢮⣝⠿⣷⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣶⣳⣾⣷⣷⡄⠀⠈⢿⢸⣿⣿⣿⡿⣫⣶⣿⣿⣿⣷⣄⢻⡿⢋⣴⣿⣿⠟⣠⣴⡿⠷⣟⣯⣤⣶⡶⣶⣄⡀⠀⣀⣀⣀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⢀⣠⣴⣾⡿⠃⠈⠛⢿⣦⣀⣈⡈⢿⣿⡟⣼⣿⣿⣿⣿⣿⠿⣛⣃⣀⣘⠿⠟⢣⣾⣿⡿⠃⣴⣿⣿⣿⣿⣿⢸⣿⣿⣿⣿⣿⣿⣿⠆⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⢀⣾⣼⡿⠋⠉⠀⠀⠀⠀⠀⠘⠿⣸⠧⡄⠻⠁⣿⣿⣿⣿⢏⣴⣿⣿⣿⣿⣿⣷⣄⢻⡟⠋⠀⣼⣿⣿⣿⠋⠉⠵⠿⣿⣿⣿⣿⢋⣷⣿⣦⡀⠀⠀⠀
@@ -151,7 +165,7 @@ class Banners:
 ⠀⣸⣿⠏⠈⠀⠀⢀⡾⣥⣿⡏⠀⠀⠀⠀⠀⠈⠛⠋⠀⠀⠀⠀⠀⠀⣿⣄⠉⣹⠏⢟⠉⢁⣼⡇⠀⠀⠀⠀⠀⠘⠙⠋⠀⠀⠀⠀⠀⠘⣿⣧⡻⣆⠀⠀⠀⠉⢷⣷⠀
 ⠀⣿⡏⠀⠀⠀⢠⡮⢾⣿⣿⣴⡖⢦⡀⠀⢀⣀⣀⣀⠀⠀⠀⠀⠀⠀⣾⠸⠿⡭⣿⣧⡽⢻⢸⡆⠀⠀⠀⠀⠀⣀⣀⣄⣀⠀⠀⣠⠖⣶⣼⣿⣿⠾⣆⠀⠀⠀⢸⣿⡇
 ⢸⢿⣿⣄⡒⠶⣿⣴⣿⠛⠛⠒⠢⢍⣻⣶⠏⠒⠀⢈⣛⣷⣄⠀⠀⢀⣿⣷⡐⠀⣒⡒⠀⣴⣿⣇⠀⠀⢀⣴⣟⣋⠀⠐⠊⣷⡾⣋⡥⠖⠚⠛⢿⣷⣾⣷⠶⣠⣼⡿⢳
-⠘⢿⣶⣯⣍⣥⣤⡴⣿⣦⡀⠀⠀⠀⠙⣿⣷⣶⠒⠀⠐⠛⠛⠶⣾⣿⡇⣿⢿⣿⣿⣿⣿⣿⢇⣯⣿⡶⠟⠛⠃⠀⠐⣶⣶⣿⡟⠁⠀⠀⠀⣠⣾⡷⣤⣤⣭⣭⢷⣿⠟
+⠘⢿⣶⣯⣍⣥⣤⡴⣿⣦⡀⠀⠀⠀⠙⣿⣷⣶⠒⠀⠐⠛⠛⠶⣾⣿⡇⣿⢿⣿⣿⣿⣿⣿⢇⣯⣿⡶⠟⠛⠛⠃⠀⠐⣶⣶⣿⡟⠁⠀⠀⠀⣠⣾⡷⣤⣤⣭⣭⢷⣿⠟
 ⠀⠀⠙⢷⣤⣤⣗⡲⢿⣾⣍⠀⠀⠀⠀⣸⣿⣿⣯⣓⡒⠢⠀⠀⠀⢉⡛⠻⢿⣻⣿⣿⣿⠿⠛⠃⠀⠀⠀⠤⠒⣒⣮⣿⣿⣿⡀⠀⠀⠀⢈⣿⣾⠷⣒⣠⣤⣴⠟⠁⠀
 ⠀⠀⠀⠀⠹⣿⡉⠉⠛⠛⢿⣿⣷⣿⣿⣟⠟⢻⣾⣦⡉⠁⠀⠀⠀⠀⠈⠙⣶⣿⣿⣿⣷⠞⠉⠀⠀⠀⠀⠀⠉⣡⣿⣿⠛⢛⣿⣿⣿⣿⣿⠟⠉⠋⢉⣹⡟⠁⠀⠀⠀
 ⠀⠀⠀⠀⠀⠈⢻⣦⡀⠀⢈⣩⣿⣿⣿⣿⠿⡟⢿⣻⣿⣷⣦⣀⠀⠀⠀⠉⢻⣿⣿⣿⣿⠊⠁⠀⠀⢀⣤⣶⣾⣿⣿⠛⡻⢿⣿⣿⣿⣯⣉⠀⠀⣠⣿⠋⠀⠀⠀⠀⠀
@@ -167,7 +181,7 @@ class Banners:
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣷⡈⠀⢿⡟⠉⠉⠉⠉⢿⠋⠉⠉⠉⠙⣿⠃⠊⣰⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⢯⣧⠀⣸⣇⠀⠀⠀⠀⠸⠀⠀⠀⠀⢀⣿⠀⢴⣯⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠿⣿⣿⣦⡀⠀⠀⢠⠀⠀⠀⣠⣾⣿⡿⠟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⠛⠛⠓⠚⠛⠛⠒⠛⠛⠛⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⠛⠛⠓⠚⠛⠛⠛⠛⠛⠛⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
         """
         
     @staticmethod
@@ -299,7 +313,7 @@ class Banners:
 ⠀⣿⢻⣿⣿⣿⣿⣦⣭⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⣶⣶⣾⣿⣿⡇⠀⠀⠀⠀⣼⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⢻⡆⢻⣿⣿⣿⣟⢿⡻⣶⡀⠀⠀⠀⠀⠀⠀⠀⠀⠸⣿⡿⣿⡇⠁⠀⠀⠀⢠⡟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⢿⣄⠙⣿⣿⣿⣷⣯⠉⠛⠷⣤⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⡿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠈⢻⣦⡈⢿⣿⣿⣿⣿⣯⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣤⠀⠀⣠⡿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠈⢻⣦⡈⢿⣿⣿⣿⣿⣯⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣤⠀⠀⣠⡿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠙⠿⣦⡉⠛⠿⢿⣿⣿⣿⣷⣤⣤⣤⣤⣤⣦⣶⡾⠟⢉⣠⡾⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠈⠛⠷⣦⣀⡉⠉⠉⠉⠛⠿⠛⠛⠛⢃⣁⣤⡶⠟⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⠛⠳⠶⠶⠶⠶⠾⠛⠛⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -400,8 +414,48 @@ class Banners:
          ╚══╝╚══╝ ╚═╝╚═╝     ╚═╝
         """
 
+    @staticmethod
+    def bluetooth():
+        return """
+⠀⣿⠲⠤⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⣸⡏⠀⠀⠀⠉⠳⢄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⣿⠀⠀⠀⠀⠀⠀⠀⠉⠲⣄⠀⠀⠀⠀⠀⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⢰⡏⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠲⣄⠀⠀⠐⡰⠋⢙⣿⣦⡀⠀⠀⠀⠀⠀
+⠸⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣙⣦⣮⣤⡀⣸⣿⣿⣿⣆⠀⠀⠀⠀
+⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⣿⣿⣿⠀⣿⢟⣫⠟⠋⠀⠀⠀⠀
+⠀⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣿⣿⣿⣿⣿⣷⣷⣿⡁⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⢹⣿⣿⣧⣿⣿⣆⡹⣖⡐⠠⠤⠠⠤
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢾⣿⣤⣿⣿⣿⡟⠹⣿⣿⣿⣿⣷⡀⠄⢀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣧⣴⣿⣿⣿⣿⠏⢧⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟⠀⠈⢳⡀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⡏⣸⣿⣿⣿⣿⣿⣿⣿⣿⣿⠃⠀⠀⠀⢳
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⢀⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠸⣿⣿⣿⣿⣿⣿⣿⣿⠏⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⡇⢠⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⠃⢸⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣼⢸⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣾⣿⢸⣿⣿⣿⣿⣿⣿⣿⣿⡄⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⣿⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣇⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⢀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠛⠻⠿⣿⣿⣿⡿⠿⠿⠿⠿⠿⢿⣿⣿⠏⠀⠀
+        """
+
+    @staticmethod
+    def extras():
+        return """
+        ╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗
+        ║╔══╝║╔═╗║║╔═╗║║╔═╗║║╔═╗║║╔═╗║
+        ║╚══╗║╚═╝║║╚═╝║║╚═╝║║║ ║║║╚══╗
+        ║╔══╝║╔╗╔╝║╔╗╔╝║╔╗╔╝║║ ║║╚══╗║
+        ║╚══╗║║║╚╗║║║╚╗║║║╚╗║╚═╝║║╚═╝║
+        ╚═══╝╚╝╚═╝╚╝╚═╝╚╝╚═╝╚═══╝╚═══╝
+        """
+
 class HackerMenu:
     def __init__(self):
+        self.username = get_username()
         self.tools = {
             "OSINT": {
                 "BuscaDeSites.py": "Busca informações em sites",
@@ -429,6 +483,7 @@ class HackerMenu:
                 "holehe.py": "procura redes sociais vinculado a um gmail",
                 "FOTO.py": "procura meta dados de foto",
                 "whois.py": "busca com whois",
+                "osint-web.py": "apis em pagina web"
                 
             },
             "malwer": {
@@ -536,6 +591,23 @@ class HackerMenu:
                 "wi-fi.py": "Ferramentas de análise Wi-Fi",
                 "clonar-wi_fi.py": "clonar wi-fi",
                 "quebrar-senha.py": "quebrar senha de wi-fi"
+            },
+            "bluetooth": {
+                "Bluejacking.py": "Ataques de Bluejacking",
+                "Bluesnarfing.py": "Ataques de Bluesnarfing"
+            },
+            "extras": {
+                "atualizações.py": "Atualizações do sistema",
+                "install.py": "Instalar dependências",
+                "definir-usuario.py": "Definir nome de usuário",
+                "aleatorio.py": "gera numeros aleatorios",
+                "gerador-senhas.py": "gera senhas fortes",
+                "Conversor-moedas.py": "valor da sua moeda moedas",
+                "verificador-links.py": "verifica seu um link e seguro",
+                "jogo_lixo.py": "um jogo simples",
+                "calculadora.py": "calculadora simples",
+                "terminal": "terminal interativo do PolyTools",
+                "prompet.py": "mudar prompet do terminal"
             }
         }
 
@@ -569,11 +641,13 @@ class HackerMenu:
         table.add_row("15", "LINUX", "Ferramentas para distribuições Linux")
         table.add_row("16", "VPN", "Ferramentas de VPN")
         table.add_row("17", "WI-FI", "Ferramentas de análise Wi-Fi")
+        table.add_row("18", "BLUETOOTH", "Ferramentas de Bluetooth")
+        table.add_row("19", "EXTRAS", "Ferramentas adicionais")
         table.add_row("0", "SAIR", "Sair do sistema")
 
         console.print(table)
 
-        choice = console.input("\n[bold red]>>> [/bold red]")
+        choice = console.input(f"\n[bold red]PolyTools[bold yellow]@[bold blue]{self.username}[bold yellow] >[bold blue]>[bold red]> [/bold red]")
         return choice
 
     def show_category_menu(self, category):
@@ -604,9 +678,9 @@ class HackerMenu:
                 console.print(Panel.fit(Banners.ddos(), style="bold dark_orange"))
             elif category == "dox":
                 console.print(Panel.fit(Banners.dox(), style="bold dark_blue"))
-            elif category == "zero-day":
+            elif category == "zero-day-leve":
                 console.print(Panel.fit(Banners.zero_day(), style="bold dark_purple"))
-            elif category == "teste-rede":
+            elif category == "testes-rede":
                 console.print(Panel.fit(Banners.teste_rede(), style="bold cyan"))
             elif category == "linux":
                 console.print(Panel.fit(Banners.linux(), style="bold green"))
@@ -614,6 +688,10 @@ class HackerMenu:
                 console.print(Panel.fit(Banners.vpn(), style="bold blue"))
             elif category == "wi-fi":
                 console.print(Panel.fit(Banners.wifi(), style="bold yellow"))
+            elif category == "bluetooth":
+                console.print(Panel.fit(Banners.bluetooth(), style="bold blue"))
+            elif category == "extras":
+                console.print(Panel.fit(Banners.extras(), style="bold magenta"))
             
             console.print(f"\n[bold]{category.upper()} TOOLS[/bold]\n")
             
@@ -630,7 +708,7 @@ class HackerMenu:
             
             console.print(table)
             
-            choice = console.input("\n[bold red]>>> [/bold red]")
+            choice = console.input(f"\n[bold red]PolyTools@/{self.username}/{category} >>> [/bold red]")
             
             if choice == "0":
                 return
@@ -669,6 +747,13 @@ class HackerMenu:
         console.print(f"[bold yellow]Executando {tool_name}...[/bold yellow]\n")
         
         try:
+            # Verifica se é uma ferramenta especial
+            if tool_name == "definir-usuario.py":
+                self.username = set_username()
+                console.print(f"[bold green]Usuário definido como: {self.username}[/bold green]")
+                console.input("\nPressione Enter para continuar...")
+                return
+                
             # Verifica se a pasta existe
             if not os.path.exists(category):
                 console.print(f"[bold red]Erro: Pasta '{category}' não encontrada![/bold red]")
@@ -766,6 +851,10 @@ class HackerMenu:
                 self.show_category_menu("vpn")
             elif choice == "17":
                 self.show_category_menu("wi-fi")
+            elif choice == "18":
+                self.show_category_menu("bluetooth")
+            elif choice == "19":
+                self.show_category_menu("extras")
             elif choice == "0":
                 console.print("[bold red]Saindo do sistema...[/bold red]")
                 time.sleep(1)
@@ -781,6 +870,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         console.print("\n[bold red]Interrompido pelo usuário[/bold red]")
         sys.exit(0)
+
 
 #Além do tempo, além do espaço,
 #navego na sombra de um sonho voraz.
