@@ -235,7 +235,7 @@ class Creditos:
         redes = [
             "🌐 REDES SOCIAIS E CONTATOS 🌐",
             " ",
-            "📷 Instagram: @erikmxp",
+            "📷 Instagram: ainda não fiz",
             "📹 YouTube: PolyTools Oficial",
             "💻 GitHub: github.com/pythoandtrojan",
             "📧 Email: eeu31471@gmail.com",
@@ -367,7 +367,7 @@ def main():
     
     print("\n🎉 Créditos finalizados!")
     print("Siga-nos nas redes sociais:")
-    print("📷 Instagram: @erikmxp")
+    print("📷 Instagram: ainda não fiz")
     print("📹 YouTube: PolyTools Oficial")
     print("💻 Continue usando o WolfPack Analyzer!")
 
