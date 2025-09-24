@@ -39,4 +39,4 @@ Clone o repositório com:
 git clone https://github.com/pythoandtrojan/PolyTools.git
 cd PolyTools
 python install.py
-python menu-real.py
+python PolyTools.py
