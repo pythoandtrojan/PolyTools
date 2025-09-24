@@ -61,7 +61,7 @@ class Banners:
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠀⠀⠀⠉⠛⠷⢦⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣠⣴⠶⠟⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠉⠉⠛⠛⠿⠿⠿⠿⠿⠿⠿⠿⠿⠟⠛⠋⠉⠁⠀
             
-     v 9.6.4 data: 22/9/2025                  ass: Erik | made: Brasil⠀⠀⠀⠀
+     v 9.6.5 data: 23/9/2025                  ass: Erik | made: Brasil⠀⠀⠀⠀
                              desde: 10/7/2025⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀               
         [/bold red]"""
 
@@ -606,7 +606,8 @@ class HackerMenu:
                 "verificador-links.py": "verifica seu um link e seguro",
                 "jogo_lixo.py": "um jogo simples",
                 "calculadora.py": "calculadora simples",
-                "terminal": "terminal interativo do PolyTools"
+                "terminal": "terminal interativo do PolyTools",
+                "prompet.py": "mudar prompet do terminal"
             }
         }
 
