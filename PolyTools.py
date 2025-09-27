@@ -606,7 +606,7 @@ class HackerMenu:
                 "verificador-links.py": "verifica seu um link e seguro",
                 "jogo_lixo.py": "um jogo simples",
                 "calculadora.py": "calculadora simples",
-                "terminal": "terminal interativo do PolyTools",
+                "terminal.py": "terminal interativo do PolyTools",
                 "prompet.py": "mudar prompet do terminal"
             }
         }
