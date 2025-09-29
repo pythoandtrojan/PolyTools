@@ -483,7 +483,11 @@ class HackerMenu:
                 "holehe.py": "procura redes sociais vinculado a um gmail",
                 "FOTO.py": "procura meta dados de foto",
                 "whois.py": "busca com whois",
-                "apis-web.py": "apis em pagina web"
+                "apis-web.py": "apis em pagina web",
+                "numero-usuario.py": "busca redes vinculada a um numero",
+                "IMEI-busca.py": "busca de imei",
+                "parentes.py": "busca de parentes de uma vitima",
+                "extra.py": "ferramentas extras de osint",
                 
             },
             "malwer": {
@@ -505,6 +509,8 @@ class HackerMenu:
                 "malwer-troll.py": "nao execulte isso",
                 "Binary-Padding.py": "depois eu explico",
                 "c2-interativo.py": "c2 com comandos",
+                "compilar.py": "compilar malwares",
+                "web-shell.py": "c2 com interface web"
                 
             },
             "scanner": {
