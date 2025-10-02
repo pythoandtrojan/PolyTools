@@ -94,7 +94,8 @@ def install_dependencies():
         "🕵️‍♂️ OSINT e Reconhecimento": [
             "holehe", "sherlock", "twint", "social-analyzer",
             "maigret", "photon", "theHarvester", "recon-ng",
-            "snscrape", "instagram-scraper", "twitter-scraper"
+            "snscrape", "instagram-scraper", "twitter-scraper",
+            "instaloader"
         ],
         
         "🌐 Requests e Web Scraping": [
@@ -105,7 +106,7 @@ def install_dependencies():
         
         "🔧 Utilitários Gerais": [
             "fake-useragent", "user-agents", "python-dotenv",
-            "pyyaml", "click", "argparse", "pathlib"
+            "pyyaml", "click", "argparse", "pathlib", "mechanize"
         ],
         
         "🔒 Criptografia e Segurança": [
