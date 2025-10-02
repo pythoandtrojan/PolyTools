@@ -14,12 +14,13 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
 from rich.text import Text
 from rich.syntax import Syntax
 from rich.layout import Layout
 from rich.live import Live
 from rich.align import Align
+from rich.prompt import Prompt, Confirm, IntPrompt
 
 console = Console()
 
@@ -151,9 +152,9 @@ class DangerousPortScanner:
     def ping_host(self, ip, timeout=1):
         """Verifica se um host está respondendo a ping"""
         try:
-            # Usando ping com count=1 e timeout
+            # Para Android/Termux, usar ping com parâmetros compatíveis
             result = subprocess.run(
-                ['ping', '-c', '1', '-W', str(timeout), ip],
+                ['ping', '-c', '1', '-W', '1', ip],
                 capture_output=True,
                 text=True,
                 timeout=timeout + 1
@@ -185,6 +186,7 @@ class DangerousPortScanner:
                     
                     # Tenta obter banner
                     try:
+                        sock.settimeout(1)
                         if port in [80, 443, 8000, 8080, 8443, 8888, 9000]:
                             sock.send(b'HEAD / HTTP/1.0\r\n\r\n')
                         elif port == 21:
@@ -206,8 +208,9 @@ class DangerousPortScanner:
         """Escaneia todas as portas perigosas nos hosts fornecidos"""
         self.scan_stats['start_time'] = time.time()
         results = []
+        total_tasks = len(hosts) * len(self.dangerous_ports)
         
-        with ThreadPoolExecutor(max_workers=100) as executor:
+        with ThreadPoolExecutor(max_workers=50) as executor:
             futures = []
             
             for host in hosts:
@@ -221,9 +224,8 @@ class DangerousPortScanner:
                 TextColumn("[progress.description]{task.description}"),
                 BarColumn(),
                 TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
-                transient=True,
             ) as progress:
-                task = progress.add_task("Escaneando portas perigosas...", total=len(futures))
+                task = progress.add_task("Escaneando portas perigosas...", total=total_tasks)
                 
                 for future in as_completed(futures):
                     try:
@@ -232,7 +234,7 @@ class DangerousPortScanner:
                             results.append(result)
                             self.show_dangerous_port_warning(result)
                         progress.update(task, advance=1)
-                    except Exception:
+                    except Exception as e:
                         progress.update(task, advance=1)
         
         self.scan_stats['end_time'] = time.time()
@@ -251,15 +253,17 @@ class DangerousPortScanner:
             "Variável": "cyan"
         }
         
+        color = risk_color.get(port_info['risk'], "white")
+        
         console.print(Panel.fit(
-            f"[bold {risk_color[port_info['risk']]}]⚠️  PORTA PERIGOSA ENCONTRADA![/bold {risk_color[port_info['risk']]}]\n\n"
+            f"[bold {color}]⚠️  PORTA PERIGOSA ENCONTRADA![/bold {color}]\n\n"
             f"🎯 [bold]Host:[/bold] {port_info['host']}\n"
             f"🚪 [bold]Porta:[/bold] {port_info['port']} ({port_info['service']})\n"
             f"🔴 [bold]Risco:[/bold] {port_info['risk']}\n"
             f"📝 [bold]Descrição:[/bold] {port_info['description']}\n"
             f"📋 [bold]Banner:[/bold] {port_info['banner'][:100]}{'...' if len(port_info['banner']) > 100 else ''}",
-            title=f"[{risk_color[port_info['risk']]}]ALERTA DE SEGURANÇA[/{risk_color[port_info['risk']]}]",
-            border_style=risk_color[port_info['risk']]
+            title=f"[{color}]ALERTA DE SEGURANÇA[/{color}]",
+            border_style=color
         ))
         
         # Mostra técnicas de exploração específicas
@@ -367,11 +371,13 @@ class DangerousPortScanner:
                 "Variável": "cyan"
             }
             
+            color = risk_color.get(port['risk'], "white")
+            
             table.add_row(
                 port['host'],
                 str(port['port']),
                 port['service'],
-                f"[{risk_color[port['risk']]}]{port['risk']}[/{risk_color[port['risk']]}]",
+                f"[{color}]{port['risk']}[/{color}]",
                 port['description'][:50] + "..." if len(port['description']) > 50 else port['description']
             )
         
@@ -382,9 +388,9 @@ class DangerousPortScannerPanel:
         self.scanner = DangerousPortScanner()
         self.banner = """
 [bold red]
-    ╔═╗┌─┐┌─┐┬ ┬  ╔═╗┌─┐┌─┐┌┬┐┌─┐┌─┐  ╔═╗┌─┐┌─┐┌┬┐┌─┐┌─┐
-    ╠═╝├─┤│  ├─┤  ║ ╦│ │├─┘ ││├┤ └─┐  ║ ╦├┤ ├─┤│││├┤ └─┐
-    ╩  ┴ ┴└─┘┴ ┴  ╚═╝└─┘┴  ─┴┘└─┘└─┘  ╚═╝└─┘┴ ┴┴ ┴└─┘└─┘
+╔═╗┌─┐┌─┐┬ ┬  ╔═╗┌─┐┌─┐┌┬┐┌─┐┌─┐  ╔═╗┌─┐┌─┐┌┬┐┌─┐┌─┐
+╠═╝├─┤│  ├─┤  ║ ╦│ │├─┘ ││├┤ └─┐  ║ ╦├┤ ├─┤│││├┤ └─┐
+╩  ┴ ┴└─┘┴ ┴  ╚═╝└─┘┴  ─┴┘└─┘└─┘  ╚═╝└─┘┴ ┴┴ ┴└─┘└─┘
 [/bold red]
 [bold white on red]        SCANNER DE PORTAS PERIGOSAS COM EXPLORAÇÃO v2.0[/bold white on red]
 """
@@ -423,7 +429,7 @@ class DangerousPortScannerPanel:
             console.print(table)
             
             choice = Prompt.ask(
-                "[blink yellow]➤[/blink yellow] Selecione uma opção",
+                "➤ Selecione uma opção",
                 choices=["0", "1", "2", "3", "4", "5"],
                 show_choices=False
             )
@@ -453,7 +459,7 @@ class DangerousPortScannerPanel:
             return
         
         timeout = IntPrompt.ask(
-            "[yellow]?[/yellow] Timeout por porta (segundos)",
+            "? Timeout por porta (segundos)",
             default=2
         )
         
@@ -471,7 +477,7 @@ class DangerousPortScannerPanel:
         
         console.print(f"[green]✅ {len(all_hosts)} hosts ativos encontrados[/green]")
         
-        if not Confirm.ask("[yellow]?[/yellow] Iniciar escaneamento de portas perigosas?"):
+        if not Confirm.ask("? Iniciar escaneamento de portas perigosas?"):
             return
         
         # Escanear portas perigosas
@@ -497,7 +503,7 @@ class DangerousPortScannerPanel:
         ))
         
         host = Prompt.ask(
-            "[yellow]?[/yellow] Digite o IP do host",
+            "? Digite o IP do host",
             default="192.168.1.1"
         )
         
@@ -509,11 +515,11 @@ class DangerousPortScannerPanel:
         # Verificar se host está ativo
         console.print(f"[bold]🔎 Verificando se {host} está ativo...[/bold]")
         if not self.scanner.ping_host(host, 2):
-            if not Confirm.ask("[yellow]?[/yellow] Host não responde a ping. Continuar mesmo assim?"):
+            if not Confirm.ask("? Host não responde a ping. Continuar mesmo assim?"):
                 return
         
         timeout = IntPrompt.ask(
-            "[yellow]?[/yellow] Timeout por porta (segundos)",
+            "? Timeout por porta (segundos)",
             default=2
         )
         
@@ -549,10 +555,12 @@ class DangerousPortScannerPanel:
                 "Variável": "cyan"
             }
             
+            color = risk_color.get(info['risk'], "white")
+            
             table.add_row(
                 str(port),
                 info['service'],
-                f"[{risk_color[info['risk']]}]{info['risk']}[/{risk_color[info['risk']]}]",
+                f"[{color}]{info['risk']}[/{color}]",
                 info['description']
             )
         
@@ -567,7 +575,7 @@ class DangerousPortScannerPanel:
         ))
         
         host = Prompt.ask(
-            "[yellow]?[/yellow] Digite o IP do host",
+            "? Digite o IP do host",
             default="192.168.1.1"
         )
         
@@ -577,17 +585,17 @@ class DangerousPortScannerPanel:
             return
         
         port = IntPrompt.ask(
-            "[yellow]?[/yellow] Digite a porta para testar",
+            "? Digite a porta para testar",
             default=22
         )
         
         if port not in self.scanner.dangerous_ports:
             console.print("[yellow]⚠️  Esta porta não está na lista de perigosas[/yellow]")
-            if not Confirm.ask("[yellow]?[/yellow] Testar mesmo assim?"):
+            if not Confirm.ask("? Testar mesmo assim?"):
                 return
         
         timeout = IntPrompt.ask(
-            "[yellow]?[/yellow] Timeout (segundos)",
+            "? Timeout (segundos)",
             default=3
         )
         
@@ -625,9 +633,9 @@ class DangerousPortScannerPanel:
             border_style="green"
         ))
         
-        if Confirm.ask("[yellow]?[/yellow] Iniciar escaneamento nessas redes?"):
+        if Confirm.ask("? Iniciar escaneamento nessas redes?"):
             timeout = IntPrompt.ask(
-                "[yellow]?[/yellow] Timeout por porta (segundos)",
+                "? Timeout por porta (segundos)",
                 default=2
             )
             
@@ -657,7 +665,7 @@ class DangerousPortScannerPanel:
         """Obtém entrada de redes do usuário"""
         networks = []
         
-        if Confirm.ask("[yellow]?[/yellow] Detectar redes automaticamente?"):
+        if Confirm.ask("? Detectar redes automaticamente?"):
             auto_networks = self.scanner.get_local_networks()
             if auto_networks:
                 networks.extend(auto_networks)
@@ -665,7 +673,7 @@ class DangerousPortScannerPanel:
         
         while True:
             network = Prompt.ask(
-                "[yellow]?[/yellow] Adicionar rede (formato CIDR) ou Enter para continuar"
+                "? Adicionar rede (formato CIDR) ou Enter para continuar"
             )
             
             if not network:
@@ -685,7 +693,7 @@ class DangerousPortScannerPanel:
     def exit_program(self):
         """Sai do programa"""
         console.print(Panel.fit(
-            "[blink bold red]⚠️ AVISO: ESCANEAMENTO NÃO AUTORIZADO É CRIME! ⚠️[/blink bold red]\n\n"
+            "[bold red]⚠️ AVISO: ESCANEAMENTO NÃO AUTORIZADO É CRIME! ⚠️[/bold red]\n\n"
             "Este tool é apenas para testes de segurança autorizados.\n"
             "Use apenas em redes próprias ou com permissão explícita.",
             border_style="red"
@@ -696,6 +704,10 @@ class DangerousPortScannerPanel:
 
 def main():
     try:
+        # Verificar se está no Termux
+        if not os.path.exists('/data/data/com.termux/files/usr/bin/python3'):
+            console.print("[yellow]⚠️  Aviso: Script otimizado para Termux[/yellow]")
+        
         panel = DangerousPortScannerPanel()
         panel.show_menu()
     except KeyboardInterrupt:
@@ -703,6 +715,8 @@ def main():
         sys.exit(0)
     except Exception as e:
         console.print(f"\n[red]✗ Erro: {str(e)}[/red]")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
 
 if __name__ == '__main__':
