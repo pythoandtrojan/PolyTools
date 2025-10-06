@@ -61,7 +61,7 @@ class Banners:
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠀⠀⠀⠉⠛⠷⢦⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣠⣴⠶⠟⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠉⠉⠛⠛⠿⠿⠿⠿⠿⠿⠿⠿⠿⠟⠛⠋⠉⠁⠀
             
-     v 9.6.6 data: 30/10/2025                  ass: Erik | made: Brasil⠀⠀⠀⠀
+     v 9.6.7 data: 6/11/2025                  ass: Erik | made: Brasil⠀⠀⠀⠀
                              desde: 10/7/2025⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀               
         [/bold red]"""
 
@@ -445,12 +445,13 @@ class Banners:
     @staticmethod
     def extras():
         return """
-        ╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗╔═══╗
-        ║╔══╝║╔═╗║║╔═╗║║╔═╗║║╔═╗║║╔═╗║
-        ║╚══╗║╚═╝║║╚═╝║║╚═╝║║║ ║║║╚══╗
-        ║╔══╝║╔╗╔╝║╔╗╔╝║╔╗╔╝║║ ║║╚══╗║
-        ║╚══╗║║║╚╗║║║╚╗║║║╚╗║╚═╝║║╚═╝║
-        ╚═══╝╚╝╚═╝╚╝╚═╝╚╝╚═╝╚═══╝╚═══╝
+       ███████╗██╗  ██╗████████╗██████╗  █████╗ ███████╗
+       ██╔════╝╚██╗██╔╝╚══██╔══╝██╔══██╗██╔══██╗██╔════╝
+       █████╗   ╚███╔╝    ██║   ██████╔╝███████║███████╗
+       ██╔══╝   ██╔██╗    ██║   ██╔══██╗██╔══██║╚════██║
+       ███████╗██╔╝ ██╗   ██║   ██║  ██║██║  ██║███████║
+       ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝
+                                                 
         """
 
 class HackerMenu:
@@ -557,7 +558,7 @@ class HackerMenu:
                 "phishing-banco.py": "phishing pra banco",
                 "phisDrive-by-social.py": "pagina com malware que cria shell",
                 "phishing-discord.py": "cria pagina pra roubar token",
-                "phishing-apk.py": "cria uma pagina que recomenda um malware pra apk",
+                "phishing-apk.py": "cria uma pagina que recomenda um malware para apk",
             },
             "xss": {
                 "xss.py": "Ferramenta de ataque XSS",
@@ -613,7 +614,8 @@ class HackerMenu:
                 "jogo_lixo.py": "um jogo simples",
                 "calculadora.py": "calculadora simples",
                 "terminal.py": "terminal interativo do PolyTools",
-                "prompet.py": "mudar prompet do terminal"
+                "prompet.py": "mudar prompet do terminal",
+                "systema.py": "olhar dados do seu termux com termux-api"
             }
         }
 
