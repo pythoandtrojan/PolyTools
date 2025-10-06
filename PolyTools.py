@@ -489,6 +489,9 @@ class HackerMenu:
                 "IMEI-busca.py": "busca de imei",
                 "parentes.py": "busca de parentes de uma vitima",
                 "extra.py": "ferramentas extras de osint",
+                "mac.py": "consulta de mac",
+                "verificador-link.py: "verifica se link e seguro",
+                
                 
             },
             "malwer": {
