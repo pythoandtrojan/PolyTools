@@ -1,733 +1,687 @@
 #!/usr/bin/env python3
-
 import requests
-import sys
-import json
 import re
-import socket
-import time
-from datetime import datetime
 import os
-import platform
-import subprocess
-from typing import Optional, Dict, List, Union
+import json
+import concurrent.futures
+from datetime import datetime
+from urllib.parse import quote
+import time
+import hashlib
+import socket
+import threading
 
-try:
-    import nmap
-except ImportError:
-    nmap = None
+# Cores para terminal
+class Cores:
+    VERDE = '\033[92m'
+    VERMELHO = '\033[91m'
+    AMARELO = '\033[93m'
+    AZUL = '\033[94m'
+    MAGENTA = '\033[95m'
+    CIANO = '\033[96m'
+    BRANCO = '\033[97m'
+    NEGRITO = '\033[1m'
+    RESET = '\033[0m'
 
-try:
-    import vulners
-except ImportError:
-    vulners = None
+# Configurações
+os.makedirs('cache_ip', exist_ok=True)
+TEMPO_CACHE = 86400  # 24 horas em segundos
 
-class Colors:
-    """Melhorado: Cores ANSI com verificação de suporte a terminal"""
-    GREEN = "\033[92m"
-    YELLOW = "\033[93m"
-    RED = "\033[91m"
-    BLUE = "\033[94m"
-    MAGENTA = "\033[95m"
-    CYAN = "\033[96m"
-    RESET = "\033[0m"
-    BOLD = "\033[1m"
-    BLACK_BG = "\033[40m"
-    RED_BG = "\033[41m"
-
-    @classmethod
-    def disable_colors(cls):
-        """Desativa cores se não suportadas"""
-        for attr in dir(cls):
-            if attr.isupper() and not attr.startswith('_'):
-                setattr(cls, attr, '')
-
-if platform.system() == 'Windows':
-    try:
-        import colorama
-        colorama.init()
-    except ImportError:
-        Colors.disable_colors()
-elif not sys.stdout.isatty():
-    Colors.disable_colors()
-
-def clear_screen():
-    """Limpa a tela de forma cross-platform"""
-    os.system('cls' if platform.system() == 'Windows' else 'clear')
-
-def show_banner():
-    try:
-        columns = os.get_terminal_size().columns
-    except:
-        columns = 80
-
-    clear_screen()
-    banner = f"""
-{Colors.BLUE}╔{'═' * (columns-2)}╗
-║{'IP SCANNER COMPLETO'.center(columns-2)}║
-║{'Consulta IP + Portas + Vulnerabilidades'.center(columns-2)}║
-╚{'═' * (columns-2)}╝{Colors.RESET}
-"""
-    print(banner)
-
-def show_menu():
-
-    try:
-        columns = os.get_terminal_size().columns
-    except:
-        columns = 80
-
-    menu_width = min(40, columns - 4)
-    border = f"╔{'═' * (menu_width-2)}╗"
-    menu_line = f"║{' ' * (menu_width-2)}║"
-    
-    print(f"""
-{Colors.CYAN}{border}
-{menu_line}
-║{'1. Consultar IP/ipv4/ipv6'.ljust(menu_width-2)}║
-║{'2. Modo interativo'.ljust(menu_width-2)}║
-║{'3. Scanner Completo (IP+Portas+Vuln)'.ljust(menu_width-2)}║
-║{'4. Sair'.ljust(menu_width-2)}║
-{menu_line}
-{border}{Colors.RESET}
-""")
-
-def validate_ip(ip: str) -> bool:
-    """Validação robusta de IPv4 e IPv6"""
-    
-    ipv4_pattern = r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
-    
-    
-    ipv6_pattern = (
-        r'^(?:(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|'
-        r'((?:[0-9a-fA-F]{1,4}:){0,6}[0-9a-fA-F]{1,4})?::((?:[0-9a-fA-F]{1,4}:){0,6}[0-9a-fA-F]{1,4}|'
-        r'::(?:[0-9a-fA-F]{1,4}:){0,5}[0-9a-fA-F]{1,4}|'
-        r'(?:[0-9a-fA-F]{1,4}:){1}(?::[0-9a-fA-F]{1,4}){1,5}|'
-        r'(?:[0-9a-fA-F]{1,4}:){2}(?::[0-9a-fA-F]{1,4}){1,4}|'
-        r'(?:[0-9a-fA-F]{1,4}:){3}(?::[0-9a-fA-F]{1,4}){1,3}|'
-        r'(?:[0-9a-fA-F]{1,4}:){4}(?::[0-9a-fA-F]{1,4}){1,2}|'
-        r'(?:[0-9a-fA-F]{1,4}:){5}(?::[0-9a-fA-F]{1,4})|'
-        r'(?:[0-9a-fA-F]{1,4}:){6})$'
-    )
-    
-    return re.match(ipv4_pattern, ip) is not None or re.match(ipv6_pattern, ip) is not None
-
-def resolve_domain(domain: str) -> Optional[str]:
-    """Resolução de domínio com tratamento robusto de erros"""
-    try:
-        if not domain:
-            raise ValueError("Domínio não pode ser vazio")
-            
-        
-        if validate_ip(domain):
-            return domain
-            
-        
-        start_time = time.time()
-        ip = socket.gethostbyname(domain)
-        resolve_time = time.time() - start_time
-        
-        print(f"{Colors.BLUE}[+] Domínio resolvido para {ip} em {resolve_time:.2f} segundos{Colors.RESET}")
-        return ip
-        
-    except socket.gaierror as e:
-        print(f"{Colors.RED}[-] Erro ao resolver domínio {domain}: {e}{Colors.RESET}")
-        return None
-    except Exception as e:
-        print(f"{Colors.RED}[-] Erro inesperado ao resolver domínio: {e}{Colors.RESET}")
-        return None
-
-def check_tor_connection() -> bool:
-    """Verifica se o Tor está funcionando corretamente"""
-    try:
-        response = requests.get(
-            'https://check.torproject.org/api/ip',
-            proxies={
-                'http': 'socks5h://127.0.0.1:9050',
-                'https': 'socks5h://127.0.0.1:9050'
-            },
-            timeout=10
-        )
-        return response.json().get('IsTor', False)
-    except:
-        return False
-
-def query_ip(ip: str, use_proxy: bool = False) -> Optional[Dict]:
-    """Consulta informações de IP com tratamento robusto de erros"""
-    url = f"http://ip-api.com/json/{ip}?fields=status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,reverse,mobile,proxy,hosting,query"
-    
-    proxies = None
-    if use_proxy:
-        if not check_tor_connection():
-            print(f"{Colors.YELLOW}[!] Proxy Tor não está disponível, usando conexão direta{Colors.RESET}")
-        else:
-            proxies = {
-                'http': 'socks5h://127.0.0.1:9050',
-                'https': 'socks5h://127.0.0.1:9050'
-            }
-    
-    try:
-        start_time = time.time()
-        response = requests.get(url, proxies=proxies, timeout=15)
-        response_time = time.time() - start_time
-        
-        if response.status_code != 200:
-            raise Exception(f"HTTP {response.status_code} - {response.text}")
-        
-        data = response.json()
-        data['response_time_ms'] = round(response_time * 1000, 2)
-        
-        if data.get('status') == 'fail':
-            raise Exception(data.get('message', 'Erro desconhecido na API'))
-        
-        return data
-    
-    except requests.exceptions.Timeout:
-        print(f"{Colors.RED}[-] Tempo de consulta excedido{Colors.RESET}")
-        return None
-    except requests.exceptions.RequestException as e:
-        print(f"{Colors.RED}[-] Erro na requisição: {e}{Colors.RESET}")
-        return None
-    except json.JSONDecodeError:
-        print(f"{Colors.RED}[-] Resposta inválida da API{Colors.RESET}")
-        return None
-    except Exception as e:
-        print(f"{Colors.RED}[-] Erro ao consultar o IP: {e}{Colors.RESET}")
-        return None
-
-def scan_ports(ip: str, port_range: str = "21-443", arguments: str = "-sV") -> Optional[Dict]:
-    """Varredura de portas com Nmap com tratamento robusto de erros"""
-    if not nmap:
-        print(f"{Colors.RED}[-] Biblioteca nmap não instalada. Instale com: pip install python-nmap{Colors.RESET}")
-        return None
-    
-    try:
-        print(f"\n{Colors.BLUE}[+] Iniciando varredura de portas em {ip}...{Colors.RESET}")
-        
-        nm = nmap.PortScanner()
-        start_time = time.time()
-        
-
-        if '-' in port_range:
-            start_port, end_port = map(int, port_range.split('-'))
-            if (end_port - start_port) > 1000:
-                print(f"{Colors.YELLOW}[!] Limite de portas excedido. Reduzindo para 1000 portas{Colors.RESET}")
-                port_range = f"{start_port}-{start_port + 999}"
-        
-        nm.scan(ip, port_range, arguments=arguments)
-        
-        scan_time = time.time() - start_time
-        results = []
-        
-        if ip in nm.all_hosts():
-            host = nm[ip]
-            
-            for proto in host.all_protocols():
-                open_ports = host[proto].keys()
-                
-                for port in sorted(open_ports):
-                    port_info = {
-                        'port': port,
-                        'protocol': proto,
-                        'state': host[proto][port]['state'],
-                        'service': host[proto][port]['name'],
-                        'version': host[proto][port].get('version', 'unknown'),
-                        'product': host[proto][port].get('product', 'unknown')
-                    }
-                    results.append(port_info)
-        
-        return {
-            'scan_time': round(scan_time, 2),
-            'open_ports': results
+# APIs de consulta IP
+APIS = {
+    'IPInfo': {
+        'url': "https://ipinfo.io/{ip}/json",
+        'fields': {
+            'ip': 'ip',
+            'hostname': 'hostname',
+            'cidade': 'city',
+            'regiao': 'region',
+            'pais': 'country',
+            'localizacao': 'loc',
+            'organizacao': 'org',
+            'timezone': 'timezone',
+            'servico': 'IPInfo'
         }
-    
-    except nmap.PortScannerError as e:
-        print(f"{Colors.RED}[-] Erro no Nmap: {e}{Colors.RESET}")
-        return None
-    except Exception as e:
-        print(f"{Colors.RED}[-] Erro durante o scan: {e}{Colors.RESET}")
-        return None
-
-def check_vulnerabilities(service: str, version: str, max_results: int = 5) -> Optional[List[Dict]]:
-    """Verifica vulnerabilidades com tratamento robusto de erros"""
-    if not vulners:
-        print(f"{Colors.YELLOW}[!] Biblioteca vulners não instalada. Instale com: pip install vulners{Colors.RESET}")
-        return None
-    
-    if not service or not version or version.lower() == 'unknown':
-        return None
-        
-    try:
-        vulners_api = vulners.VulnersApi()
-        results = vulners_api.softwareVulnerabilities(service, version)
-        
-        vulnerabilities = []
-        
-        if results.get('cvelist'):
-            for cve in results['cvelist']:
-                vulnerabilities.append({
-                    'id': cve.get('id'),
-                    'type': cve.get('type'),
-                    'title': cve.get('title'),
-                    'severity': cve.get('cvss', {}).get('score', 0),
-                    'description': cve.get('description'),
-                    'reference': cve.get('href')
-                })
-        
-    
-        return sorted(vulnerabilities, key=lambda x: x['severity'], reverse=True)[:max_results]
-    
-    except Exception as e:
-        print(f"{Colors.RED}[-] Erro ao verificar vulnerabilidades: {e}{Colors.RESET}")
-        return None
-
-def get_flag(country_code: str) -> str:
-    """Retorna emoji de bandeira para código de país"""
-    if not country_code or len(country_code) != 2:
-        return ""
-    try:
-        return chr(127397 + ord(country_code[0].upper())) + chr(127397 + ord(country_code[1].upper()))
-    except:
-        return ""
-
-def detect_device(isp: str) -> str:
-    """Detecção melhorada de tipo de dispositivo"""
-    if not isp:
-        return "Unknown"
-    
-    isp_lower = isp.lower()
-    
-    
-    mobile_keywords = ['mobile', 'celular', 'wireless', '3g', '4g', '5g', 'lte', 'vodafone', 'verizon', 'at&t', 't-mobile']
-    if any(keyword in isp_lower for keyword in mobile_keywords):
-        return "Mobile Device"
-    
-
-    hosting_keywords = ['host', 'server', 'data center', 'cloud', 'amazon', 'google cloud', 'azure', 'digitalocean', 'linode']
-    if any(keyword in isp_lower for keyword in hosting_keywords):
-        return "Server/Hosting"
-    
-    
-    brands = {
-        'apple': 'Apple Device',
-        'samsung': 'Samsung Device',
-        'xiaomi': 'Xiaomi Device',
-        'huawei': 'Huawei Device',
-        'motorola': 'Motorola Device',
-        'google': 'Google Device',
-        'oneplus': 'OnePlus Device',
-        'microsoft': 'Microsoft Device'
+    },
+    'IPAPI': {
+        'url': "http://ip-api.com/json/{ip}",
+        'fields': {
+            'ip': 'query',
+            'pais': 'country',
+            'codigo_pais': 'countryCode',
+            'regiao': 'regionName',
+            'cidade': 'city',
+            'cep': 'zip',
+            'latitude': 'lat',
+            'longitude': 'lon',
+            'timezone': 'timezone',
+            'isp': 'isp',
+            'organizacao': 'org',
+            'asn': 'as',
+            'status': 'status',
+            'servico': 'IPAPI'
+        }
+    },
+    'IPWhoIs': {
+        'url': "https://ipwho.is/{ip}",
+        'fields': {
+            'ip': 'ip',
+            'tipo': 'type',
+            'continente': 'continent',
+            'pais': 'country',
+            'regiao': 'region',
+            'cidade': 'city',
+            'latitude': 'latitude',
+            'longitude': 'longitude',
+            'asn_numero': 'asn.asn',
+            'asn_nome': 'asn.name',
+            'asn_dominio': 'asn.domain',
+            'asn_rota': 'asn.route',
+            'asn_tipo': 'asn.type',
+            'timezone_id': 'timezone.id',
+            'timezone_atual': 'timezone.current_time',
+            'sucesso': 'success',
+            'servico': 'IPWhoIs'
+        }
     }
-    
-    for brand, name in brands.items():
-        if brand in isp_lower:
-            return name
-    
-    return "Unknown"
+}
 
-def format_data(ip_data: Dict, scan_results: Optional[Dict] = None) -> str:
-    """Formata os dados de forma mais limpa e segura"""
-    if not ip_data:
-        return f"{Colors.RED}No data available.{Colors.RESET}"
-    
-    
-    defaults = {
-        'query': 'N/A',
-        'continent': 'N/A',
-        'country': 'N/A',
-        'city': 'N/A',
-        'isp': 'N/A',
-        'org': 'N/A',
-        'as': 'N/A',
-        'asname': 'N/A',
-        'reverse': 'N/A',
-        'lat': 'N/A',
-        'lon': 'N/A',
-        'timezone': 'N/A',
-        'currency': 'N/A',
-        'regionName': 'N/A',
-        'region': 'N/A',
-        'district': 'N/A',
-        'zip': 'N/A',
-        'continentCode': 'N/A',
-        'countryCode': 'N/A',
-        'mobile': False,
-        'proxy': False,
-        'hosting': False,
-        'response_time_ms': 'N/A'
-    }
-    
+# Portas comuns para scan
+PORTAS_COMUNS = [21, 22, 23, 25, 53, 80, 110, 443, 993, 995, 8080, 8443]
 
-    for key, value in defaults.items():
-        ip_data.setdefault(key, value)
-    
-    
-    mobile = f"{Colors.RED}Yes{Colors.RESET}" if ip_data['mobile'] else f"{Colors.GREEN}No{Colors.RESET}"
-    proxy = f"{Colors.RED}Yes{Colors.RESET}" if ip_data['proxy'] else f"{Colors.GREEN}No{Colors.RESET}"
-    hosting = f"{Colors.RED}Yes{Colors.RESET}" if ip_data['hosting'] else f"{Colors.GREEN}No{Colors.RESET}"
-    
-    flag = get_flag(ip_data.get('countryCode'))
-    device = detect_device(ip_data.get('isp'))
-    
-    
-    output = f"""
-{Colors.BLUE}┌───────────────────────────────┐
-│{Colors.BOLD}  IP INFORMATION          {Colors.RESET}{Colors.BLUE}│
-└───────────────────────────────┘{Colors.RESET}
-{Colors.CYAN}• IP:{Colors.RESET} {ip_data['query']}
-{Colors.CYAN}• Date/Time:{Colors.RESET} {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}
-{Colors.CYAN}• Response Time:{Colors.RESET} {ip_data['response_time_ms']} ms
+def limpar_tela():
+    os.system('clear' if os.name == 'posix' else 'cls')
 
-{Colors.YELLOW}┌───────────────────────────────┐
-│{Colors.BOLD}  LOCATION               {Colors.RESET}{Colors.YELLOW}│
-└───────────────────────────────┘{Colors.RESET}
-{Colors.CYAN}• Continent:{Colors.RESET} {ip_data['continent']} ({ip_data['continentCode']})
-{Colors.CYAN}• Country:{Colors.RESET} {flag} {ip_data['country']} ({ip_data['countryCode']})
-{Colors.CYAN}• Region:{Colors.RESET} {ip_data['regionName']} ({ip_data['region']})
-{Colors.CYAN}• City:{Colors.RESET} {ip_data['city']}
-{Colors.CYAN}• District:{Colors.RESET} {ip_data['district']}
-{Colors.CYAN}• ZIP:{Colors.RESET} {ip_data['zip']}
-{Colors.CYAN}• Coordinates:{Colors.RESET} Lat {ip_data['lat']}, Lon {ip_data['lon']}
-{Colors.CYAN}• Timezone:{Colors.RESET} {ip_data['timezone']}
-{Colors.CYAN}• Currency:{Colors.RESET} {ip_data['currency']}
+def banner():
+    limpar_tela()
+    print(f"""{Cores.CIANO}{Cores.NEGRITO}
+   ██╗███╗   ██╗██████╗ 
+   ██║████╗  ██║██╔══██╗
+   ██║██╔██╗ ██║██████╔╝
+   ██║██║╚██╗██║██╔═══╝ 
+   ██║██║ ╚████║██║     
+   ╚═╝╚═╝  ╚═══╝╚═╝     
+{Cores.RESET}
+{Cores.MAGENTA}{Cores.NEGRITO}   CONSULTOR DE IP AVANÇADO
+   Geolocalização + Port Scan
+{Cores.RESET}
+{Cores.AMARELO}   Múltiplas APIs + Google Maps + Scan Portas
+   Cache Inteligente
+{Cores.RESET}""")
 
-{Colors.YELLOW}┌───────────────────────────────┐
-│{Colors.BOLD}  NETWORK & DEVICE        {Colors.RESET}{Colors.YELLOW}│
-└───────────────────────────────┘{Colors.RESET}
-{Colors.CYAN}• ISP:{Colors.RESET} {ip_data['isp']}
-{Colors.CYAN}• Organization:{Colors.RESET} {ip_data['org']}
-{Colors.CYAN}• AS Number/Name:{Colors.RESET} {ip_data['as']} / {ip_data['asname']}
-{Colors.CYAN}• Reverse DNS:{Colors.RESET} {ip_data['reverse']}
-{Colors.CYAN}• Device Type:{Colors.RESET} {device}
-
-{Colors.YELLOW}┌───────────────────────────────┐
-│{Colors.BOLD}  SECURITY DETECTIONS    {Colors.RESET}{Colors.YELLOW}│
-└───────────────────────────────┘{Colors.RESET}
-{Colors.CYAN}• Mobile:{Colors.RESET} {mobile}
-{Colors.CYAN}• Proxy/VPN:{Colors.RESET} {proxy}
-{Colors.CYAN}• Hosting/Data Center:{Colors.RESET} {hosting}
-"""
-    
-    
-    if scan_results and scan_results.get('open_ports'):
-        output += f"""
-{Colors.RED}┌───────────────────────────────┐
-│{Colors.BOLD}  OPEN PORTS             {Colors.RESET}{Colors.RED}│
-└───────────────────────────────┘{Colors.RESET}
-{Colors.CYAN}• Scan Time:{Colors.RESET} {scan_results.get('scan_time', 'N/A')} seconds
-{Colors.CYAN}• Open Ports Found:{Colors.RESET} {len(scan_results['open_ports'])}
-"""
-        
-        for port in scan_results['open_ports']:
-            output += f"""
-{Colors.CYAN}┌ Port:{Colors.RESET} {port['port']}/{port['protocol']} - {port['state']}
-{Colors.CYAN}├ Service:{Colors.RESET} {port['service']}
-{Colors.CYAN}├ Version:{Colors.RESET} {port['version']}
-{Colors.CYAN}└ Product:{Colors.RESET} {port['product']}
-"""
-            
-        
-            if port['service'] != 'unknown' and port['version'] != 'unknown':
-                vulnerabilities = check_vulnerabilities(port['service'], port['version'])
-                if vulnerabilities:
-                    output += f"    {Colors.RED}  ! Known Vulnerabilities !{Colors.RESET}\n"
-                    for vuln in vulnerabilities:
-                        severity = ""
-                        if vuln['severity'] >= 7.5:
-                            severity = f"{Colors.RED}CRITICAL{Colors.RESET}"
-                        elif vuln['severity'] >= 5.0:
-                            severity = f"{Colors.YELLOW}HIGH{Colors.RESET}"
-                        else:
-                            severity = f"{Colors.GREEN}MODERATE{Colors.RESET}"
-                            
-                        output += f"""
-{Colors.CYAN}  ├─ {vuln['id']} ({severity})
-{Colors.CYAN}  ├─ {vuln['title']}
-{Colors.CYAN}  └─ {vuln['reference']}
-"""
-    
-    return output
-
-def save_results(ip_data: Dict, scan_results: Optional[Dict] = None, format_type: str = 'txt') -> bool:
-    """Salva resultados com tratamento robusto de erros"""
-    if not ip_data:
-        return False
-    
-    ip = ip_data.get('query', 'result')
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"ip_scan_{ip}_{timestamp}.{format_type}"
-    
+def validar_ip(ip):
+    """Valida formato do endereço IP"""
     try:
-    
-        os.makedirs("scan_results", exist_ok=True)
-        filename = os.path.join("scan_results", filename)
-        
-        with open(filename, 'w', encoding='utf-8') as f:
-            if format_type == 'json':
-                complete_result = {
-                    'ip_information': ip_data,
-                    'port_scan': scan_results
-                }
-                json.dump(complete_result, f, indent=2, ensure_ascii=False)
-            else:
-            
-                cleaned_output = re.sub(r'\033\[[\d;]+m', '', format_data(ip_data, scan_results))
-                f.write(cleaned_output)
-        
-        print(f"{Colors.GREEN}[+] Results saved to: {filename}{Colors.RESET}")
+        socket.inet_aton(ip)
         return True
-        
-    except PermissionError:
-        print(f"{Colors.RED}[-] Permission denied to save file{Colors.RESET}")
-        return False
-    except Exception as e:
-        print(f"{Colors.RED}[-] Error saving results: {e}{Colors.RESET}")
+    except socket.error:
         return False
 
-def full_scan():
-    """Executa um scan completo com tratamento de erros"""
-    target = input("Enter IP or domain for full scan: ").strip()
-    if not target:
-        print(f"{Colors.RED}[-] No target specified{Colors.RESET}")
-        return
-    
-    ip = target if validate_ip(target) else resolve_domain(target)
-    if not ip:
-        print(f"{Colors.RED}[-] Invalid target{Colors.RESET}")
-        return
-    
-    print(f"\n{Colors.BLUE}[+] Querying IP information...{Colors.RESET}")
-    ip_data = query_ip(ip)
-    
-    if not ip_data:
-        return
-    
-    print(f"\n{Colors.BLUE}[+] Starting port scan...{Colors.RESET}")
-    scan_results = scan_ports(ip, port_range="1-1000", arguments="-sV -T4")
-    
-    if ip_data or scan_results:
-        print(format_data(ip_data, scan_results))
-        
-        while True:
-            save_option = input("\nSave results? (s/n/txt/json): ").lower().strip()
-            if save_option in ['s', 'sim', 't', 'txt']:
-                save_results(ip_data, scan_results, 'txt')
-                break
-            elif save_option in ['j', 'json']:
-                save_results(ip_data, scan_results, 'json')
-                break
-            elif save_option in ['n', 'não', 'nao']:
-                break
-            else:
-                print(f"{Colors.RED}Invalid option. Use s/n/txt/json{Colors.RESET}")
+def gerar_hash(texto):
+    if not texto:
+        return ""
+    return hashlib.md5(texto.encode()).hexdigest()
 
-def single_query():
-    """Consulta única com tratamento de erros"""
-    target = input("Enter IP or domain: ").strip()
-    if not target:
-        print(f"{Colors.RED}[-] No target specified{Colors.RESET}")
-        return
-    
-    ip = target if validate_ip(target) else resolve_domain(target)
-    if not ip:
-        print(f"{Colors.RED}[-] Invalid target{Colors.RESET}")
-        return
-    
-    print(f"{Colors.BLUE}[+] Querying information...{Colors.RESET}")
-    ip_data = query_ip(ip)
-    
-    if ip_data:
-        print(format_data(ip_data))
-        
-        while True:
-            save_option = input("Save results? (s/n/txt/json): ").lower().strip()
-            if save_option in ['s', 'sim', 't', 'txt']:
-                save_results(ip_data, None, 'txt')
-                break
-            elif save_option in ['j', 'json']:
-                save_results(ip_data, None, 'json')
-                break
-            elif save_option in ['n', 'não', 'nao']:
-                break
-            else:
-                print(f"{Colors.RED}Invalid option. Use s/n/txt/json{Colors.RESET}")
+def cache_arquivo(nome, dados=None):
+    try:
+        caminho = f"cache_ip/{nome}.json"
+        if dados is not None:  # Modo escrita
+            with open(caminho, 'w', encoding='utf-8') as f:
+                json.dump({'data': dados, 'timestamp': time.time()}, f)
+            return dados
+        else:  # Modo leitura
+            if os.path.exists(caminho):
+                with open(caminho, 'r', encoding='utf-8') as f:
+                    cache = json.load(f)
+                    if time.time() - cache['timestamp'] < TEMPO_CACHE:
+                        return cache['data']
+        return None
+    except (IOError, json.JSONDecodeError):
+        return None
 
-def interactive_mode():
-    """Modo interativo melhorado"""
-    while True:
-        try:
-            print(f"\n{Colors.CYAN}Interactive Mode (type 'exit' to quit){Colors.RESET}")
-            target = input("Enter IP or domain (or 'scan' for full scan): ").strip()
+def consultar_ipinfo(ip):
+    """Consulta específica para IPInfo API"""
+    cache_id = f"ipinfo_{ip}"
+    cached = cache_arquivo(cache_id)
+    if cached:
+        return cached
+    
+    try:
+        url = f"https://ipinfo.io/{ip}/json"
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36',
+            'Accept': 'application/json'
+        }
+        response = requests.get(url, headers=headers, timeout=15)
+        
+        if response.status_code == 200:
+            dados = response.json()
+            if dados and 'ip' in dados:
+                resultado = {
+                    'ip': dados.get('ip', ''),
+                    'hostname': dados.get('hostname', ''),
+                    'cidade': dados.get('city', ''),
+                    'regiao': dados.get('region', ''),
+                    'pais': dados.get('country', ''),
+                    'localizacao': dados.get('loc', ''),
+                    'organizacao': dados.get('org', ''),
+                    'timezone': dados.get('timezone', ''),
+                    'servico': 'IPInfo'
+                }
+                cache_arquivo(cache_id, resultado)
+                return resultado
+    except (requests.RequestException, json.JSONDecodeError, ValueError):
+        pass
+    return None
+
+def consultar_ipapi(ip):
+    """Consulta específica para IP-API"""
+    cache_id = f"ipapi_{ip}"
+    cached = cache_arquivo(cache_id)
+    if cached:
+        return cached
+    
+    try:
+        url = f"http://ip-api.com/json/{ip}"
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36',
+            'Accept': 'application/json'
+        }
+        response = requests.get(url, headers=headers, timeout=15)
+        
+        if response.status_code == 200:
+            dados = response.json()
+            if dados and dados.get('status') == 'success':
+                resultado = {
+                    'ip': dados.get('query', ''),
+                    'pais': dados.get('country', ''),
+                    'codigo_pais': dados.get('countryCode', ''),
+                    'regiao': dados.get('regionName', ''),
+                    'cidade': dados.get('city', ''),
+                    'cep': dados.get('zip', ''),
+                    'latitude': dados.get('lat', ''),
+                    'longitude': dados.get('lon', ''),
+                    'timezone': dados.get('timezone', ''),
+                    'isp': dados.get('isp', ''),
+                    'organizacao': dados.get('org', ''),
+                    'asn': dados.get('as', ''),
+                    'status': dados.get('status', ''),
+                    'servico': 'IPAPI'
+                }
+                cache_arquivo(cache_id, resultado)
+                return resultado
+    except (requests.RequestException, json.JSONDecodeError, ValueError):
+        pass
+    return None
+
+def consultar_ipwhois(ip):
+    """Consulta específica para IPWhoIs"""
+    cache_id = f"ipwhois_{ip}"
+    cached = cache_arquivo(cache_id)
+    if cached:
+        return cached
+    
+    try:
+        url = f"https://ipwho.is/{ip}"
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36',
+            'Accept': 'application/json'
+        }
+        response = requests.get(url, headers=headers, timeout=15)
+        
+        if response.status_code == 200:
+            dados = response.json()
+            if dados and dados.get('success'):
+                resultado = {
+                    'ip': dados.get('ip', ''),
+                    'tipo': dados.get('type', ''),
+                    'continente': dados.get('continent', ''),
+                    'pais': dados.get('country', ''),
+                    'regiao': dados.get('region', ''),
+                    'cidade': dados.get('city', ''),
+                    'latitude': dados.get('latitude', ''),
+                    'longitude': dados.get('longitude', ''),
+                    'asn_numero': dados.get('asn', {}).get('asn', ''),
+                    'asn_nome': dados.get('asn', {}).get('name', ''),
+                    'asn_dominio': dados.get('asn', {}).get('domain', ''),
+                    'asn_rota': dados.get('asn', {}).get('route', ''),
+                    'asn_tipo': dados.get('asn', {}).get('type', ''),
+                    'timezone_id': dados.get('timezone', {}).get('id', ''),
+                    'timezone_atual': dados.get('timezone', {}).get('current_time', ''),
+                    'sucesso': dados.get('success', ''),
+                    'servico': 'IPWhoIs'
+                }
+                cache_arquivo(cache_id, resultado)
+                return resultado
+    except (requests.RequestException, json.JSONDecodeError, ValueError):
+        pass
+    return None
+
+def consultar_apis_paralelo(ip):
+    """Consulta todas as APIs em paralelo"""
+    if not validar_ip(ip):
+        return {}
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+        futures = {
+            executor.submit(consultar_ipinfo, ip): 'IPInfo',
+            executor.submit(consultar_ipapi, ip): 'IPAPI',
+            executor.submit(consultar_ipwhois, ip): 'IPWhoIs'
+        }
+        
+        resultados = {}
+        for future in concurrent.futures.as_completed(futures):
+            nome_api = futures[future]
+            try:
+                resultado = future.result()
+                if resultado:
+                    resultados[nome_api] = resultado
+            except Exception:
+                pass
+    
+    return resultados
+
+def testar_porta(ip, porta, timeout=2):
+    """Testa se uma porta está aberta"""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.settimeout(timeout)
+            resultado = sock.connect_ex((ip, porta))
+            return resultado == 0
+    except:
+        return False
+
+def scan_portas(ip, portas):
+    """Faz scan de portas de forma paralela"""
+    print(f"{Cores.AMARELO}[*] Scaneando {len(portas)} portas em {ip}...{Cores.RESET}")
+    
+    portas_abertas = []
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
+        futures = {executor.submit(testar_porta, ip, porta): porta for porta in portas}
+        
+        for future in concurrent.futures.as_completed(futures):
+            porta = futures[future]
+            try:
+                if future.result():
+                    portas_abertas.append(porta)
+                    print(f"{Cores.VERDE}[+] Porta {porta} aberta{Cores.RESET}")
+            except:
+                pass
+    
+    return sorted(portas_abertas)
+
+def obter_servico_porta(porta):
+    """Retorna o serviço comum associado à porta"""
+    servicos = {
+        21: "FTP", 22: "SSH", 23: "Telnet", 25: "SMTP", 53: "DNS",
+        80: "HTTP", 110: "POP3", 443: "HTTPS", 993: "IMAPS", 995: "POP3S",
+        8080: "HTTP-Alt", 8443: "HTTPS-Alt", 3306: "MySQL", 5432: "PostgreSQL",
+        27017: "MongoDB", 6379: "Redis", 11211: "Memcached"
+    }
+    return servicos.get(porta, "Desconhecido")
+
+def gerar_link_google_maps(lat, lng):
+    """Gera link para Google Maps com as coordenadas"""
+    if lat and lng:
+        return f"https://www.google.com/maps?q={lat},{lng}&z=15"
+    return None
+
+def exibir_resultado_individual(api_nome, dados):
+    """Exibe resultados individuais de cada API"""
+    print(f"\n{Cores.MAGENTA}{Cores.NEGRITO}=== {api_nome} ==={Cores.RESET}")
+    
+    if not dados:
+        print(f"{Cores.VERMELHO}  Nenhum dado retornado{Cores.RESET}")
+        return
+    
+    if 'ip' in dados:
+        print(f"{Cores.AZUL}  IP:{Cores.RESET} {dados['ip']}")
+    
+    if api_nome == 'IPInfo':
+        if 'hostname' in dados and dados['hostname']:
+            print(f"{Cores.AZUL}  Hostname:{Cores.RESET} {dados['hostname']}")
+        if 'cidade' in dados and dados['cidade'] and 'regiao' in dados and dados['regiao']:
+            print(f"{Cores.AZUL}  Localização:{Cores.RESET} {dados['cidade']}, {dados['regiao']}")
+        if 'pais' in dados and dados['pais']:
+            print(f"{Cores.AZUL}  País:{Cores.RESET} {dados['pais']}")
+        if 'organizacao' in dados and dados['organizacao']:
+            print(f"{Cores.AZUL}  Organização:{Cores.RESET} {dados['organizacao']}")
+        if 'localizacao' in dados and dados['localizacao']:
+            lat, lng = dados['localizacao'].split(',')
+            maps_link = gerar_link_google_maps(lat, lng)
+            print(f"{Cores.AZUL}  Coordenadas:{Cores.RESET} {dados['localizacao']}")
+            if maps_link:
+                print(f"{Cores.AZUL}  Google Maps:{Cores.RESET} {Cores.CIANO}{maps_link}{Cores.RESET}")
+    
+    elif api_nome == 'IPAPI':
+        if 'cidade' in dados and dados['cidade'] and 'regiao' in dados and dados['regiao']:
+            print(f"{Cores.AZUL}  Localização:{Cores.RESET} {dados['cidade']}, {dados['regiao']}")
+        if 'pais' in dados and dados['pais']:
+            print(f"{Cores.AZUL}  País:{Cores.RESET} {dados['pais']}")
+        if 'isp' in dados and dados['isp']:
+            print(f"{Cores.AZUL}  ISP:{Cores.RESET} {dados['isp']}")
+        if 'asn' in dados and dados['asn']:
+            print(f"{Cores.AZUL}  ASN:{Cores.RESET} {dados['asn']}")
+        if 'latitude' in dados and 'longitude' in dados:
+            maps_link = gerar_link_google_maps(dados['latitude'], dados['longitude'])
+            print(f"{Cores.AZUL}  Coordenadas:{Cores.RESET} {dados['latitude']}, {dados['longitude']}")
+            if maps_link:
+                print(f"{Cores.AZUL}  Google Maps:{Cores.RESET} {Cores.CIANO}{maps_link}{Cores.RESET}")
+    
+    elif api_nome == 'IPWhoIs':
+        if 'continente' in dados and dados['continente']:
+            print(f"{Cores.AZUL}  Continente:{Cores.RESET} {dados['continente']}")
+        if 'cidade' in dados and dados['cidade'] and 'regiao' in dados and dados['regiao']:
+            print(f"{Cores.AZUL}  Localização:{Cores.RESET} {dados['cidade']}, {dados['regiao']}")
+        if 'pais' in dados and dados['pais']:
+            print(f"{Cores.AZUL}  País:{Cores.RESET} {dados['pais']}")
+        if 'asn_nome' in dados and dados['asn_nome']:
+            print(f"{Cores.AZUL}  ASN:{Cores.RESET} {dados['asn_nome']} ({dados.get('asn_numero', '')})")
+        if 'latitude' in dados and 'longitude' in dados:
+            maps_link = gerar_link_google_maps(dados['latitude'], dados['longitude'])
+            print(f"{Cores.AZUL}  Coordenadas:{Cores.RESET} {dados['latitude']}, {dados['longitude']}")
+            if maps_link:
+                print(f"{Cores.AZUL}  Google Maps:{Cores.RESET} {Cores.CIANO}{maps_link}{Cores.RESET}")
+
+def exibir_resultados_combinados(resultados, ip):
+    """Exibe resumo combinado dos dados"""
+    if not resultados:
+        print(f"{Cores.VERMELHO}[!] Nenhum dado encontrado para este IP{Cores.RESET}")
+        return
+    
+    print(f"\n{Cores.VERDE}{Cores.NEGRITO}=== DADOS COMBINADOS (RESUMO) ==={Cores.RESET}")
+    print(f"{Cores.AZUL}Endereço IP:{Cores.RESET} {ip}")
+    
+    # Combinar localização
+    localizacao = None
+    coordenadas = None
+    
+    for api in ['IPInfo', 'IPAPI', 'IPWhoIs']:
+        if api in resultados:
+            dados = resultados[api]
+            if not localizacao and 'cidade' in dados and dados['cidade']:
+                cidade = dados['cidade']
+                regiao = dados.get('regiao', '')
+                pais = dados.get('pais', dados.get('codigo_pais', ''))
+                localizacao = f"{cidade}, {regiao}, {pais}"
             
-            if target.lower() in ['exit', 'quit', 'q']:
-                break
-                
-            if not target:
-                continue
-                
-            if target.lower() == 'scan':
-                full_scan()
-                input("\nPress Enter to continue...")
-                clear_screen()
-                continue
-                
-            ip = target if validate_ip(target) else resolve_domain(target)
-            if not ip:
-                print(f"{Colors.RED}[-] Invalid target{Colors.RESET}")
-                continue
-            
-            print(f"{Colors.BLUE}[+] Querying information...{Colors.RESET}")
-            ip_data = query_ip(ip)
-            
-            if ip_data:
-                print(format_data(ip_data))
-                
-                while True:
-                    save_option = input("Save results? (s/n/txt/json): ").lower().strip()
-                    if save_option in ['s', 'sim', 't', 'txt']:
-                        save_results(ip_data, None, 'txt')
-                        break
-                    elif save_option in ['j', 'json']:
-                        save_results(ip_data, None, 'json')
-                        break
-                    elif save_option in ['n', 'não', 'nao']:
-                        break
-                    else:
-                        print(f"{Colors.RED}Invalid option. Use s/n/txt/json{Colors.RESET}")
-            
-            input("\nPress Enter to continue...")
-            clear_screen()
-            
-        except KeyboardInterrupt:
-            print(f"\n{Colors.RED}Operation cancelled by user{Colors.RESET}")
+            if not coordenadas:
+                if 'localizacao' in dados and dados['localizacao']:
+                    coordenadas = dados['localizacao']
+                elif 'latitude' in dados and 'longitude' in dados:
+                    coordenadas = f"{dados['latitude']}, {dados['longitude']}"
             break
-        except Exception as e:
-            print(f"{Colors.RED}[-] Unexpected error: {e}{Colors.RESET}")
-            continue
+    
+    if localizacao:
+        print(f"{Cores.AZUL}Localização:{Cores.RESET} {localizacao}")
+    
+    # Combinar organização/ISP
+    organizacao = None
+    for api in ['IPInfo', 'IPAPI', 'IPWhoIs']:
+        if api in resultados:
+            dados = resultados[api]
+            if not organizacao:
+                organizacao = dados.get('organizacao') or dados.get('isp') or dados.get('asn_nome')
+            if organizacao:
+                break
+    
+    if organizacao:
+        print(f"{Cores.AZUL}Organização:{Cores.RESET} {organizacao}")
+    
+    # Link do Google Maps
+    if coordenadas:
+        # Extrair lat e lng das coordenadas
+        if ',' in coordenadas:
+            partes = coordenadas.split(',')
+            if len(partes) == 2:
+                lat = partes[0].strip()
+                lng = partes[1].strip()
+                maps_link = gerar_link_google_maps(lat, lng)
+                if maps_link:
+                    print(f"\n{Cores.CIANO}{Cores.NEGRITO}🗺️  LOCALIZAÇÃO NO GOOGLE MAPS:{Cores.RESET}")
+                    print(f"{Cores.VERDE}{Cores.NEGRITO}{maps_link}{Cores.RESET}")
+    
+    print(f"{Cores.AZUL}APIs com resposta:{Cores.RESET} {len(resultados)}/3")
 
-def check_dependencies():
-    """Verifica dependências e mostra mensagens úteis"""
-    missing = []
+def exibir_portas_abertas(portas_abertas):
+    """Exibe as portas abertas encontradas"""
+    if not portas_abertas:
+        print(f"{Cores.VERMELHO}[!] Nenhuma porta aberta encontrada{Cores.RESET}")
+        return
     
-    if nmap is None:
-        missing.append("python-nmap (required for port scanning)")
+    print(f"\n{Cores.CIANO}{Cores.NEGRITO}=== PORTAS ABERTAS ENCONTRADAS ==={Cores.RESET}")
+    for porta in portas_abertas:
+        servico = obter_servico_porta(porta)
+        print(f"{Cores.VERDE}✓ Porta {porta:5} - {servico}{Cores.RESET}")
+
+def combinar_dados(resultados):
+    """Combina dados de todas as APIs para exportação"""
+    if not resultados:
+        return None
     
-    if vulners is None:
-        missing.append("vulners (optional for vulnerability checking)")
+    combinado = {
+        'ip': '',
+        'localizacao': {},
+        'rede': {},
+        'apis_responderam': list(resultados.keys()),
+        'total_apis': len(resultados)
+    }
     
-    if missing:
-        print(f"{Colors.YELLOW}[!] Missing dependencies:{Colors.RESET}")
-        for dep in missing:
-            print(f"  - {dep}")
-        print(f"\nInstall with: pip install {' '.join(missing)}\n")
+    # Combinar dados de todas as APIs
+    for api, dados in resultados.items():
+        if not combinado['ip'] and 'ip' in dados:
+            combinado['ip'] = dados['ip']
+        
+        # Localização
+        if 'cidade' in dados and dados['cidade'] and not combinado['localizacao'].get('cidade'):
+            combinado['localizacao']['cidade'] = dados['cidade']
+        if 'regiao' in dados and dados['regiao'] and not combinado['localizacao'].get('regiao'):
+            combinado['localizacao']['regiao'] = dados['regiao']
+        if 'pais' in dados and dados['pais'] and not combinado['localizacao'].get('pais'):
+            combinado['localizacao']['pais'] = dados['pais']
+        if 'latitude' in dados and 'longitude' in dados and not combinado['localizacao'].get('coordenadas'):
+            combinado['localizacao']['coordenadas'] = f"{dados['latitude']},{dados['longitude']}"
+        
+        # Rede
+        if 'organizacao' in dados and dados['organizacao'] and not combinado['rede'].get('organizacao'):
+            combinado['rede']['organizacao'] = dados['organizacao']
+        if 'isp' in dados and dados['isp'] and not combinado['rede'].get('isp'):
+            combinado['rede']['isp'] = dados['isp']
+        if 'asn' in dados and dados['asn'] and not combinado['rede'].get('asn'):
+            combinado['rede']['asn'] = dados['asn']
+    
+    return combinado
+
+def salvar_resultado(dados, portas_abertas, ip, formato='txt'):
+    if not dados:
+        return False
+    
+    try:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        os.makedirs('resultados_ip', exist_ok=True)
+        nome_arquivo = f"resultados_ip/ip_{ip}_{timestamp}.{formato.lower()}"
+        
+        with open(nome_arquivo, 'w', encoding='utf-8') as f:
+            if formato.lower() == 'json':
+                resultado_completo = {
+                    'dados': dados,
+                    'portas_abertas': portas_abertas,
+                    'timestamp': timestamp
+                }
+                json.dump(resultado_completo, f, indent=2, ensure_ascii=False)
+            else:
+                f.write(f"=== CONSULTA IP {ip} ===\n\n")
+                f.write(f"IP: {dados.get('ip', 'N/A')}\n")
+                
+                if dados.get('localizacao'):
+                    loc = dados['localizacao']
+                    if loc.get('cidade') and loc.get('regiao'):
+                        f.write(f"Localização: {loc['cidade']}, {loc['regiao']}, {loc.get('pais', '')}\n")
+                    if loc.get('coordenadas'):
+                        f.write(f"Coordenadas: {loc['coordenadas']}\n")
+                        maps_link = gerar_link_google_maps(*loc['coordenadas'].split(','))
+                        if maps_link:
+                            f.write(f"Google Maps: {maps_link}\n")
+                
+                if dados.get('rede'):
+                    rede = dados['rede']
+                    if rede.get('organizacao'):
+                        f.write(f"Organização: {rede['organizacao']}\n")
+                    if rede.get('isp'):
+                        f.write(f"ISP: {rede['isp']}\n")
+                    if rede.get('asn'):
+                        f.write(f"ASN: {rede['asn']}\n")
+                
+                f.write(f"\nAPIs: {', '.join(dados.get('apis_responderam', []))}\n")
+                f.write(f"Total APIs: {dados.get('total_apis', 0)}/3\n")
+                
+                if portas_abertas:
+                    f.write(f"\n=== PORTAS ABERTAS ({len(portas_abertas)}) ===\n")
+                    for porta in portas_abertas:
+                        servico = obter_servico_porta(porta)
+                        f.write(f"Porta {porta}: {servico}\n")
+                
+                f.write(f"\nDATA: {timestamp}\n")
+        
+        print(f"{Cores.VERDE}[+] Resultado salvo em {nome_arquivo}{Cores.RESET}")
+        return True
+    except (IOError, OSError, json.JSONDecodeError) as e:
+        print(f"{Cores.VERMELHO}[!] Erro ao salvar: {str(e)}{Cores.RESET}")
+        return False
+
+def menu_principal():
+    banner()
+    print(f"\n{Cores.AMARELO}{Cores.NEGRITO}MENU PRINCIPAL{Cores.RESET}")
+    print(f"{Cores.VERDE}[1]{Cores.RESET} Consultar IP")
+    print(f"{Cores.VERDE}[2]{Cores.RESET} Sobre")
+    print(f"{Cores.VERDE}[3]{Cores.RESET} Sair")
+    
+    try:
+        return input(f"\n{Cores.CIANO}Selecione uma opção: {Cores.RESET}").strip()
+    except (EOFError, KeyboardInterrupt):
+        return '3'
+
+def sobre():
+    banner()
+    print(f"""
+{Cores.CIANO}{Cores.NEGRITO}SOBRE O CONSULTOR DE IP AVANÇADO{Cores.RESET}
+
+{Cores.AMARELO}Recursos principais:{Cores.RESET}
+- Consulta em 3 APIs públicas simultaneamente
+- Geolocalização precisa com coordenadas
+- Links diretos para Google Maps
+- Scan de portas abertas
+- Identificação de serviços
+- Cache inteligente para performance
+
+{Cores.AMARELO}APIs utilizadas:{Cores.RESET}
+- IPInfo.io - Dados completos + localização
+- IP-API.com - Informações de rede + ISP
+- IPWho.is - Dados técnicos + ASN
+
+{Cores.AMARELO}Portas verificadas:{Cores.RESET}
+- 21 (FTP), 22 (SSH), 23 (Telnet), 25 (SMTP)
+- 53 (DNS), 80 (HTTP), 110 (POP3), 443 (HTTPS)
+- 993 (IMAPS), 995 (POP3S), 8080, 8443
+
+{Cores.AMARELO}Informações obtidas:{Cores.RESET}
+- Localização geográfica (cidade, região, país)
+- Coordenadas GPS (latitude, longitude)
+- ISP e organização responsável
+- Número ASN e informações de rede
+- Hostname reverso
+- Portas abertas e serviços
+
+{Cores.VERDE}Pressione Enter para voltar...{Cores.RESET}""")
+    try:
+        input()
+    except (EOFError, KeyboardInterrupt):
+        pass
 
 def main():
-    """Função principal"""
-    check_dependencies()
-    show_banner()
-    
-    
-    if len(sys.argv) > 1:
-        try:
-            targets = []
-            use_proxy = False
-            save_json = False
-            save_txt = False
-            full_scan_mode = False
+    try:
+        while True:
+            opcao = menu_principal()
             
-            for arg in sys.argv[1:]:
-                if arg in ['-p', '--proxy']:
-                    use_proxy = True
-                elif arg in ['-j', '--json']:
-                    save_json = True
-                elif arg in ['-t', '--txt']:
-                    save_txt = True
-                elif arg in ['-s', '--scan']:
-                    full_scan_mode = True
-                elif arg in ['-h', '--help']:
-                    print(f"""
-Usage:
-  {sys.argv[0]} [OPTIONS] <IP1 IP2...|domain>
-  
-Options:
-  -p, --proxy    Use Tor proxy (requires running Tor)
-  -j, --json     Save results as JSON
-  -t, --txt      Save results as TXT
-  -s, --scan     Perform full scan (IP + Ports + Vulnerabilities)
-  -h, --help     Show this help
-                    """)
-                    sys.exit(0)
-                elif validate_ip(arg) or '.' in arg or ':' in arg:
-                    ip = arg if validate_ip(arg) else resolve_domain(arg)
-                    if ip:
-                        targets.append(ip)
+            if opcao == '1':
+                banner()
+                try:
+                    ip = input(f"\n{Cores.CIANO}Digite o endereço IP: {Cores.RESET}").strip()
+                except (EOFError, KeyboardInterrupt):
+                    continue
+                
+                if not validar_ip(ip):
+                    print(f"{Cores.VERMELHO}[!] IP inválido. Use formato IPv4.{Cores.RESET}")
+                    try:
+                        input(f"{Cores.AMARELO}Pressione Enter para continuar...{Cores.RESET}")
+                    except (EOFError, KeyboardInterrupt):
+                        pass
+                    continue
+                
+                print(f"\n{Cores.AMARELO}[*] Consultando IP {ip} em 3 APIs...{Cores.RESET}")
+                
+                # Consultar APIs em paralelo
+                resultados = consultar_apis_paralelo(ip)
+                dados_combinados = combinar_dados(resultados)
+                
+                banner()
+                print(f"{Cores.VERDE}{Cores.NEGRITO}RESULTADOS PARA IP {ip}{Cores.RESET}")
+                
+                # Exibir resultados individuais de cada API
+                for api_nome in ['IPInfo', 'IPAPI', 'IPWhoIs']:
+                    exibir_resultado_individual(api_nome, resultados.get(api_nome))
+                
+                # Exibir dados combinados
+                exibir_resultados_combinados(resultados, ip)
+                
+                # Scan de portas
+                try:
+                    scan = input(f"\n{Cores.CIANO}Deseja escanear portas? (S/N): {Cores.RESET}").strip().lower()
+                    if scan in ['s', 'sim', 'y', 'yes']:
+                        portas_abertas = scan_portas(ip, PORTAS_COMUNS)
+                        exibir_portas_abertas(portas_abertas)
                     else:
-                        print(f"{Colors.RED}[-] Invalid target: {arg}{Colors.RESET}")
+                        portas_abertas = []
+                except (EOFError, KeyboardInterrupt):
+                    portas_abertas = []
+                
+                # Opção de exportação
+                if dados_combinados:
+                    try:
+                        exportar = input(f"\n{Cores.CIANO}Exportar resultado? (JSON/TXT/Não): {Cores.RESET}").lower()
+                        if exportar.startswith('j'):
+                            salvar_resultado(dados_combinados, portas_abertas, ip, 'json')
+                        elif exportar.startswith('t'):
+                            salvar_resultado(dados_combinados, portas_abertas, ip, 'txt')
+                    except (EOFError, KeyboardInterrupt):
+                        pass
+                
+                try:
+                    input(f"\n{Cores.AMARELO}Pressione Enter para continuar...{Cores.RESET}")
+                except (EOFError, KeyboardInterrupt):
+                    continue
             
-            if not targets:
-                print(f"{Colors.RED}No valid targets specified.{Colors.RESET}")
-                sys.exit(1)
+            elif opcao == '2':
+                sobre()
             
-            for ip in targets:
-                if full_scan_mode:
-                    print(f"\n{Colors.CYAN}Performing full scan on: {ip}{Colors.RESET}")
-                    
-                    ip_data = query_ip(ip, use_proxy)
-                    scan_results = scan_ports(ip, port_range="1-1000", arguments="-sV -T4")
-                    
-                    print(format_data(ip_data, scan_results))
-                    
-                    if save_txt:
-                        save_results(ip_data, scan_results, 'txt')
-                    if save_json:
-                        save_results(ip_data, scan_results, 'json')
-                else:
-                    print(f"\n{Colors.CYAN}Querying information for: {ip}{Colors.RESET}")
-                    
-                    ip_data = query_ip(ip, use_proxy)
-                    if ip_data:
-                        print(format_data(ip_data))
-                        
-                        if save_txt:
-                            save_results(ip_data, None, 'txt')
-                        if save_json:
-                            save_results(ip_data, None, 'json')
+            elif opcao == '3':
+                print(f"\n{Cores.VERDE}[+] Saindo...{Cores.RESET}")
+                break
             
-            input("\nPress Enter to exit...")
-            sys.exit(0)
-        
-        except KeyboardInterrupt:
-            print(f"\n{Colors.RED}Operation cancelled by user{Colors.RESET}")
-            sys.exit(1)
-        except Exception as e:
-            print(f"{Colors.RED}[-] Unexpected error: {e}{Colors.RESET}")
-            sys.exit(1)
+            else:
+                print(f"{Cores.VERMELHO}[!] Opção inválida!{Cores.RESET}")
+                try:
+                    input(f"{Cores.AMARELO}Pressione Enter para continuar...{Cores.RESET}")
+                except (EOFError, KeyboardInterrupt):
+                    continue
     
-    
-    while True:
-        show_banner()
-        show_menu()
-        option = input("Select an option: ")
-    
-        if option == '1':
-            show_banner()
-            single_query()
-            input("\nPress Enter to continue...")
-            clear_screen()
-        elif option == '2':
-            show_banner()
-            interactive_mode()
-        elif option == '3':
-            show_banner()
-            full_scan()
-            input("\nPress Enter to continue...")
-            clear_screen()
-        elif option == '4':
-            print(f"\n{Colors.GREEN}Exiting...{Colors.RESET}")
-            break
-        else:
-            print(f"\n{Colors.RED}Invalid option!{Colors.RESET}")
-            time.sleep(1)
+    except KeyboardInterrupt:
+        print(f"\n{Cores.VERMELHO}[!] Programa interrompido{Cores.RESET}")
+    except Exception as e:
+        print(f"\n{Cores.VERMELHO}[!] Erro fatal: {str(e)}{Cores.RESET}")
+    finally:
+        print(f"{Cores.CIANO}\nObrigado por usar o Consultor de IP Avançado!{Cores.RESET}")
 
 if __name__ == "__main__":
     main()
