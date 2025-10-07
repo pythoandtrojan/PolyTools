@@ -503,7 +503,7 @@ class HackerMenu:
             "malwer": {
                 "c2.py": "Servidor de Comando e Controle",
                 "malwer.py": "Ferramentas de malware",
-                "malwer-assembly": "Malware em Assembly",
+                "malwer-assembly.py": "Malware em Assembly",
                 "malwer-c.py": "Malware em C",
                 "malwerPowerShell.py": "Malware em PowerShell",
                 "mawer.go.py": "Malware em Go",
