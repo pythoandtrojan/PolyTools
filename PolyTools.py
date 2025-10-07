@@ -496,7 +496,7 @@ class HackerMenu:
                 "mapa-osint.py": "um mapa com varios suportes para osint",
                 "reddit.py": "detalhes de usuario do reddit",
                 "sherlock-api.py" "sherlock modo api",
-                "geolocalização.py: "olhar minha geolocalizaçao atual"
+                "geolocalização.py": "olhar minha geolocalizaçao atual"
                 
                 
             },
