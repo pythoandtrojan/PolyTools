@@ -61,7 +61,7 @@ class Banners:
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠀⠀⠀⠉⠛⠷⢦⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣠⣴⠶⠟⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠉⠉⠛⠛⠿⠿⠿⠿⠿⠿⠿⠿⠿⠟⠛⠋⠉⠁⠀
             
-     v 9.6.7 data: 6/11/2025                  ass: Erik | made: Brasil⠀⠀⠀⠀
+     v 9.6.8 data: 6/11/2025                  ass: Erik | made: Brasil⠀⠀⠀⠀
                              desde: 10/7/2025⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀               
         [/bold red]"""
 
@@ -460,7 +460,7 @@ class HackerMenu:
         self.tools = {
             "OSINT": {
                 "BuscaDeSites.py": "Busca informações em sites",
-                "Geolocalização-Metadados.py": "Extrai metadados de geolocalização",
+                "metadados.py": "Extrai metadados de arquivos",
                 "Leaked-Databases.py": "Consulta bancos de dados vazados",
                 "busca-usuario.py": "Busca por usuários em redes sociais",
                 "gmail-social.py": "busca por gmail em redes sociais",
@@ -491,6 +491,12 @@ class HackerMenu:
                 "extra.py": "ferramentas extras de osint",
                 "mac.py": "consulta de mac",
                 "verificador-link.py": "verifica se link e seguro",
+                "camera.py": "olhar cameras",
+                "github.py": "envestigar usuario do github",
+                "mapa-osint.py": "um mapa com varios suportes para osint",
+                "reddit.py": "detalhes de usuario do reddit",
+                "sherlock-api.py" "sherlock modo api",
+                "geolocalização.py: "olhar minha geolocalizaçao atual"
                 
                 
             },
