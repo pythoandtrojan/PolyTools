@@ -514,7 +514,8 @@ class HackerMenu:
                 "Binary-Padding.py": "depois eu explico",
                 "c2-interativo.py": "c2 com comandos",
                 "compilar.py": "compilar malwares",
-                "web-shell.py": "c2 com interface web"
+                "web-shell.py": "c2 com interface web",
+                "malware-do-mal.py": "crie um malware aqui e envie para o seu amigo"
                 
             },
             "scanner": {
