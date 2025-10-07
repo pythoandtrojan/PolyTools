@@ -1,484 +1,611 @@
 #!/usr/bin/env python3
-import os
 import requests
+import os
+import json
+import csv
+from datetime import datetime
 import time
+import hashlib
 import sys
 import re
-import json
-from datetime import datetime
-from colorama import init, Fore, Back, Style
 
-# Inicializar colorama
-init(autoreset=True)
+# Cores para terminal
+class Cores:
+    VERDE = '\033[92m'
+    VERMELHO = '\033[91m'
+    AMARELO = '\033[93m'
+    AZUL = '\033[94m'
+    MAGENTA = '\033[95m'
+    CIANO = '\033[96m'
+    BRANCO = '\033[97m'
+    NEGRITO = '\033[1m'
+    RESET = '\033[0m'
 
 # Configurações
-PASTA_RESULTADOS = "IMEI_Results"
-os.makedirs(PASTA_RESULTADOS, exist_ok=True)
+os.makedirs('cache_imei', exist_ok=True)
+TEMPO_CACHE = 86400  # 24 horas em segundos
 
-# Banner THE LURKER IMEI
-BANNER = f"""
-{Fore.RED}▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-{Fore.RED}▓                                                                        ▓
-{Fore.RED}▓  {Fore.WHITE}████████╗██╗  ██╗███████╗    {Fore.RED}██╗     ██╗   ██╗██████╗ ██╗  ██╗███████╗██████╗  {Fore.RED}▓
-{Fore.RED}▓  {Fore.WHITE}╚══██╔══╝██║  ██║██╔════╝    {Fore.RED}██║     ██║   ██║██╔══██╗██║ ██╔╝██╔════╝██╔══██╗ {Fore.RED}▓
-{Fore.RED}▓  {Fore.WHITE}   ██║   ███████║█████╗      {Fore.RED}██║     ██║   ██║██████╔╝█████╔╝ █████╗  ██████╔╝ {Fore.RED}▓
-{Fore.RED}▓  {Fore.WHITE}   ██║   ██╔══██║██╔══╝      {Fore.RED}██║     ██║   ██║██╔══██╗██╔═██╗ ██╔══╝  ██╔══██╗ {Fore.RED}▓
-{Fore.RED}▓  {Fore.WHITE}   ██║   ██║  ██║███████╗    {Fore.RED}███████╗╚██████╔╝██║  ██║██║  ██╗███████╗██║  ██║ {Fore.RED}▓
-{Fore.RED}▓  {Fore.WHITE}   ╚═╝   ╚═╝  ╚═╝╚══════╝    {Fore.RED}╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝ {Fore.RED}▓
-{Fore.RED}▓                                                                        ▓
-{Fore.RED}▓  {Fore.YELLOW}📱 IMEI ANALYZER - Device Intelligence v2.0              {Fore.RED}▓
-{Fore.RED}▓  {Fore.CYAN}Developed by Erik 16y - Linux & Termux Expert              {Fore.RED}▓
-{Fore.RED}▓  {Fore.MAGENTA}Made in Brazil with ❤️                                   {Fore.RED}▓
-{Fore.RED}▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-{Style.RESET_ALL}"""
-
-def animar_texto(texto, delay=0.03):
-    """Animação de digitação"""
-    for char in texto:
-        print(char, end='', flush=True)
-        time.sleep(delay)
-    print()
+# URL da base de dados IMEI
+IMEI_DB_URL = "https://raw.githubusercontent.com/VTSTech/IMEIDB/master/imeidb.csv"
 
 def limpar_tela():
-    os.system('cls' if os.name == 'nt' else 'clear')
+    os.system('clear' if os.name == 'posix' else 'cls')
 
-def mostrar_loading(texto="Analisando", duracao=2):
-    """Animação de loading"""
-    animacao = ["⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"]
-    fim_tempo = time.time() + duracao
-    i = 0
+def banner():
+    limpar_tela()
+    print(f"""{Cores.CIANO}{Cores.NEGRITO}
+   ██╗███╗   ██╗███████╗██╗
+   ██║████╗  ██║██╔════╝██║
+   ██║██╔██╗ ██║█████╗  ██║
+   ██║██║╚██╗██║██╔══╝  ██║
+   ██║██║ ╚████║██║     ██║
+   ╚═╝╚═╝  ╚═══╝╚═╝     ╚═╝
+{Cores.RESET}
+{Cores.MAGENTA}{Cores.NEGRITO}   CONSULTOR IMEI
+   Identificação de Dispositivos
+{Cores.RESET}
+{Cores.AMARELO}   Base de dados completa + Validação
+   Fabricante + Modelo + País
+{Cores.RESET}""")
+
+def gerar_hash(texto):
+    if not texto:
+        return ""
+    return hashlib.md5(texto.encode()).hexdigest()
+
+def cache_arquivo(nome, dados=None):
+    try:
+        caminho = f"cache_imei/{nome}.json"
+        if dados is not None:  # Modo escrita
+            with open(caminho, 'w', encoding='utf-8') as f:
+                json.dump({'data': dados, 'timestamp': time.time()}, f)
+            return dados
+        else:  # Modo leitura
+            if os.path.exists(caminho):
+                with open(caminho, 'r', encoding='utf-8') as f:
+                    cache = json.load(f)
+                    if time.time() - cache['timestamp'] < TEMPO_CACHE:
+                        return cache['data']
+        return None
+    except (IOError, json.JSONDecodeError):
+        return None
+
+def baixar_base_imei():
+    """Baixa e atualiza a base de dados IMEI"""
+    cache_id = "base_imei_completa"
+    cached = cache_arquivo(cache_id)
+    if cached:
+        return cached
     
-    while time.time() < fim_tempo:
-        print(f"\r{Fore.CYAN}{animacao[i % len(animacao)]} {texto}...{Style.RESET_ALL}", end="")
-        time.sleep(0.1)
-        i += 1
-    print("\r" + " " * 60 + "\r", end="")
+    print(f"{Cores.AMARELO}[*] Baixando base de dados IMEI...{Cores.RESET}")
+    
+    try:
+        response = requests.get(IMEI_DB_URL, timeout=30)
+        if response.status_code == 200:
+            # Processar CSV
+            dados_csv = response.text.splitlines()
+            leitor = csv.reader(dados_csv)
+            
+            base_imei = {}
+            next(leitor)  # Pular cabeçalho se existir
+            
+            for linha in leitor:
+                if len(linha) >= 5:
+                    imei_prefix = linha[0].strip()
+                    fabricante = linha[1].strip()
+                    modelo = linha[2].strip()
+                    pais = linha[3].strip()
+                    tipo = linha[4].strip() if len(linha) > 4 else "Dispositivo Móvel"
+                    
+                    base_imei[imei_prefix] = {
+                        'fabricante': fabricante,
+                        'modelo': modelo,
+                        'pais': pais,
+                        'tipo': tipo
+                    }
+            
+            print(f"{Cores.VERDE}[+] Base de dados carregada: {len(base_imei)} dispositivos{Cores.RESET}")
+            cache_arquivo(cache_id, base_imei)
+            return base_imei
+        else:
+            print(f"{Cores.VERMELHO}[!] Erro ao baixar base: HTTP {response.status_code}{Cores.RESET}")
+            return {}
+    except Exception as e:
+        print(f"{Cores.VERMELHO}[!] Erro ao baixar base: {str(e)}{Cores.RESET}")
+        return {}
 
 def validar_imei(imei):
     """Valida o número IMEI usando o algoritmo Luhn"""
-    if len(imei) != 15 or not imei.isdigit():
+    if not imei or not imei.isdigit():
         return False
     
-    # Algoritmo Luhn para IMEI
+    if len(imei) != 15:
+        return False
+    
+    # Algoritmo de Luhn para IMEI
     total = 0
-    for i, digit in enumerate(imei):
-        n = int(digit)
+    for i, digito in enumerate(imei):
+        num = int(digito)
         if i % 2 == 1:  # Dígitos pares (índice ímpar)
-            n *= 2
-            if n > 9:
-                n = n - 9
-        total += n
+            num = num * 2
+            if num > 9:
+                num = num - 9
+        total += num
     
     return total % 10 == 0
 
 def calcular_digito_verificador(imei_14):
-    """Calcula o dígito verificador para IMEI de 14 dígitos"""
+    """Calcula o dígito verificador para os 14 primeiros dígitos"""
     if len(imei_14) != 14 or not imei_14.isdigit():
         return None
     
     total = 0
-    for i, digit in enumerate(imei_14):
-        n = int(digit)
+    for i, digito in enumerate(imei_14):
+        num = int(digito)
         if i % 2 == 0:  # Posições ímpares (índice par)
-            n *= 2
-            if n > 9:
-                n = n - 9
-        total += n
+            num = num * 2
+            if num > 9:
+                num = num - 9
+        total += num
     
-    digito = (10 - (total % 10)) % 10
-    return imei_14 + str(digito)
+    digito_verificador = (10 - (total % 10)) % 10
+    return digito_verificador
 
-def decodificar_tac(tac):
-    """Decodifica o Type Allocation Code (primeiros 8 dígitos)"""
-    # Banco de dados simplificado de TACs comuns
-    tac_database = {
-        "01124500": {"marca": "Apple", "modelo": "iPhone 13 Pro"},
-        "01161200": {"marca": "Samsung", "modelo": "Galaxy S21"},
-        "35175605": {"marca": "Samsung", "modelo": "Galaxy A12"},
-        "86098104": {"marca": "Xiaomi", "modelo": "Redmi Note 10"},
-        "35531607": {"marca": "Motorola", "modelo": "Moto G Power"},
-        "01234500": {"marca": "Apple", "modelo": "iPhone 12"},
-        "35851006": {"marca": "Huawei", "modelo": "P30 Pro"},
-        "86129304": {"marca": "Xiaomi", "modelo": "Poco X3"},
-        "35696207": {"marca": "LG", "modelo": "K51"},
-        "01332700": {"marca": "Apple", "modelo": "iPhone 11"}
+def consultar_imei_tac(imei):
+    """Consulta informações TAC (Type Allocation Code) - primeiros 8 dígitos"""
+    tac = imei[:8]
+    base_imei = baixar_base_imei()
+    
+    # Buscar correspondência exata
+    if tac in base_imei:
+        return base_imei[tac]
+    
+    # Buscar correspondência parcial (6 primeiros dígitos)
+    tac_6 = imei[:6]
+    for prefix, info in base_imei.items():
+        if prefix.startswith(tac_6):
+            return info
+    
+    return None
+
+def consultar_imei_api_externa(imei):
+    """Tenta consultar APIs externas para mais informações"""
+    cache_id = f"api_imei_{imei}"
+    cached = cache_arquivo(cache_id)
+    if cached:
+        return cached
+    
+    apis = [
+        {
+            'nome': 'IMEI API',
+            'url': f"https://imei.apis.com/check/{imei}",
+            'campos': {
+                'modelo': 'model',
+                'fabricante': 'manufacturer',
+                'status': 'status'
+            }
+        }
+    ]
+    
+    for api in apis:
+        try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36',
+                'Accept': 'application/json'
+            }
+            response = requests.get(api['url'], headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                dados = response.json()
+                resultado = {
+                    'fabricante': dados.get(api['campos']['fabricante'], ''),
+                    'modelo': dados.get(api['campos']['modelo'], ''),
+                    'status': dados.get(api['campos']['status'], ''),
+                    'fonte': api['nome']
+                }
+                cache_arquivo(cache_id, resultado)
+                return resultado
+        except:
+            continue
+    
+    return None
+
+def obter_info_fabricante(fabricante):
+    """Obtém informações adicionais sobre o fabricante"""
+    fabricantes_info = {
+        'Samsung': {'pais': 'Coreia do Sul', 'fundacao': 1938, 'site': 'samsung.com'},
+        'Apple': {'pais': 'EUA', 'fundacao': 1976, 'site': 'apple.com'},
+        'Huawei': {'pais': 'China', 'fundacao': 1987, 'site': 'huawei.com'},
+        'Xiaomi': {'pais': 'China', 'fundacao': 2010, 'site': 'mi.com'},
+        'Nokia': {'pais': 'Finlândia', 'fundacao': 1865, 'site': 'nokia.com'},
+        'Motorola': {'pais': 'EUA', 'fundacao': 1928, 'site': 'motorola.com'},
+        'LG': {'pais': 'Coreia do Sul', 'fundacao': 1958, 'site': 'lg.com'},
+        'Sony': {'pais': 'Japão', 'fundacao': 1946, 'site': 'sony.com'},
+        'Google': {'pais': 'EUA', 'fundacao': 1998, 'site': 'google.com'},
+        'OnePlus': {'pais': 'China', 'fundacao': 2013, 'site': 'oneplus.com'},
+        'Oppo': {'pais': 'China', 'fundacao': 2004, 'site': 'oppo.com'},
+        'Vivo': {'pais': 'China', 'fundacao': 2009, 'site': 'vivo.com'},
+        'Realme': {'pais': 'China', 'fundacao': 2018, 'site': 'realme.com'},
+        'ZTE': {'pais': 'China', 'fundacao': 1985, 'site': 'zte.com.cn'},
+        'Alcatel': {'pais': 'França', 'fundacao': 1898, 'site': 'alcatel.com'},
+        'TCL': {'pais': 'China', 'fundacao': 1981, 'site': 'tcl.com'},
+        'Lenovo': {'pais': 'China', 'fundacao': 1984, 'site': 'lenovo.com'},
+        'HTC': {'pais': 'Taiwan', 'fundacao': 1997, 'site': 'htc.com'},
+        'Asus': {'pais': 'Taiwan', 'fundacao': 1989, 'site': 'asus.com'},
+        'BlackBerry': {'pais': 'Canadá', 'fundacao': 1984, 'site': 'blackberry.com'}
     }
     
-    return tac_database.get(tac, {"marca": "Desconhecida", "modelo": "Modelo não identificado"})
+    return fabricantes_info.get(fabricante, {})
 
 def analisar_estrutura_imei(imei):
     """Analisa a estrutura do IMEI"""
-    # Estrutura: TAC (8) + SNR (6) + CD (1)
+    # TAC (Type Allocation Code) - 8 primeiros dígitos
     tac = imei[:8]
-    snr = imei[8:14]
-    cd = imei[14]
     
-    info_tac = decodificar_tac(tac)
+    # SNR (Serial Number) - 6 dígitos do meio
+    snr = imei[8:14]
+    
+    # Dígito verificador - último dígito
+    dv = imei[14]
     
     return {
-        "tac": tac,
-        "snr": snr,
-        "digito_verificador": cd,
-        "marca": info_tac["marca"],
-        "modelo": info_tac["modelo"],
-        "ano_fabricacao": estimar_ano_fabricacao(tac),
-        "origem": determinar_origem(tac)
+        'tac': tac,
+        'snr': snr,
+        'digito_verificador': dv,
+        'tac_formatado': f"{tac[:2]} {tac[2:4]} {tac[4:6]} {tac[6:8]}",
+        'snr_formatado': f"{snr[:2]} {snr[2:4]} {snr[4:6]}"
     }
 
-def estimar_ano_fabricacao(tac):
-    """Estima o ano de fabricação baseado no TAC"""
-    # Simulação baseada nos dígitos do TAC
-    ano_base = 2018 + (int(tac[2]) % 5)  # Estimativa simplificada
-    return ano_base
-
-def determinar_origem(tac):
-    """Determina a origem do dispositivo baseado no TAC"""
-    origem_map = {
-        "01": "EUA/Canadá",
-        "35": "Finlândia",
-        "86": "China",
-        "35": "Reino Unido",
-        "45": "Japão",
-        "49": "Japão",
-        "50": "Reino Unido",
-        "86": "China",
-        "89": "Coreia do Sul"
+def consultar_todos_dados_imei(imei):
+    """Consulta todas as informações disponíveis do IMEI"""
+    print(f"{Cores.AMARELO}[*] Analisando IMEI {imei}...{Cores.RESET}")
+    
+    # Validação básica
+    if not validar_imei(imei):
+        return {'erro': 'IMEI inválido - Não passou na validação Luhn'}
+    
+    # Informações da base de dados TAC
+    info_tac = consultar_imei_tac(imei)
+    
+    # Informações de APIs externas
+    info_api = consultar_imei_api_externa(imei)
+    
+    # Análise estrutural
+    estrutura = analisar_estrutura_imei(imei)
+    
+    # Combinar resultados
+    resultado = {
+        'imei': imei,
+        'valido': True,
+        'estrutura': estrutura,
+        'tac_info': info_tac,
+        'api_info': info_api,
+        'consultado_em': datetime.now().isoformat()
     }
     
-    prefixo = tac[:2]
-    return origem_map.get(prefixo, "Origem não identificada")
+    return resultado
 
-def verificar_imei_online(imei):
-    """Verifica o IMEI em serviços online (simulação ética)"""
-    resultados = []
+def exibir_resultados_imei(resultado):
+    """Exibe os resultados da consulta IMEI"""
+    if 'erro' in resultado:
+        print(f"{Cores.VERMELHO}[!] {resultado['erro']}{Cores.RESET}")
+        return False
     
-    # Simulação de verificação de blacklist
-    mostrar_loading("Verificando status de bloqueio")
+    imei = resultado['imei']
+    print(f"\n{Cores.VERDE}{Cores.NEGRITO}=== RESULTADOS IMEI {imei} ==={Cores.RESET}")
     
-    # Simulação baseada em padrões do IMEI
-    status_bloqueio = "LIVRE" if int(imei[-1]) % 3 != 0 else "BLOQUEADO"
-    motivo_bloqueio = "Nenhum" if status_bloqueio == "LIVRE" else "Relatório de furto"
+    # Status de validação
+    print(f"{Cores.AZUL}Status:{Cores.RESET} {Cores.VERDE}✓ VÁLIDO (Algoritmo Luhn){Cores.RESET}")
     
-    resultados.append({
-        "servico": "GSMA Blacklist",
-        "status": status_bloqueio,
-        "detalhes": motivo_bloqueio,
-        "confianca": "85%"
-    })
+    # Estrutura do IMEI
+    estrutura = resultado['estrutura']
+    print(f"\n{Cores.AZUL}Estrutura do IMEI:{Cores.RESET}")
+    print(f"  {Cores.CIANO}TAC (Type Allocation Code):{Cores.RESET} {estrutura['tac']}")
+    print(f"  {Cores.CIANO}SNR (Serial Number):{Cores.RESET} {estrutura['snr']}")
+    print(f"  {Cores.CIANO}Dígito Verificador:{Cores.RESET} {estrutura['digito_verificador']}")
+    print(f"  {Cores.CIANO}Formato:{Cores.RESET} {estrutura['tac_formatado']} - {estrutura['snr_formatado']} - {estrutura['digito_verificador']}")
     
-    # Verificação de garantia (simulação)
-    mostrar_loading("Verificando status da garantia")
-    status_garantia = "VÁLIDA" if int(imei[-2]) % 2 == 0 else "EXPIRADA"
-    resultados.append({
-        "servico": "Status da Garantia",
-        "status": status_garantia,
-        "detalhes": f"Estimativa: {status_garantia}",
-        "confianca": "70%"
-    })
-    
-    return resultados
-
-def verificar_operadoras_brasil(imei):
-    """Verifica compatibilidade com operadoras brasileiras"""
-    operadoras = {
-        "Vivo": {"compativel": True, "bandas": "GSM/WCDMA/LTE"},
-        "Claro": {"compativel": True, "bandas": "GSM/LTE"},
-        "TIM": {"compativel": True, "bandas": "GSM/WCDMA/LTE"},
-        "Oi": {"compativel": int(imei[-1]) % 4 != 0, "bandas": "GSM/LTE"}
-    }
-    
-    return operadoras
-
-def analisar_vulnerabilidades(imei, marca, modelo):
-    """Analisa vulnerabilidades conhecidas do modelo"""
-    vulnerabilidades_db = {
-        "Samsung Galaxy S21": ["CVE-2021-28663", "CVE-2021-28664"],
-        "iPhone 13 Pro": ["CVE-2021-30883", "CVE-2021-30860"],
-        "Xiaomi Redmi Note 10": ["CVE-2021-3966", "CVE-2021-3967"],
-        "Motorola Moto G Power": ["CVE-2020-0423", "CVE-2020-0424"]
-    }
-    
-    return vulnerabilidades_db.get(modelo, ["Nenhuma vulnerabilidade crítica conhecida"])
-
-def gerar_relatorio_seguranca(imei_info):
-    """Gera relatório de segurança do dispositivo"""
-    score = 100
-    
-    # Penalizações baseadas em fatores de risco
-    if imei_info['status_bloqueio'] == "BLOQUEADO":
-        score -= 40
-    
-    if imei_info['garantia'] == "EXPIRADA":
-        score -= 20
-    
-    if len(imei_info['vulnerabilidades']) > 2:
-        score -= 15
-    
-    # Classificação de risco
-    if score >= 80:
-        risco = "BAIXO"
-        cor = Fore.GREEN
-    elif score >= 60:
-        risco = "MÉDIO"
-        cor = Fore.YELLOW
+    # Informações do dispositivo
+    info_tac = resultado.get('tac_info')
+    if info_tac:
+        print(f"\n{Cores.MAGENTA}{Cores.NEGRITO}=== INFORMAÇÕES DO DISPOSITIVO ==={Cores.RESET}")
+        print(f"  {Cores.CIANO}Fabricante:{Cores.RESET} {Cores.VERDE}{info_tac['fabricante']}{Cores.RESET}")
+        print(f"  {Cores.CIANO}Modelo:{Cores.RESET} {info_tac['modelo']}")
+        print(f"  {Cores.CIANO}País de Origem:{Cores.RESET} {info_tac['pais']}")
+        print(f"  {Cores.CIANO}Tipo:{Cores.RESET} {info_tac['tipo']}")
+        
+        # Informações adicionais do fabricante
+        info_fabricante = obter_info_fabricante(info_tac['fabricante'])
+        if info_fabricante:
+            print(f"\n  {Cores.CIANO}Informações do Fabricante:{Cores.RESET}")
+            print(f"    {Cores.AZUL}País:{Cores.RESET} {info_fabricante['pais']}")
+            print(f"    {Cores.AZUL}Fundado:{Cores.RESET} {info_fabricante['fundacao']}")
+            print(f"    {Cores.AZUL}Site:{Cores.RESET} {info_fabricante['site']}")
     else:
-        risco = "ALTO"
-        cor = Fore.RED
+        print(f"\n{Cores.AMARELO}[!] Dispositivo não encontrado na base de dados TAC{Cores.RESET}")
     
-    return {"score": score, "risco": risco, "cor": cor}
+    # Informações de API externa
+    info_api = resultado.get('api_info')
+    if info_api:
+        print(f"\n{Cores.CIANO}{Cores.NEGRITO}=== INFORMAÇÕES ADICIONAIS ==={Cores.RESET}")
+        print(f"  {Cores.CIANO}Fonte:{Cores.RESET} {info_api['fonte']}")
+        if info_api.get('status'):
+            print(f"  {Cores.CIANO}Status:{Cores.RESET} {info_api['status']}")
+    
+    # Informações técnicas
+    print(f"\n{Cores.AZUL}Informações Técnicas:{Cores.RESET}")
+    print(f"  {Cores.CIANO}Comprimento:{Cores.RESET} 15 dígitos")
+    print(f"  {Cores.CIANO}Formato:{Cores.RESET} TAC (8) + SNR (6) + DV (1)")
+    print(f"  {Cores.CIANO}Validação:{Cores.RESET} Algoritmo Luhn")
+    
+    return True
 
-def fazer_requisicao_api(url, headers=None):
-    """Faz requisição HTTP genérica"""
-    headers_padrao = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'application/json, text/plain, */*'
+def gerar_relatorio_imei(imei, resultado):
+    """Gera um relatório completo do IMEI"""
+    if 'erro' in resultado:
+        return None
+    
+    relatorio = {
+        'imei': imei,
+        'valido': resultado['valido'],
+        'data_consulta': resultado['consultado_em'],
+        'estrutura': resultado['estrutura'],
+        'dispositivo': resultado.get('tac_info'),
+        'informacoes_adicionais': resultado.get('api_info')
     }
     
-    if headers:
-        headers_padrao.update(headers)
+    if relatorio['dispositivo']:
+        fabricante = relatorio['dispositivo']['fabricante']
+        info_fabricante = obter_info_fabricante(fabricante)
+        relatorio['fabricante_info'] = info_fabricante
+    
+    return relatorio
+
+def salvar_resultado(resultado, imei, formato='txt'):
+    """Salva os resultados em arquivo"""
+    if 'erro' in resultado:
+        return False
     
     try:
-        resposta = requests.get(url, headers=headers_padrao, timeout=15)
-        return resposta
-    except:
-        return None
-
-def analise_completa_imei(imei):
-    """Executa análise completa do IMEI"""
-    print(f"\n{Fore.YELLOW}🔍 Iniciando análise do IMEI: {imei}{Style.RESET_ALL}")
-    
-    # Validação inicial
-    if not validar_imei(imei):
-        print(f"{Fore.RED}❌ IMEI inválido! Verifique o número.{Style.RESET_ALL}")
-        return None
-    
-    print(f"{Fore.GREEN}✅ IMEI válido confirmado{Style.RESET_ALL}")
-    
-    resultados = {}
-    
-    # Análise da estrutura
-    mostrar_loading("Decodificando estrutura do IMEI")
-    estrutura = analisar_estrutura_imei(imei)
-    resultados['estrutura'] = estrutura
-    
-    # Verificações online
-    mostrar_loading("Consultando bancos de dados")
-    verificacoes_online = verificar_imei_online(imei)
-    resultados['verificacoes'] = verificacoes_online
-    
-    # Compatibilidade com operadoras
-    mostrar_loading("Analisando compatibilidade")
-    operadoras = verificar_operadoras_brasil(imei)
-    resultados['operadoras'] = operadoras
-    
-    # Análise de vulnerabilidades
-    mostrar_loading("Verificando vulnerabilidades")
-    vulnerabilidades = analisar_vulnerabilidades(imei, estrutura['marca'], estrutura['modelo'])
-    resultados['vulnerabilidades'] = vulnerabilidades
-    
-    # Informações adicionais
-    resultados['info_gerais'] = {
-        'data_analise': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
-        'imei': imei,
-        'status_geral': 'ANÁLISE COMPLETA'
-    }
-    
-    return resultados
-
-def mostrar_resultados_imei(resultados):
-    """Exibe os resultados da análise de forma organizada"""
-    if not resultados:
-        return
-    
-    imei = resultados['info_gerais']['imei']
-    
-    print(f"\n{Fore.GREEN}═" * 70)
-    print(f"📊 RELATÓRIO DE ANÁLISE - IMEI: {imei}")
-    print("═" * 70 + f"{Style.RESET_ALL}\n")
-    
-    # Informações da Estrutura
-    estrutura = resultados['estrutura']
-    print(f"{Fore.CYAN}🏷️  INFORMAÇÕES DO DISPOSITIVO:{Style.RESET_ALL}")
-    print(f"  📱 Marca: {Fore.YELLOW}{estrutura['marca']}{Style.RESET_ALL}")
-    print(f"  🔧 Modelo: {Fore.YELLOW}{estrutura['modelo']}{Style.RESET_ALL}")
-    print(f"  📅 Ano estimado: {Fore.YELLOW}{estrutura['ano_fabricacao']}{Style.RESET_ALL}")
-    print(f"  🌍 Origem: {Fore.YELLOW}{estrutura['origem']}{Style.RESET_ALL}")
-    print(f"  🔢 TAC: {estrutura['tac']}")
-    print(f"  🔍 SNR: {estrutura['snr']}")
-    print(f"  ✅ Dígito verificador: {estrutura['digito_verificador']}")
-    
-    # Verificações Online
-    print(f"\n{Fore.CYAN}🛡️  STATUS DE BLOQUEIO E GARANTIA:{Style.RESET_ALL}")
-    for verificacao in resultados['verificacoes']:
-        status_cor = Fore.GREEN if "LIVRE" in verificacao['status'] or "VÁLIDA" in verificacao['status'] else Fore.RED
-        print(f"  {verificacao['servico']}: {status_cor}{verificacao['status']}{Style.RESET_ALL}")
-        print(f"     📋 {verificacao['detalhes']}")
-        print(f"     🎯 Confiança: {verificacao['confianca']}")
-    
-    # Operadoras
-    print(f"\n{Fore.CYAN}📶 COMPATIBILIDADE COM OPERADORAS BR:{Style.RESET_ALL}")
-    for operadora, info in resultados['operadoras'].items():
-        status = "✅" if info['compativel'] else "❌"
-        cor = Fore.GREEN if info['compativel'] else Fore.RED
-        print(f"  {status} {operadora}: {cor}{'Compatível' if info['compativel'] else 'Incompatível'}{Style.RESET_ALL}")
-        print(f"     📡 Bandas: {info['bandas']}")
-    
-    # Vulnerabilidades
-    print(f"\n{Fore.CYAN}⚠️  VULNERABILIDADES CONHECIDAS:{Style.RESET_ALL}")
-    for vuln in resultados['vulnerabilidades']:
-        if "CVE" in vuln:
-            print(f"  🔴 {vuln}")
-        else:
-            print(f"  🟢 {vuln}")
-    
-    # Relatório de Segurança
-    relatorio_seg = gerar_relatorio_seguranca({
-        'status_bloqueio': resultados['verificacoes'][0]['status'],
-        'garantia': resultados['verificacoes'][1]['status'],
-        'vulnerabilidades': resultados['vulnerabilidades']
-    })
-    
-    print(f"\n{Fore.CYAN}📈 RELATÓRIO DE SEGURANÇA:{Style.RESET_ALL}")
-    print(f"  🎯 Score de segurança: {relatorio_seg['cor']}{relatorio_seg['score']}/100{Style.RESET_ALL}")
-    print(f"  🚨 Nível de risco: {relatorio_seg['cor']}{relatorio_seg['risco']}{Style.RESET_ALL}")
-    
-    # Recomendações
-    print(f"\n{Fore.CYAN}💡 RECOMENDAÇÕES:{Style.RESET_ALL}")
-    if relatorio_seg['score'] >= 80:
-        print("  ✅ Dispositivo considerado seguro para uso")
-    elif relatorio_seg['score'] >= 60:
-        print("  ⚠️  Tome cuidado com transações sensíveis")
-    else:
-        print("  🔴 Recomendamos verificação profissional")
-
-def salvar_relatorio(resultados, formato='txt'):
-    """Salva o relatório em arquivo"""
-    imei = resultados['info_gerais']['imei']
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    
-    if formato == 'txt':
-        nome_arquivo = f"IMEI_{imei}_{timestamp}.txt"
-        caminho = os.path.join(PASTA_RESULTADOS, nome_arquivo)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        os.makedirs('resultados_imei', exist_ok=True)
+        nome_arquivo = f"resultados_imei/imei_{imei}_{timestamp}.{formato.lower()}"
         
-        with open(caminho, 'w', encoding='utf-8') as f:
-            f.write("THE LURKER - Relatório de Análise de IMEI\n")
-            f.write("=" * 50 + "\n\n")
-            f.write(f"IMEI Analisado: {imei}\n")
-            f.write(f"Data da Análise: {resultados['info_gerais']['data_analise']}\n\n")
-            
-            # Estrutura
-            estr = resultados['estrutura']
-            f.write("INFORMAÇÕES DO DISPOSITIVO:\n")
-            f.write(f"Marca: {estr['marca']}\n")
-            f.write(f"Modelo: {estr['modelo']}\n")
-            f.write(f"Ano: {estr['ano_fabricacao']}\n")
-            f.write(f"Origem: {estr['origem']}\n\n")
-            
-            # Status
-            f.write("STATUS:\n")
-            for ver in resultados['verificacoes']:
-                f.write(f"{ver['servico']}: {ver['status']}\n")
-            
-        return caminho
+        with open(nome_arquivo, 'w', encoding='utf-8') as f:
+            if formato.lower() == 'json':
+                relatorio = gerar_relatorio_imei(imei, resultado)
+                json.dump(relatorio, f, indent=2, ensure_ascii=False)
+            else:
+                f.write(f"=== RELATÓRIO IMEI {imei} ===\n\n")
+                
+                f.write("STATUS: VÁLIDO ✓\n\n")
+                
+                f.write("ESTRUTURA DO IMEI:\n")
+                estrutura = resultado['estrutura']
+                f.write(f"TAC (Type Allocation Code): {estrutura['tac']}\n")
+                f.write(f"SNR (Serial Number): {estrutura['snr']}\n")
+                f.write(f"Dígito Verificador: {estrutura['digito_verificador']}\n")
+                f.write(f"Formato: {estrutura['tac_formatado']} - {estrutura['snr_formatado']} - {estrutura['digito_verificador']}\n\n")
+                
+                info_tac = resultado.get('tac_info')
+                if info_tac:
+                    f.write("INFORMAÇÕES DO DISPOSITIVO:\n")
+                    f.write(f"Fabricante: {info_tac['fabricante']}\n")
+                    f.write(f"Modelo: {info_tac['modelo']}\n")
+                    f.write(f"País de Origem: {info_tac['pais']}\n")
+                    f.write(f"Tipo: {info_tac['tipo']}\n\n")
+                    
+                    info_fabricante = obter_info_fabricante(info_tac['fabricante'])
+                    if info_fabricante:
+                        f.write("INFORMAÇÕES DO FABRICANTE:\n")
+                        f.write(f"País: {info_fabricante['pais']}\n")
+                        f.write(f"Fundado: {info_fabricante['fundacao']}\n")
+                        f.write(f"Site: {info_fabricante['site']}\n\n")
+                
+                f.write("INFORMAÇÕES TÉCNICAS:\n")
+                f.write("Comprimento: 15 dígitos\n")
+                f.write("Formato: TAC (8) + SNR (6) + DV (1)\n")
+                f.write("Validação: Algoritmo Luhn\n\n")
+                
+                f.write(f"Data da consulta: {timestamp}\n")
+        
+        print(f"{Cores.VERDE}[+] Resultado salvo em {nome_arquivo}{Cores.RESET}")
+        return True
+    except (IOError, OSError, json.JSONDecodeError) as e:
+        print(f"{Cores.VERMELHO}[!] Erro ao salvar: {str(e)}{Cores.RESET}")
+        return False
+
+def testar_imei_exemplo():
+    """Testa com IMEIs de exemplo"""
+    imeis_exemplo = [
+        "352982103456789",  # Samsung
+        "357223064567890",  # Apple
+        "358240055678901",  # Huawei
+        "868988046789012",  # Xiaomi
+        "351885107890123",  # Nokia
+    ]
+    
+    print(f"{Cores.AMARELO}[*] IMEIs de exemplo para teste:{Cores.RESET}")
+    for i, imei in enumerate(imeis_exemplo, 1):
+        print(f"  {Cores.CIANO}{i}. {imei}{Cores.RESET}")
 
 def menu_principal():
-    """Menu principal do programa"""
-    limpar_tela()
-    print(BANNER)
-    print(f"\n{Fore.GREEN}[{time.strftime('%d/%m/%Y %H:%M:%S')}]{Style.RESET_ALL}")
-    print(f"\n{Fore.YELLOW}📱 ANALISADOR DE IMEI - THE LURKER{Style.RESET_ALL}")
-    print(f"{Fore.CYAN}═" * 50 + f"{Style.RESET_ALL}")
-    
-    print("\n1. 🔍 Analisar número IMEI")
-    print("2. 🧮 Calcular dígito verificador")
-    print("3. 📖 Verificar validade do IMEI")
-    print("4. 📂 Relatórios salvos")
-    print("5. 🚪 Sair")
+    banner()
+    print(f"\n{Cores.AMARELO}{Cores.NEGRITO}MENU PRINCIPAL{Cores.RESET}")
+    print(f"{Cores.VERDE}[1]{Cores.RESET} Consultar IMEI")
+    print(f"{Cores.VERDE}[2]{Cores.RESET} Validar IMEI")
+    print(f"{Cores.VERDE}[3]{Cores.RESET} IMEIs de Exemplo")
+    print(f"{Cores.VERDE}[4]{Cores.RESET} Sobre")
+    print(f"{Cores.VERDE}[5]{Cores.RESET} Sair")
     
     try:
-        opcao = input(f"\n{Fore.YELLOW}🎯 Escolha uma opção (1-5): {Style.RESET_ALL}").strip()
-        return int(opcao) if opcao.isdigit() else 0
-    except:
-        return 0
+        return input(f"\n{Cores.CIANO}Selecione uma opção: {Cores.RESET}").strip()
+    except (EOFError, KeyboardInterrupt):
+        return '5'
 
-def calcular_digito_menu():
-    """Menu para calcular dígito verificador"""
-    print(f"\n{Fore.CYAN}🧮 CALCULADOR DE DÍGITO VERIFICADOR{Style.RESET_ALL}")
-    imei_14 = input(f"{Fore.YELLOW}Digite os 14 primeiros dígitos do IMEI: {Style.RESET_ALL}").strip()
-    
-    if len(imei_14) == 14 and imei_14.isdigit():
-        imei_completo = calcular_digito_verificador(imei_14)
-        if imei_completo:
-            print(f"\n{Fore.GREEN}✅ IMEI completo: {imei_completo}{Style.RESET_ALL}")
-            print(f"{Fore.BLUE}📝 Dígito verificador calculado: {imei_completo[-1]}{Style.RESET_ALL}")
-    else:
-        print(f"{Fore.RED}❌ Digite exatamente 14 dígitos numéricos{Style.RESET_ALL}")
+def sobre():
+    banner()
+    print(f"""
+{Cores.CIANO}{Cores.NEGRITO}SOBRE O CONSULTOR IMEI{Cores.RESET}
 
-def validar_imei_menu():
-    """Menu para validar IMEI"""
-    print(f"\n{Fore.CYAN}✅ VALIDADOR DE IMEI{Style.RESET_ALL}")
-    imei = input(f"{Fore.YELLOW}Digite o IMEI completo (15 dígitos): {Style.RESET_ALL}").strip()
-    
-    if validar_imei(imei):
-        print(f"\n{Fore.GREEN}🎉 IMEI VÁLIDO!{Style.RESET_ALL}")
-        print(f"{Fore.BLUE}📱 O IMEI {imei} passou na verificação do algoritmo Luhn{Style.RESET_ALL}")
-    else:
-        print(f"\n{Fore.RED}❌ IMEI INVÁLIDO!{Style.RESET_ALL}")
-        print(f"{Fore.YELLOW}💡 Verifique se digitou corretamente os 15 dígitos{Style.RESET_ALL}")
+{Cores.AMARELO}Recursos principais:{Cores.RESET}
+- Validação completa usando algoritmo Luhn
+- Base de dados com milhares de dispositivos
+- Identificação de fabricante e modelo
+- Informações do país de origem
+- Análise estrutural do IMEI
+- Cache inteligente para performance
+
+{Cores.AMARELO}O que é IMEI?{Cores.RESET}
+IMEI (International Mobile Equipment Identity) é um número único
+de 15 dígitos que identifica cada dispositivo móvel.
+
+{Cores.AMARELO}Estrutura do IMEI:{Cores.RESET}
+- TAC (8 dígitos): Type Allocation Code - Identifica modelo/fabricante
+- SNR (6 dígitos): Serial Number - Número de série único
+- DV (1 dígito): Dígito Verificador - Validação Luhn
+
+{Cores.AMARELO}Validação Luhn:{Cores.RESET}
+Algoritmo matemático que verifica a validade do número através
+do dígito verificador.
+
+{Cores.VERDE}Pressione Enter para voltar...{Cores.RESET}""")
+    try:
+        input()
+    except (EOFError, KeyboardInterrupt):
+        pass
 
 def main():
-    """Função principal"""
     try:
+        # Baixar base de dados na inicialização
+        print(f"{Cores.AMARELO}[*] Inicializando consultor IMEI...{Cores.RESET}")
+        base_carregada = baixar_base_imei()
+        
+        if not base_carregada:
+            print(f"{Cores.VERMELHO}[!] Base de dados não pôde ser carregada{Cores.RESET}")
+            print(f"{Cores.AMARELO}[*] Funcionalidade limitada - apenas validação{Cores.RESET}")
+        
         while True:
             opcao = menu_principal()
             
-            if opcao == 1:
-                imei = input(f"\n{Fore.YELLOW}📱 Digite o número IMEI (15 dígitos): {Style.RESET_ALL}").strip()
+            if opcao == '1':
+                banner()
+                try:
+                    imei = input(f"\n{Cores.CIANO}Digite o IMEI (15 dígitos): {Cores.RESET}").strip()
+                except (EOFError, KeyboardInterrupt):
+                    continue
                 
-                if imei:
-                    if validar_imei(imei):
-                        resultados = analise_completa_imei(imei)
-                        if resultados:
-                            mostrar_resultados_imei(resultados)
-                            arquivo_salvo = salvar_relatorio(resultados)
-                            print(f"\n{Fore.GREEN}💾 Relatório salvo em: {arquivo_salvo}{Style.RESET_ALL}")
-                    else:
-                        print(f"{Fore.RED}❌ IMEI inválido! Use a opção 3 para validar.{Style.RESET_ALL}")
-                else:
-                    print(f"{Fore.RED}❌ Por favor, insira um IMEI válido!{Style.RESET_ALL}")
-                    
-            elif opcao == 2:
-                calcular_digito_menu()
+                # Remover espaços e caracteres especiais
+                imei = re.sub(r'[^0-9]', '', imei)
                 
-            elif opcao == 3:
-                validar_imei_menu()
+                if not imei:
+                    print(f"{Cores.VERMELHO}[!] IMEI não pode estar vazio{Cores.RESET}")
+                    try:
+                        input(f"{Cores.AMARELO}Pressione Enter para continuar...{Cores.RESET}")
+                    except (EOFError, KeyboardInterrupt):
+                        pass
+                    continue
                 
-            elif opcao == 4:
-                arquivos = [f for f in os.listdir(PASTA_RESULTADOS) if f.startswith('IMEI_')]
-                if arquivos:
-                    print(f"\n{Fore.GREEN}📂 RELATÓRIOS SALVOS:{Style.RESET_ALL}")
-                    for i, arq in enumerate(arquivos[-5:], 1):  # Mostra últimos 5
-                        print(f"  {i}. {arq}")
-                else:
-                    print(f"\n{Fore.YELLOW}📁 Nenhum relatório encontrado{Style.RESET_ALL}")
-                    
-            elif opcao == 5:
-                print(f"\n{Fore.GREEN}👋 Saindo do IMEI Analyzer...{Style.RESET_ALL}")
-                break
+                if len(imei) != 15:
+                    print(f"{Cores.VERMELHO}[!] IMEI deve ter exatamente 15 dígitos{Cores.RESET}")
+                    try:
+                        input(f"{Cores.AMARELO}Pressione Enter para continuar...{Cores.RESET}")
+                    except (EOFError, KeyboardInterrupt):
+                        pass
+                    continue
                 
-            else:
-                print(f"\n{Fore.RED}❌ Opção inválida! Tente novamente.{Style.RESET_ALL}")
-                time.sleep(1)
+                # Consultar IMEI
+                resultado = consultar_todos_dados_imei(imei)
+                
+                banner()
+                sucesso = exibir_resultados_imei(resultado)
+                
+                # Opção de exportação
+                if sucesso:
+                    try:
+                        exportar = input(f"\n{Cores.CIANO}Exportar resultado? (JSON/TXT/Não): {Cores.RESET}").lower()
+                        if exportar.startswith('j'):
+                            salvar_resultado(resultado, imei, 'json')
+                        elif exportar.startswith('t'):
+                            salvar_resultado(resultado, imei, 'txt')
+                    except (EOFError, KeyboardInterrupt):
+                        pass
+                
+                try:
+                    input(f"\n{Cores.AMARELO}Pressione Enter para continuar...{Cores.RESET}")
+                except (EOFError, KeyboardInterrupt):
+                    continue
             
-            if opcao != 5:
-                input(f"\n{Fore.YELLOW}⏎ Pressione Enter para continuar...{Style.RESET_ALL}")
+            elif opcao == '2':
+                banner()
+                try:
+                    imei = input(f"\n{Cores.CIANO}Digite o IMEI para validação: {Cores.RESET}").strip()
+                    imei = re.sub(r'[^0-9]', '', imei)
+                except (EOFError, KeyboardInterrupt):
+                    continue
                 
+                if not imei:
+                    print(f"{Cores.VERMELHO}[!] IMEI não pode estar vazio{Cores.RESET}")
+                elif len(imei) != 15:
+                    print(f"{Cores.VERMELHO}[!] IMEI deve ter 15 dígitos{Cores.RESET}")
+                else:
+                    if validar_imei(imei):
+                        print(f"{Cores.VERDE}[+] IMEI VÁLIDO ✓{Cores.RESET}")
+                        
+                        # Mostrar dígito verificador calculado
+                        digito_calculado = calcular_digito_verificador(imei[:14])
+                        print(f"{Cores.AZUL}Dígito verificador calculado: {digito_calculado}{Cores.RESET}")
+                        print(f"{Cores.AZUL}Dígito verificador real: {imei[14]}{Cores.RESET}")
+                    else:
+                        print(f"{Cores.VERMELHO}[!] IMEI INVÁLIDO ✗{Cores.RESET}")
+                        
+                        # Sugerir correção
+                        digito_correto = calcular_digito_verificador(imei[:14])
+                        if digito_correto is not None:
+                            imei_corrigido = imei[:14] + str(digito_correto)
+                            print(f"{Cores.AMARELO}[*] IMEI correto seria: {imei_corrigido}{Cores.RESET}")
+                
+                try:
+                    input(f"\n{Cores.AMARELO}Pressione Enter para continuar...{Cores.RESET}")
+                except (EOFError, KeyboardInterrupt):
+                    continue
+            
+            elif opcao == '3':
+                banner()
+                testar_imei_exemplo()
+                try:
+                    input(f"\n{Cores.AMARELO}Pressione Enter para continuar...{Cores.RESET}")
+                except (EOFError, KeyboardInterrupt):
+                    continue
+            
+            elif opcao == '4':
+                sobre()
+            
+            elif opcao == '5':
+                print(f"\n{Cores.VERDE}[+] Saindo...{Cores.RESET}")
+                break
+            
+            else:
+                print(f"{Cores.VERMELHO}[!] Opção inválida!{Cores.RESET}")
+                try:
+                    input(f"{Cores.AMARELO}Pressione Enter para continuar...{Cores.RESET}")
+                except (EOFError, KeyboardInterrupt):
+                    continue
+    
     except KeyboardInterrupt:
-        print(f"\n\n{Fore.RED}❌ IMEI Analyzer interrompido pelo usuário!{Style.RESET_ALL}")
+        print(f"\n{Cores.VERMELHO}[!] Programa interrompido{Cores.RESET}")
     except Exception as e:
-        print(f"\n{Fore.RED}💥 ERRO: {str(e)}{Style.RESET_ALL}")
+        print(f"\n{Cores.VERMELHO}[!] Erro fatal: {str(e)}{Cores.RESET}")
     finally:
-        print(f"\n{Fore.GREEN}🛡️  Use estas informações apenas para fins legítimos!{Style.RESET_ALL}\n")
+        print(f"{Cores.CIANO}\nObrigado por usar o Consultor IMEI!{Cores.RESET}")
 
 if __name__ == "__main__":
+    # Verificar dependências
+    try:
+        import requests
+    except ImportError:
+        print(f"{Cores.VERMELHO}[!] Biblioteca 'requests' não encontrada.{Cores.RESET}")
+        print(f"{Cores.AMARELO}[*] Instale com: pip install requests{Cores.RESET}")
+        sys.exit(1)
+    
     main()
