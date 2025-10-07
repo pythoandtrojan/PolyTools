@@ -521,7 +521,8 @@ class HackerMenu:
                 "c2-interativo.py": "c2 com comandos",
                 "compilar.py": "compilar malwares",
                 "web-shell.py": "c2 com interface web",
-                "malware-do-mal.py": "crie um malware aqui e envie para o seu amigo"
+                "win-lin.py": "organizar lista de malwares linux/windows",
+                "termux-lista.py": "organizar lista de malwares termux"
                 
             },
             "scanner": {
