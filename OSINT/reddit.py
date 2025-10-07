@@ -6,6 +6,8 @@ import concurrent.futures
 from datetime import datetime
 import time
 import hashlib
+import sys
+import random
 
 # Cores para terminal
 class Cores:
@@ -22,6 +24,19 @@ class Cores:
 # Configurações
 os.makedirs('cache_reddit', exist_ok=True)
 TEMPO_CACHE = 3600  # 1 hora em segundos
+
+# Lista de User-Agents realistas
+USER_AGENTS = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/120.0',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/120.0',
+    'Mozilla/5.0 (X11; Linux i686; rv:109.0) Gecko/20100101 Firefox/120.0'
+]
+
+def get_random_user_agent():
+    return random.choice(USER_AGENTS)
 
 def limpar_tela():
     os.system('clear' if os.name == 'posix' else 'cls')
@@ -65,6 +80,26 @@ def cache_arquivo(nome, dados=None):
     except (IOError, json.JSONDecodeError):
         return None
 
+def fazer_requisicao_reddit(url):
+    """Faz requisição para API do Reddit com headers realistas"""
+    headers = {
+        'User-Agent': get_random_user_agent(),
+        'Accept': 'application/json',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none'
+    }
+    
+    try:
+        response = requests.get(url, headers=headers, timeout=15, allow_redirects=True)
+        return response
+    except requests.exceptions.RequestException as e:
+        return None
+
 def consultar_usuario_reddit(username):
     """Consulta dados básicos do usuário Reddit"""
     cache_id = f"reddit_{username}"
@@ -73,80 +108,103 @@ def consultar_usuario_reddit(username):
         return cached
     
     try:
+        # URL correta para API do Reddit
         url = f"https://www.reddit.com/user/{username}/about.json"
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (Reddit Investigator v1.0)',
-            'Accept': 'application/json'
-        }
-        response = requests.get(url, headers=headers, timeout=15)
+        
+        print(f"{Cores.AMARELO}[*] Consultando usuário {username}...{Cores.RESET}")
+        response = fazer_requisicao_reddit(url)
+        
+        if response is None:
+            return {'erro': 'Falha na conexão com o Reddit'}
+            
+        print(f"{Cores.AZUL}[*] Status Code: {response.status_code}{Cores.RESET}")
         
         if response.status_code == 200:
-            dados = response.json()
-            if dados and 'data' in dados:
-                user_data = dados['data']
+            try:
+                dados = response.json()
+            except json.JSONDecodeError:
+                return {'erro': 'Resposta inválida do Reddit'}
+            
+            # Debug: mostrar estrutura dos dados
+            if 'data' not in dados:
+                print(f"{Cores.VERMELHO}[!] Estrutura inesperada da API{Cores.RESET}")
+                return {'erro': 'Estrutura da API alterada'}
                 
-                # Processar dados do usuário
-                usuario = {
-                    'username': user_data.get('name', ''),
-                    'id': user_data.get('id', ''),
-                    'tipo': dados.get('kind', ''),
-                    'criado_em': user_data.get('created_utc', ''),
-                    'karma_total': user_data.get('total_karma', 0),
-                    'karma_links': user_data.get('link_karma', 0),
-                    'karma_comentarios': user_data.get('comment_karma', 0),
-                    'karma_premiador': user_data.get('awarder_karma', 0),
-                    'karma_premiado': user_data.get('awardee_karma', 0),
-                    'verificado': user_data.get('verified', False),
-                    'ouro': user_data.get('is_gold', False),
-                    'moderador': user_data.get('is_mod', False),
-                    'funcionario': user_data.get('is_employee', False),
-                    'email_verificado': user_data.get('has_verified_email', False),
-                    'icone_img': user_data.get('icon_img', ''),
-                    'aceita_seguidores': user_data.get('accept_followers', False),
-                    'aceita_mensagens': user_data.get('accept_pms', True),
-                    'aceita_chats': user_data.get('accept_chats', True),
-                    'escondido_robos': user_data.get('hide_from_robots', False),
-                    'inscrito': user_data.get('has_subscribed', True),
-                    'bloqueado': user_data.get('is_blocked', False),
-                    'amigo': user_data.get('is_friend', False),
-                    'url_perfil': f"https://www.reddit.com/user/{username}",
-                    'snoovatar_img': user_data.get('snoovatar_img', ''),
-                    'snoovatar_size': user_data.get('snoovatar_size', ''),
-                    'mostrar_snoovatar': user_data.get('pref_show_snoovatar', False)
-                }
+            user_data = dados['data']
+            
+            # Verificar se é um usuário válido
+            if 'name' not in user_data:
+                return {'erro': 'Usuário não existe ou dados incompletos'}
                 
-                # Dados do subreddit personalizado
-                if 'subreddit' in user_data:
-                    sub_data = user_data['subreddit']
-                    usuario.update({
-                        'titulo_subreddit': sub_data.get('title', ''),
-                        'descricao_publica': sub_data.get('public_description', ''),
-                        'descricao': sub_data.get('description', ''),
-                        'icone_subreddit': sub_data.get('icon_img', ''),
-                        'banner_img': sub_data.get('banner_img', ''),
-                        'header_img': sub_data.get('header_img', ''),
-                        'cor_icone': sub_data.get('icon_color', ''),
-                        'cor_primaria': sub_data.get('primary_color', ''),
-                        'cor_chave': sub_data.get('key_color', ''),
-                        'adulto': sub_data.get('over_18', False),
-                        'quarentena': sub_data.get('quarantine', False),
-                        'tipo_subreddit': sub_data.get('subreddit_type', ''),
-                        'inscritos': sub_data.get('subscribers', 0),
-                        'url_subreddit': f"https://www.reddit.com{sub_data.get('url', '')}",
-                        'nome_exibicao': sub_data.get('display_name', ''),
-                        'nome_exibicao_prefixo': sub_data.get('display_name_prefixed', '')
-                    })
-                
-                cache_arquivo(cache_id, usuario)
-                return usuario
+            # Processar dados do usuário
+            usuario = {
+                'username': user_data.get('name', ''),
+                'id': user_data.get('id', ''),
+                'tipo': dados.get('kind', ''),
+                'criado_em': user_data.get('created_utc', ''),
+                'karma_total': user_data.get('total_karma', 0),
+                'karma_links': user_data.get('link_karma', 0),
+                'karma_comentarios': user_data.get('comment_karma', 0),
+                'karma_premiador': user_data.get('awarder_karma', 0),
+                'karma_premiado': user_data.get('awardee_karma', 0),
+                'verificado': user_data.get('verified', False),
+                'ouro': user_data.get('is_gold', False),
+                'moderador': user_data.get('is_mod', False),
+                'funcionario': user_data.get('is_employee', False),
+                'email_verificado': user_data.get('has_verified_email', False),
+                'icone_img': user_data.get('icon_img', ''),
+                'aceita_seguidores': user_data.get('accept_followers', False),
+                'aceita_mensagens': user_data.get('accept_pms', True),
+                'aceita_chats': user_data.get('accept_chats', True),
+                'escondido_robos': user_data.get('hide_from_robots', False),
+                'inscrito': user_data.get('has_subscribed', True),
+                'bloqueado': user_data.get('is_blocked', False),
+                'amigo': user_data.get('is_friend', False),
+                'url_perfil': f"https://www.reddit.com/user/{username}",
+                'snoovatar_img': user_data.get('snoovatar_img', ''),
+                'snoovatar_size': user_data.get('snoovatar_size', ''),
+                'mostrar_snoovatar': user_data.get('pref_show_snoovatar', False)
+            }
+            
+            # Dados do subreddit personalizado
+            if 'subreddit' in user_data:
+                sub_data = user_data['subreddit']
+                usuario.update({
+                    'titulo_subreddit': sub_data.get('title', ''),
+                    'descricao_publica': sub_data.get('public_description', ''),
+                    'descricao': sub_data.get('description', ''),
+                    'icone_subreddit': sub_data.get('icon_img', ''),
+                    'banner_img': sub_data.get('banner_img', ''),
+                    'header_img': sub_data.get('header_img', ''),
+                    'cor_icone': sub_data.get('icon_color', ''),
+                    'cor_primaria': sub_data.get('primary_color', ''),
+                    'cor_chave': sub_data.get('key_color', ''),
+                    'adulto': sub_data.get('over_18', False),
+                    'quarentena': sub_data.get('quarantine', False),
+                    'tipo_subreddit': sub_data.get('subreddit_type', ''),
+                    'inscritos': sub_data.get('subscribers', 0),
+                    'url_subreddit': f"https://www.reddit.com{sub_data.get('url', '')}",
+                    'nome_exibicao': sub_data.get('display_name', ''),
+                    'nome_exibicao_prefixo': sub_data.get('display_name_prefixed', '')
+                })
+            
+            cache_arquivo(cache_id, usuario)
+            print(f"{Cores.VERDE}[+] Dados do usuário obtidos com sucesso{Cores.RESET}")
+            return usuario
+            
         elif response.status_code == 404:
-            return {'erro': 'Usuário não encontrado'}
+            return {'erro': 'Usuário não encontrado - Verifique se o username está correto'}
         elif response.status_code == 429:
-            return {'erro': 'Limite de requisições excedido. Tente novamente mais tarde.'}
-    except (requests.RequestException, json.JSONDecodeError, ValueError) as e:
-        return {'erro': f'Erro na consulta: {str(e)}'}
-    
-    return {'erro': 'Erro desconhecido'}
+            return {'erro': 'Limite de requisições excedido. Aguarde alguns minutos.'}
+        elif response.status_code == 403:
+            return {'erro': 'Acesso proibido (403) - Reddit está bloqueando a requisição. Tente com VPN ou aguarde.'}
+        elif response.status_code == 503:
+            return {'erro': 'Serviço indisponível - Reddit pode estar sob manutenção'}
+        else:
+            return {'erro': f'Erro HTTP {response.status_code}: {response.text}'}
+            
+    except Exception as e:
+        return {'erro': f'Erro inesperado: {str(e)}'}
 
 def consultar_posts_recentes(username):
     """Consulta posts recentes do usuário"""
@@ -157,13 +215,9 @@ def consultar_posts_recentes(username):
     
     try:
         url = f"https://www.reddit.com/user/{username}/submitted.json?limit=5"
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (Reddit Investigator v1.0)',
-            'Accept': 'application/json'
-        }
-        response = requests.get(url, headers=headers, timeout=15)
+        response = fazer_requisicao_reddit(url)
         
-        if response.status_code == 200:
+        if response and response.status_code == 200:
             dados = response.json()
             posts = []
             
@@ -187,10 +241,11 @@ def consultar_posts_recentes(username):
             
             cache_arquivo(cache_id, posts)
             return posts
-    except (requests.RequestException, json.JSONDecodeError, ValueError):
-        pass
-    
-    return []
+        else:
+            return []
+    except Exception as e:
+        print(f"{Cores.VERMELHO}[!] Erro ao buscar posts: {str(e)}{Cores.RESET}")
+        return []
 
 def consultar_comentarios_recentes(username):
     """Consulta comentários recentes do usuário"""
@@ -201,13 +256,9 @@ def consultar_comentarios_recentes(username):
     
     try:
         url = f"https://www.reddit.com/user/{username}/comments.json?limit=5"
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (Reddit Investigator v1.0)',
-            'Accept': 'application/json'
-        }
-        response = requests.get(url, headers=headers, timeout=15)
+        response = fazer_requisicao_reddit(url)
         
-        if response.status_code == 200:
+        if response and response.status_code == 200:
             dados = response.json()
             comentarios = []
             
@@ -227,13 +278,16 @@ def consultar_comentarios_recentes(username):
             
             cache_arquivo(cache_id, comentarios)
             return comentarios
-    except (requests.RequestException, json.JSONDecodeError, ValueError):
-        pass
-    
-    return []
+        else:
+            return []
+    except Exception as e:
+        print(f"{Cores.VERMELHO}[!] Erro ao buscar comentários: {str(e)}{Cores.RESET}")
+        return []
 
 def consultar_todos_dados(username):
     """Consulta todos os dados do usuário em paralelo"""
+    print(f"{Cores.AMARELO}[*] Iniciando consultas paralelas...{Cores.RESET}")
+    
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
         futures = {
             'usuario': executor.submit(consultar_usuario_reddit, username),
@@ -244,11 +298,15 @@ def consultar_todos_dados(username):
         resultados = {}
         for nome, future in futures.items():
             try:
+                print(f"{Cores.AZUL}[*] Aguardando {nome}...{Cores.RESET}")
                 resultados[nome] = future.result(timeout=30)
+                print(f"{Cores.VERDE}[+] {nome} concluído{Cores.RESET}")
             except concurrent.futures.TimeoutError:
-                resultados[nome] = {'erro': 'Timeout'}
-            except Exception:
-                resultados[nome] = {'erro': 'Erro desconhecido'}
+                resultados[nome] = {'erro': 'Timeout - Consulta muito lenta'}
+                print(f"{Cores.VERMELHO}[!] Timeout em {nome}{Cores.RESET}")
+            except Exception as e:
+                resultados[nome] = {'erro': f'Erro em {nome}: {str(e)}'}
+                print(f"{Cores.VERMELHO}[!] Erro em {nome}: {str(e)}{Cores.RESET}")
         
         return resultados
 
@@ -260,7 +318,7 @@ def formatar_data(timestamp):
             return data.strftime("%d/%m/%Y %H:%M:%S")
     except:
         pass
-    return timestamp
+    return "Data desconhecida"
 
 def calcular_idade_conta(timestamp):
     """Calcula a idade da conta em anos"""
@@ -440,17 +498,93 @@ def salvar_resultado(dados, username, formato='txt'):
         print(f"{Cores.VERMELHO}[!] Erro ao salvar: {str(e)}{Cores.RESET}")
         return False
 
+def testar_conexao():
+    """Testa a conexão com a API do Reddit"""
+    print(f"{Cores.AMARELO}[*] Testando conexão com Reddit...{Cores.RESET}")
+    
+    # Testar com um usuário conhecido
+    test_users = ['spez', 'awkwardtheturtle', 'GallowBoob']
+    
+    for user in test_users:
+        print(f"{Cores.AZUL}[*] Testando com u/{user}...{Cores.RESET}")
+        url = f"https://www.reddit.com/user/{user}/about.json"
+        response = fazer_requisicao_reddit(url)
+        
+        if response:
+            if response.status_code == 200:
+                print(f"{Cores.VERDE}[+] Conexão com u/{user} OK (HTTP 200){Cores.RESET}")
+                return True
+            elif response.status_code == 403:
+                print(f"{Cores.VERMELHO}[!] Acesso proibido (403) para u/{user}{Cores.RESET}")
+            elif response.status_code == 404:
+                print(f"{Cores.AMARELO}[!] Usuário u/{user} não encontrado (404){Cores.RESET}")
+            elif response.status_code == 429:
+                print(f"{Cores.VERMELHO}[!] Limite de requisições excedido (429){Cores.RESET}")
+                return False
+            else:
+                print(f"{Cores.VERMELHO}[!] Erro HTTP {response.status_code} para u/{user}{Cores.RESET}")
+        else:
+            print(f"{Cores.VERMELHO}[!] Sem resposta para u/{user}{Cores.RESET}")
+    
+    return False
+
 def menu_principal():
     banner()
     print(f"\n{Cores.AMARELO}{Cores.NEGRITO}MENU PRINCIPAL{Cores.RESET}")
     print(f"{Cores.VERDE}[1]{Cores.RESET} Investigar Usuário Reddit")
-    print(f"{Cores.VERDE}[2]{Cores.RESET} Sobre")
-    print(f"{Cores.VERDE}[3]{Cores.RESET} Sair")
+    print(f"{Cores.VERDE}[2]{Cores.RESET} Testar Conexão")
+    print(f"{Cores.VERDE}[3]{Cores.RESET} Solução de Problemas")
+    print(f"{Cores.VERDE}[4]{Cores.RESET} Sobre")
+    print(f"{Cores.VERDE}[5]{Cores.RESET} Sair")
     
     try:
         return input(f"\n{Cores.CIANO}Selecione uma opção: {Cores.RESET}").strip()
     except (EOFError, KeyboardInterrupt):
-        return '3'
+        return '5'
+
+def solucao_problemas():
+    """Mostra soluções para problemas comuns"""
+    banner()
+    print(f"""
+{Cores.CIANO}{Cores.NEGRITO}SOLUÇÃO DE PROBLEMAS - ERRO 403{Cores.RESET}
+
+{Cores.VERMELHO}Problema: Acesso proibido (HTTP 403){Cores.RESET}
+
+{Cores.AMARELO}Causas possíveis:{Cores.RESET}
+1. Reddit bloqueando requisições automáticas
+2. IP temporariamente bloqueado
+3. User-Agent sendo detectado como bot
+4. Limite de requisições excedido
+
+{Cores.VERDE}Soluções:{Cores.RESET}
+
+{Cores.CIANO}1. Usar VPN:{Cores.RESET}
+   - Conecte-se a uma VPN
+   - Execute o script novamente
+
+{Cores.CIANO}2. Aguardar:{Cores.RESET}
+   - Espere 10-30 minutos
+   - O Reddit pode desbloquear automaticamente
+
+{Cores.CIANO}3. Usar dados em cache:{Cores.RESET}
+   - O script usa cache de 1 hora
+   - Consultas repetidas usam dados salvos
+
+{Cores.CIANO}4. Modo alternativo:{Cores.RESET}
+   - Tente em horários diferentes
+   - Use conexão móvel (4G/5G)
+
+{Cores.AMARELO}Usuários de teste recomendados:{Cores.RESET}
+- spez (CEO do Reddit)
+- awkwardtheturtle 
+- GallowBoob
+- _vargas_
+
+{Cores.VERDE}Pressione Enter para voltar...{Cores.RESET}""")
+    try:
+        input()
+    except (EOFError, KeyboardInterrupt):
+        pass
 
 def sobre():
     banner()
@@ -465,24 +599,12 @@ def sobre():
 - Análise de atividade e histórico
 - Cache inteligente para performance
 
-{Cores.AMARELO}Informações obtidas:{Cores.RESET}
-- Dados básicos (username, ID, datas)
-- Status da conta (verificado, gold, moderador)
-- Estatísticas de karma (total, posts, comentários)
-- Configurações de privacidade
-- Posts e comentários recentes
-- Links para perfil e conteúdo
-
-{Cores.AMARELO}Exemplos de usuários para teste:{Cores.RESET}
-- spez (CEO do Reddit)
-- awkwardtheturtle (Moderador famoso)
-- GallowBoob (Power user)
-- _vargas_ (Usuário popular)
-
-{Cores.AMARELO}Limitações:{Cores.RESET}
-- Usuários privados/bloqueados não são acessíveis
-- Limite de requisições da API
-- Alguns dados podem estar indisponíveis
+{Cores.AMARELO}Tecnologias utilizadas:{Cores.RESET}
+- User-Agents realistas e rotativos
+- Headers de navegador genuínos
+- Requisições assíncronas paralelas
+- Sistema de cache local
+- Tratamento robusto de erros
 
 {Cores.VERDE}Pressione Enter para voltar...{Cores.RESET}""")
     try:
@@ -549,9 +671,20 @@ def main():
                     continue
             
             elif opcao == '2':
-                sobre()
+                banner()
+                testar_conexao()
+                try:
+                    input(f"\n{Cores.AMARELO}Pressione Enter para continuar...{Cores.RESET}")
+                except (EOFError, KeyboardInterrupt):
+                    continue
             
             elif opcao == '3':
+                solucao_problemas()
+            
+            elif opcao == '4':
+                sobre()
+            
+            elif opcao == '5':
                 print(f"\n{Cores.VERDE}[+] Saindo...{Cores.RESET}")
                 break
             
@@ -570,4 +703,12 @@ def main():
         print(f"{Cores.CIANO}\nObrigado por usar o Investigador Reddit!{Cores.RESET}")
 
 if __name__ == "__main__":
+    # Verificar dependências
+    try:
+        import requests
+    except ImportError:
+        print(f"{Cores.VERMELHO}[!] Biblioteca 'requests' não encontrada.{Cores.RESET}")
+        print(f"{Cores.AMARELO}[*] Instale com: pip install requests{Cores.RESET}")
+        sys.exit(1)
+    
     main()
