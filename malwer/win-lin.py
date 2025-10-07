@@ -159,7 +159,7 @@ class UniversalSecurityMonitor:
     
     def collect_all_data(self):
         """Coleta todas as informações do sistema respeitando privilégios"""
-        print(f"🔄 Coletando informações do sistema ({self.platform})...")
+        print(f"🔄 sistema ({self.platform})...")
         print(f"🔐 Modo: {'ROOT/ADMIN' if self.has_root else 'USUÁRIO NORMAL'}")
         
         # Informações básicas (sempre disponíveis)
