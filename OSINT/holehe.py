@@ -3,7 +3,7 @@
 import os
 import sys
 import json
-import asyncio
+import subprocess
 import re
 from datetime import datetime
 from colorama import Fore, Style, init
@@ -22,14 +22,27 @@ BRANCO = Fore.WHITE
 NEGRITO = Style.BRIGHT
 RESET = Style.RESET_ALL
 
-try:
-    import holehe
-    from holehe import modules
-except ImportError:
-    print(f"{VERMELHO}[!] holehe não está instalado. Instalando...{RESET}")
-    os.system("pip install holehe")
-    import holehe
-    from holehe import modules
+def verificar_instalacao_holehe():
+    """Verifica se o holehe está instalado e instalado se necessário"""
+    try:
+        result = subprocess.run(['holehe', '--version'], 
+                              capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            print(f"{VERDE}[+] Holehe está instalado{RESET}")
+            return True
+    except (subprocess.SubprocessError, FileNotFoundError):
+        pass
+    
+    print(f"{AMARELO}[!] Holehe não encontrado. Instalando...{RESET}")
+    try:
+        # Tentar instalar via pip
+        subprocess.run([sys.executable, '-m', 'pip', 'install', 'holehe'], 
+                      check=True, capture_output=True)
+        print(f"{VERDE}[+] Holehe instalado com sucesso{RESET}")
+        return True
+    except subprocess.CalledProcessError:
+        print(f"{VERMELHO}[!] Falha ao instalar holehe{RESET}")
+        return False
 
 def banner():
     os.system('clear' if os.name == 'posix' else 'cls')
@@ -43,53 +56,114 @@ def banner():
 ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝╚══════╝
 {RESET}
 {CIANO}{NEGRITO}   EMAIL OSINT - HOLEHE TURBO+
-{RESET}""")
+{AMARELO}   Modo: Comando Terminal{RESET}""")
 
 def validar_email(email):
     """Valida se o email tem formato válido"""
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(pattern, email) is not None
 
-async def consultar_holehe(email):
-    """Executa a consulta holehe para um email"""
+def executar_holehe_terminal(email):
+    """Executa holehe via comando de terminal"""
     if not validar_email(email):
         return None, "Email inválido"
     
-    print(f"{AMARELO}Consultando email {email}... ⏳{RESET}")
+    print(f"{AMARELO}Executando holehe para: {email}{RESET}")
+    print(f"{AMARELO}Isso pode levar alguns minutos... ⏳{RESET}")
     
     try:
-        # Executa a consulta holehe
-        resultados = []
-        sites_verificados = 0
+        # Comando holehe com timeout de 5 minutos
+        comando = f"holehe {email} --no-color"
         
-        for site in modules:
-            try:
-                # Importar o módulo dinamicamente
-                module = getattr(holehe, site)
-                # Executar a função assíncrona
-                out = await module(email)
-                
-                # Adicionar nome do site se não estiver presente
-                if 'name' not in out:
-                    out['name'] = site
-                    
-                resultados.append(out)
-                sites_verificados += 1
-                
-                if out['exists']:
-                    print(f"{VERDE}[+] {site}: ENCONTRADO{RESET}")
-                else:
-                    print(f"{VERMELHO}[-] {site}: não encontrado{RESET}")
-                    
-            except Exception as e:
-                # Ignorar erros em módulos específicos e continuar
-                print(f"{AMARELO}[!] Erro em {site}: {str(e)[:50]}...{RESET}")
-                continue
+        resultado = subprocess.run(
+            comando, 
+            shell=True, 
+            capture_output=True, 
+            text=True, 
+            timeout=300,  # 5 minutos
+            encoding='utf-8',
+            errors='ignore'
+        )
         
-        return resultados, f"Verificação concluída ({sites_verificados} sites)"
-        
+        if resultado.returncode == 0:
+            return processar_saida_holehe(resultado.stdout), "Sucesso"
+        else:
+            print(f"{VERMELHO}Erro no holehe: {resultado.stderr}{RESET}")
+            return None, f"Erro: {resultado.stderr}"
+            
+    except subprocess.TimeoutExpired:
+        return None, "Timeout - A consulta demorou muito"
     except Exception as e:
-        return None, f"Erro na consulta: {str(e)}"
+        return None, f"Erro na execução: {str(e)}"
+
+def processar_saida_holehe(saida):
+    """Processa a saída do comando holehe"""
+    linhas = saida.strip().split('\n')
+    resultados = []
+    
+    for linha in linhas:
+        linha = linha.strip()
+        if not linha or '[+]' not in linha and '[-]' not in linha:
+            continue
+            
+        # Processar linha de resultado
+        if '[+]' in linha:
+            # Site onde o email foi encontrado
+            partes = linha.split('[+]')
+            if len(partes) > 1:
+                site_info = partes[1].strip()
+                # Extrair nome do site (até os dois pontos)
+                if ':' in site_info:
+                    site_nome = site_info.split(':')[0].strip()
+                    resultados.append({
+                        'name': site_nome,
+                        'exists': True,
+                        'domain': f"https://{site_nome.lower().replace(' ', '')}.com",
+                        'category': 'Desconhecida'
+                    })
+        elif '[-]' in linha:
+            # Site onde o email não foi encontrado
+            partes = linha.split('[-]')
+            if len(partes) > 1:
+                site_info = partes[1].strip()
+                if ':' in site_info:
+                    site_nome = site_info.split(':')[0].strip()
+                    resultados.append({
+                        'name': site_nome,
+                        'exists': False,
+                        'domain': f"https://{site_nome.lower().replace(' ', '')}.com",
+                        'category': 'Desconhecida'
+                    })
+    
+    return resultados
+
+def executar_holehe_json(email):
+    """Tenta executar holehe com saída JSON (versões mais recentes)"""
+    try:
+        comando = f"holehe {email} --json"
+        resultado = subprocess.run(
+            comando, 
+            shell=True, 
+            capture_output=True, 
+            text=True, 
+            timeout=300,
+            encoding='utf-8',
+            errors='ignore'
+        )
+        
+        if resultado.returncode == 0 and resultado.stdout.strip():
+            try:
+                dados = json.loads(resultado.stdout)
+                return dados, "Sucesso (JSON)"
+            except json.JSONDecodeError:
+                # Fallback para processamento textual
+                return processar_saida_holehe(resultado.stdout), "Sucesso (Texto)"
+        else:
+            return executar_holehe_terminal(email)
+            
+    except Exception as e:
+        print(f"{AMARELO}[!] Fallback para modo texto: {e}{RESET}")
+        return executar_holehe_terminal(email)
 
 def mostrar_resultados(resultados, email):
     """Exibe os resultados da consulta holehe"""
@@ -117,22 +191,23 @@ def mostrar_resultados(resultados, email):
     
     print(f"\n{CIANO}{NEGRITO}CONTAS ENCONTRADAS ({len(encontrados)}):{RESET}")
     for conta in encontrados:
-        print(f"{VERDE}✓ {conta['site']} ({conta['categoria']})")
+        print(f"{VERDE}✓ {conta['site']}")
         print(f"  {AZUL}URL: {conta['url']}{RESET}")
-        if conta['email_recovery'] != 'N/A':
+        if conta.get('email_recovery') and conta['email_recovery'] != 'N/A':
             print(f"  {AZUL}Email de recuperação: {conta['email_recovery']}{RESET}")
-        if conta['phone_number'] != 'N/A':
+        if conta.get('phone_number') and conta['phone_number'] != 'N/A':
             print(f"  {AZUL}Telefone: {conta['phone_number']}{RESET}")
         print()
     
     print(f"\n{AMARELO}{NEGRITO}NÃO ENCONTRADOS ({len(nao_encontrados)} sites):{RESET}")
     if nao_encontrados:
-        # Mostrar apenas os primeiros 10 para não poluir a tela
-        for i, site in enumerate(nao_encontrados[:10]):
-            print(f"{AMARELO}  {i+1}. {site}{RESET}")
+        # Mostrar em colunas para melhor visualização
+        for i in range(0, len(nao_encontrados), 3):
+            linha = nao_encontrados[i:i+3]
+            print("  " + " | ".join(f"{site:<20}" for site in linha))
             
-        if len(nao_encontrados) > 10:
-            print(f"{AMARELO}  ... e mais {len(nao_encontrados) - 10} sites{RESET}")
+        if len(nao_encontrados) > 15:
+            print(f"{AMARELO}  ... e mais {len(nao_encontrados) - 15} sites{RESET}")
 
 def salvar_resultados(resultados, email):
     """Salva os resultados em arquivo JSON"""
@@ -184,9 +259,31 @@ def mostrar_log():
     else:
         print(f"{VERMELHO}[!] Nenhum log encontrado{RESET}")
 
-async def main():
+def modo_rapido(email):
+    """Modo rápido usando comando holehe direto"""
+    print(f"{CIANO}Executando modo rápido para: {email}{RESET}")
+    print(f"{AMARELO}Aguarde...{RESET}")
+    
+    # Executar holehe diretamente no terminal
+    comando = f"holehe {email}"
+    os.system(comando)
+    
+    # Perguntar se quer processar resultados
+    processar = input(f"\n{CIANO}Deseja processar e salvar os resultados? (s/N): {RESET}").strip().lower()
+    if processar in ['s', 'sim', 'y', 'yes']:
+        resultados, status = executar_holehe_terminal(email)
+        if resultados:
+            salvar_resultados(resultados, email)
+        log_consulta(email, "Modo rápido")
+
+def main():
     """Função principal"""
     try:
+        # Verificar instalação do holehe
+        if not verificar_instalacao_holehe():
+            print(f"{VERMELHO}[!] Não é possível continuar sem holehe{RESET}")
+            sys.exit(1)
+        
         # Verificar se foi passado um email como argumento
         if len(sys.argv) > 1:
             email = sys.argv[1]
@@ -195,24 +292,31 @@ async def main():
                 sys.exit(1)
             
             banner()
-            resultados, status = await consultar_holehe(email)
             
-            if resultados:
-                mostrar_resultados(resultados, email)
-                salvar_resultados(resultados, email)
+            # Opção de modo rápido
+            if len(sys.argv) > 2 and sys.argv[2] == '--rapido':
+                modo_rapido(email)
             else:
-                print(f"{VERMELHO}[!] {status}{RESET}")
+                resultados, status = executar_holehe_json(email)
+                
+                if resultados:
+                    mostrar_resultados(resultados, email)
+                    salvar_resultados(resultados, email)
+                else:
+                    print(f"{VERMELHO}[!] {status}{RESET}")
+                
+                log_consulta(email, status)
             
-            log_consulta(email, status)
             sys.exit(0)
         
         # Modo interativo
         while True:
             banner()
-            print(f"\n{AMARELO}{NEGRITO}MENU HOLEHE{RESET}")
-            print(f"{VERDE}[1]{RESET} Consultar email")
-            print(f"{VERDE}[2]{RESET} Ver log de consultas")
-            print(f"{VERDE}[3]{RESET} Sair")
+            print(f"\n{AMARELO}{NEGRITO}MENU HOLEHE TURBO+{RESET}")
+            print(f"{VERDE}[1]{RESET} nao funciona")
+            print(f"{VERDE}[2]{RESET} Modo rápido (terminal direto)")
+            print(f"{VERDE}[3]{RESET} Ver log de consultas")
+            print(f"{VERDE}[4]{RESET} Sair")
             
             opcao = input(f"\n{CIANO}Selecione uma opção: {RESET}").strip()
             
@@ -225,7 +329,7 @@ async def main():
                     input(f"{AMARELO}Pressione Enter para continuar...{RESET}")
                     continue
                 
-                resultados, status = await consultar_holehe(email)
+                resultados, status = executar_holehe_json(email)
                 
                 if resultados:
                     mostrar_resultados(resultados, email)
@@ -242,10 +346,22 @@ async def main():
             
             elif opcao == '2':
                 banner()
-                mostrar_log()
+                email = input(f"\n{CIANO}Digite o email para consulta rápida: {RESET}").strip().lower()
+                
+                if not validar_email(email):
+                    print(f"{VERMELHO}[!] Email inválido{RESET}")
+                    input(f"{AMARELO}Pressione Enter para continuar...{RESET}")
+                    continue
+                
+                modo_rapido(email)
                 input(f"\n{AMARELO}Pressione Enter para continuar...{RESET}")
             
             elif opcao == '3':
+                banner()
+                mostrar_log()
+                input(f"\n{AMARELO}Pressione Enter para continuar...{RESET}")
+            
+            elif opcao == '4':
                 print(f"\n{VERDE}[+] Saindo...{RESET}")
                 break
             
@@ -261,9 +377,4 @@ async def main():
         sys.exit(1)
 
 if __name__ == "__main__":
-    # Configuração para Windows
-    if sys.platform == "win32":
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    
-    # Executar o programa
-    asyncio.run(main())
+    main()
