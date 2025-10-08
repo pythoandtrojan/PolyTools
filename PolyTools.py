@@ -61,7 +61,7 @@ class Banners:
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠀⠀⠀⠉⠛⠷⢦⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣠⣴⠶⠟⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠉⠉⠛⠛⠿⠿⠿⠿⠿⠿⠿⠿⠿⠟⠛⠋⠉⠁⠀
             
-     v 9.6.9 data: 7/11/2025                  ass: Erik | made: Brasil⠀⠀⠀⠀
+     v 9.7.0 data: 7/11/2025                  ass: Erik | made: Brasil⠀⠀⠀⠀
                              desde: 10/7/2025⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀               
         [/bold red]"""
 
@@ -500,7 +500,8 @@ class HackerMenu:
                 "subdomain.py": "buscar dominios em sites",
                 "validador.py": "Validador de CPF, telefone, IP, email e CEP",
                 "ddd-ddi.py": "Buscador de DDD/DDI",
-                "gerador.py": "Gerador de CPF, telefone, placa, cartão e IP "
+                "gerador.py": "Gerador de CPF, telefone, placa, cartão e IP ",
+                "gerar-pessoa.py": "gera uma pessoa fake com dados",
             },
             "malwer": {
                 "c2.py": "Servidor de Comando e Controle",
