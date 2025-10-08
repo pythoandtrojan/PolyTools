@@ -61,7 +61,7 @@ class Banners:
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠀⠀⠀⠉⠛⠷⢦⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣠⣴⠶⠟⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀       ⠀⠉⠉⠛⠛⠿⠿⠿⠿⠿⠿⠿⠿⠿⠟⠛⠋⠉⠁⠀
             
-     v 9.6.8 data: 6/11/2025                  ass: Erik | made: Brasil⠀⠀⠀⠀
+     v 9.6.9 data: 7/11/2025                  ass: Erik | made: Brasil⠀⠀⠀⠀
                              desde: 10/7/2025⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀               
         [/bold red]"""
 
@@ -496,7 +496,8 @@ class HackerMenu:
                 "mapa-osint.py": "um mapa com varios suportes para osint",
                 "reddit.py": "detalhes de usuario do reddit",
                 "sherlock-api.py": "sherlock modo api",
-                "geolocalização.py": "olhar minha geolocalizaçao atual"
+                "geolocalização.py": "olhar minha geolocalizaçao atual",
+                "subdomain.py": "buscar dominios em sites",
                 
                 
             },
