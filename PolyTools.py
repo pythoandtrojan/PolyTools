@@ -498,8 +498,7 @@ class HackerMenu:
                 "sherlock-api.py": "sherlock modo api",
                 "geolocalização.py": "olhar minha geolocalizaçao atual",
                 "subdomain.py": "buscar dominios em sites",
-                
-                
+                "validador.py": "Validador de CPF, telefone, IP, email e CEP "              
             },
             "malwer": {
                 "c2.py": "Servidor de Comando e Controle",
