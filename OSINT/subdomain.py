@@ -9,6 +9,7 @@ from colorama import Fore, Style, init
 import argparse
 from typing import List, Dict, Set
 import json
+import csv
 
 # Inicialização do colorama
 init(autoreset=True)
@@ -32,6 +33,7 @@ class SubdomainScanner:
         self.lock = threading.Lock()
         self.checked_count = 0
         self.total_count = 0
+        self.last_progress_len = 0
         
     def banner(self):
         os.system('clear' if os.name == 'posix' else 'cls')
@@ -44,7 +46,7 @@ class SubdomainScanner:
   |____/ \___/|____/|_____| \___/|____/|____/ 
 {RESET}
 {VERDE}{NEGRITO}   SCANNER DE SUBDOMÍNIOS - PROFESSIONAL
-   Versão 2.0 - Multi-threaded
+   Versão 2.1 - Interface Melhorada
 {RESET}
 {AMARELO}   Threads: {self.threads} | Timeout: {self.timeout}s
    Wordlists: wordlists/
@@ -54,7 +56,7 @@ class SubdomainScanner:
         """Carrega a wordlist de subdomínios"""
         try:
             with open(wordlist_path, 'r', encoding='utf-8', errors='ignore') as f:
-                subdomains = [line.strip() for line in f if line.strip()]
+                subdomains = [line.strip() for line in f if line.strip() and not line.startswith('#')]
             return subdomains
         except FileNotFoundError:
             print(f"{VERMELHO}[!] Wordlist não encontrada: {wordlist_path}{RESET}")
@@ -65,47 +67,71 @@ class SubdomainScanner:
 
     def check_subdomain(self, domain: str, subdomain: str):
         """Verifica se um subdomínio existe"""
-        url = f"http://{subdomain}.{domain}"
-        url_https = f"https://{subdomain}.{domain}"
+        full_subdomain = f"{subdomain}.{domain}"
+        url_http = f"http://{full_subdomain}"
+        url_https = f"https://{full_subdomain}"
         
+        protocol = None
+        status_code = None
+        ip_address = 'N/A'
+        
+        # Primeiro tenta HTTPS
         try:
-            response = requests.get(url_https, timeout=self.timeout, verify=False)
-            with self.lock:
-                self.checked_count += 1
-                if response.status_code < 400:
-                    self.found_subdomains.append({
-                        'subdomain': f"{subdomain}.{domain}",
-                        'url': url_https,
-                        'status_code': response.status_code,
-                        'ip': response.raw._connection.sock.getpeername()[0] if response.raw else 'N/A'
-                    })
-                    print(f"{VERDE}[+] {subdomain}.{domain} - Status: {response.status_code}{RESET}")
-                else:
-                    print(f"{AMARELO}[-] {subdomain}.{domain} - Status: {response.status_code}{RESET}")
-            return
+            response = requests.get(url_https, timeout=self.timeout, verify=False, allow_redirects=True)
+            protocol = 'HTTPS'
+            status_code = response.status_code
+            try:
+                ip_address = response.raw._connection.sock.getpeername()[0]
+            except:
+                ip_address = 'N/A'
+                
         except requests.exceptions.SSLError:
-            pass  # Tenta HTTP
+            # SSL Error mas o subdomínio pode existir via HTTP
+            protocol = 'HTTPS (SSL Error)'
+            status_code = 'SSL Error'
         except:
-            pass  # Subdomínio não existe
+            protocol = None
+            status_code = None
         
-        try:
-            response = requests.get(url, timeout=self.timeout)
-            with self.lock:
-                self.checked_count += 1
-                if response.status_code < 400:
-                    self.found_subdomains.append({
-                        'subdomain': f"{subdomain}.{domain}",
-                        'url': url,
-                        'status_code': response.status_code,
-                        'ip': response.raw._connection.sock.getpeername()[0] if response.raw else 'N/A'
-                    })
-                    print(f"{VERDE}[+] {subdomain}.{domain} - Status: {response.status_code}{RESET}")
-                else:
-                    print(f"{AMARELO}[-] {subdomain}.{domain} - Status: {response.status_code}{RESET}")
-        except:
-            with self.lock:
-                self.checked_count += 1
-                print(f"{VERMELHO}[-] {subdomain}.{domain} - Inacessível{RESET}")
+        # Se HTTPS falhou, tenta HTTP
+        if not protocol or 'Error' in str(protocol):
+            try:
+                response = requests.get(url_http, timeout=self.timeout, allow_redirects=True)
+                protocol = 'HTTP'
+                status_code = response.status_code
+                try:
+                    ip_address = response.raw._connection.sock.getpeername()[0]
+                except:
+                    ip_address = 'N/A'
+            except:
+                protocol = None
+                status_code = None
+        
+        with self.lock:
+            self.checked_count += 1
+            
+            if protocol and status_code and status_code < 400:
+                result = {
+                    'subdomain': full_subdomain,
+                    'protocol': protocol,
+                    'url': url_https if 'HTTPS' in protocol else url_http,
+                    'status_code': status_code,
+                    'ip': ip_address
+                }
+                self.found_subdomains.append(result)
+                
+                # Mostrar resultado formatado
+                status_color = VERDE if status_code == 200 else AMARELO
+                print(f"{VERDE}[+] {full_subdomain}")
+                print(f"    {AZUL}URL:{RESET} {result['url']}")
+                print(f"    {AZUL}Protocolo:{RESET} {protocol}")
+                print(f"    {AZUL}Status:{RESET} {status_color}{status_code}{RESET}")
+                print(f"    {AZUL}IP:{RESET} {ip_address}\n")
+                
+            else:
+                # Apenas mostra falhas se não estiver mostrando progresso
+                if self.checked_count % 10 == 0:  # Mostra apenas a cada 10 falhas
+                    print(f"{VERMELHO}[-] {full_subdomain} - Inacessível{RESET}")
 
     def scan_domain(self, domain: str, wordlist_path: str) -> List[Dict]:
         """Executa o scan de subdomínios"""
@@ -118,10 +144,12 @@ class SubdomainScanner:
         self.total_count = len(subdomains)
         self.checked_count = 0
         self.found_subdomains = []
+        self.last_progress_len = 0
         
         print(f"{CIANO}[*] Iniciando scan em {domain}...{RESET}")
         print(f"{CIANO}[*] Total de subdomínios para testar: {self.total_count}{RESET}")
-        print(f"{CIANO}[*] Usando {self.threads} threads{RESET}\n")
+        print(f"{CIANO}[*] Usando {self.threads} threads{RESET}")
+        print(f"{CIANO}[*] Mostrando apenas subdomínios ativos...{RESET}\n")
         
         start_time = time.time()
         
@@ -138,15 +166,19 @@ class SubdomainScanner:
             threads.append(thread)
             thread.start()
         
-        # Barra de progresso
-        self._show_progress(start_time)
+        # Barra de progresso em thread separada
+        progress_thread = threading.Thread(target=self._show_progress, args=(start_time,))
+        progress_thread.daemon = True
+        progress_thread.start()
         
-        # Aguardar todas as threads
+        # Aguardar todas as threads de scan
         for thread in threads:
             thread.join()
         
+        # Garantir que a barra de progresso mostre 100%
+        self._clear_progress_line()
         elapsed_time = time.time() - start_time
-        print(f"\n{VERDE}[+] Scan concluído em {elapsed_time:.2f} segundos{RESET}")
+        print(f"{VERDE}[+] Scan concluído em {elapsed_time:.2f} segundos{RESET}")
         print(f"{VERDE}[+] Subdomínios encontrados: {len(self.found_subdomains)}{RESET}")
         
         return self.found_subdomains
@@ -154,17 +186,34 @@ class SubdomainScanner:
     def _scan_chunk(self, domain: str, subdomains: List[str]):
         """Escaneia um chunk de subdomínios"""
         for subdomain in subdomains:
+            if self.checked_count >= self.total_count:
+                break
             self.check_subdomain(domain, subdomain)
 
     def _show_progress(self, start_time: float):
-        """Mostra barra de progresso"""
+        """Mostra barra de progresso sem sobrepor resultados"""
         while self.checked_count < self.total_count:
             elapsed = time.time() - start_time
             progress = (self.checked_count / self.total_count) * 100
-            print(f"\r{AZUL}[*] Progresso: {progress:.1f}% ({self.checked_count}/{self.total_count}) - Tempo: {elapsed:.1f}s", end="")
+            
+            # Limpa a linha anterior do progresso
+            self._clear_progress_line()
+            
+            # Mostra nova linha de progresso
+            progress_text = f"{AZUL}[*] Progresso: {progress:.1f}% ({self.checked_count}/{self.total_count}) - Tempo: {elapsed:.1f}s{RESET}"
+            print(progress_text, end="", flush=True)
+            self.last_progress_len = len(progress_text)
+            
             time.sleep(0.5)
         
-        print(f"\r{VERDE}[*] Progresso: 100.0% ({self.total_count}/{self.total_count}) - Concluído!{RESET}")
+        # Limpa a última linha de progresso quando terminar
+        self._clear_progress_line()
+
+    def _clear_progress_line(self):
+        """Limpa a linha de progresso anterior"""
+        if self.last_progress_len > 0:
+            print("\r" + " " * self.last_progress_len + "\r", end="", flush=True)
+            self.last_progress_len = 0
 
     def save_results(self, results: List[Dict], domain: str, format: str = 'txt'):
         """Salva os resultados em arquivo"""
@@ -177,7 +226,7 @@ class SubdomainScanner:
         elif format == 'csv':
             filename = f"subdomains_{domain}_{timestamp}.csv"
             with open(filename, 'w', newline='', encoding='utf-8') as f:
-                writer = csv.DictWriter(f, fieldnames=['subdomain', 'url', 'status_code', 'ip'])
+                writer = csv.DictWriter(f, fieldnames=['subdomain', 'url', 'protocol', 'status_code', 'ip'])
                 writer.writeheader()
                 writer.writerows(results)
         else:
@@ -187,7 +236,12 @@ class SubdomainScanner:
                 f.write(f"# Data: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
                 f.write(f"# Total: {len(results)}\n\n")
                 for result in results:
-                    f.write(f"{result['subdomain']} | Status: {result['status_code']} | IP: {result['ip']}\n")
+                    f.write(f"Subdomínio: {result['subdomain']}\n")
+                    f.write(f"URL: {result['url']}\n")
+                    f.write(f"Protocolo: {result['protocol']}\n")
+                    f.write(f"Status: {result['status_code']}\n")
+                    f.write(f"IP: {result['ip']}\n")
+                    f.write("-" * 50 + "\n")
         
         print(f"{VERDE}[+] Resultados salvos em: {filename}{RESET}")
         return filename
@@ -252,6 +306,9 @@ def scan_subdomains(scanner: SubdomainScanner):
         input(f"{AMARELO}Pressione Enter para continuar...{RESET}")
         return
     
+    # Limpar www. se o usuário digitou
+    domain = domain.replace('http://', '').replace('https://', '').replace('www.', '')
+    
     # Listar wordlists disponíveis
     wordlists = scanner.list_wordlists()
     if not wordlists:
@@ -262,7 +319,13 @@ def scan_subdomains(scanner: SubdomainScanner):
     print(f"\n{CIANO}Wordlists disponíveis:{RESET}")
     for i, wl in enumerate(wordlists, 1):
         size_kb = wl['size'] / 1024
-        print(f"{VERDE}[{i}]{RESET} {wl['name']} ({size_kb:.1f} KB)")
+        # Contar linhas reais
+        try:
+            with open(wl['path'], 'r', encoding='utf-8', errors='ignore') as f:
+                lines = sum(1 for line in f if line.strip() and not line.startswith('#'))
+        except:
+            lines = 0
+        print(f"{VERDE}[{i}]{RESET} {wl['name']} ({size_kb:.1f} KB, {lines} subdomínios)")
     
     try:
         choice = int(input(f"\n{CIANO}Selecione a wordlist: {RESET}")) - 1
@@ -278,11 +341,12 @@ def scan_subdomains(scanner: SubdomainScanner):
     results = scanner.scan_domain(domain, wordlist_path)
     
     if results:
-        print(f"\n{CIANO}{NEGRITO}=== SUBDOMÍNIOS ENCONTRADOS ==={RESET}")
-        for result in results:
+        print(f"\n{CIANO}{NEGRITO}=== RESUMO DOS SUBDOMÍNIOS ENCONTRADOS ==={RESET}")
+        for i, result in enumerate(results, 1):
             status_color = VERDE if result['status_code'] == 200 else AMARELO
-            print(f"{VERDE}✓{RESET} {result['subdomain']}")
+            print(f"{VERDE}{i}. {result['subdomain']}{RESET}")
             print(f"   {AZUL}URL:{RESET} {result['url']}")
+            print(f"   {AZUL}Protocolo:{RESET} {result['protocol']}")
             print(f"   {AZUL}Status:{RESET} {status_color}{result['status_code']}{RESET}")
             print(f"   {AZUL}IP:{RESET} {result['ip']}\n")
         
@@ -293,6 +357,8 @@ def scan_subdomains(scanner: SubdomainScanner):
             if not format_choice:
                 format_choice = 'txt'
             scanner.save_results(results, domain, format_choice)
+    else:
+        print(f"{AMARELO}[!] Nenhum subdomínio ativo encontrado{RESET}")
     
     input(f"\n{AMARELO}Pressione Enter para continuar...{RESET}")
 
@@ -309,7 +375,7 @@ def list_wordlists(scanner: SubdomainScanner):
             # Contar linhas
             try:
                 with open(wl['path'], 'r', encoding='utf-8', errors='ignore') as f:
-                    lines = sum(1 for _ in f)
+                    lines = sum(1 for line in f if line.strip() and not line.startswith('#'))
             except:
                 lines = 0
             
@@ -332,11 +398,11 @@ def configure_scanner(scanner: SubdomainScanner):
     try:
         threads = input(f"Threads [{scanner.threads}]: ").strip()
         if threads:
-            scanner.threads = int(threads)
+            scanner.threads = max(1, min(50, int(threads)))  # Limite de 1-50 threads
         
         timeout = input(f"Timeout (s) [{scanner.timeout}]: ").strip()
         if timeout:
-            scanner.timeout = int(timeout)
+            scanner.timeout = max(1, min(30, int(timeout)))  # Limite de 1-30 segundos
         
         print(f"{VERDE}[+] Configurações atualizadas{RESET}")
     except ValueError:
@@ -357,6 +423,7 @@ def sobre():
 • Vários formatos de exportação
 • Barra de progresso em tempo real
 • Wordlists customizáveis
+• Interface limpa e organizada
 
 {AMARELO}Wordlists:{RESET}
 Coloque seus arquivos .txt na pasta 'wordlists/'
