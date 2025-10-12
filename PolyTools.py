@@ -700,6 +700,7 @@ class HackerMenu:
             },
             "dox": {
                 "dox.py": "Ferramentas de coleta de informações pessoais",
+                "dox-discord.py" "vai mandar os dados coletador para um canal"
             },
             "zero-day-leve": {
                 "zero-day.py": "Exploits de dia zero",
@@ -707,7 +708,8 @@ class HackerMenu:
             },
             "testes-rede": {
                 "rede.py": "Ferramentas de teste de rede",
-                "my-wireshark.py": "copia do wireshark"
+                "my-wireshark.py": "copia do wireshark",
+                "analise-web.py": "analise web de rede"
             },
             "linux": {
                 "distro.py": "Ferramentas para distribuições Linux"
