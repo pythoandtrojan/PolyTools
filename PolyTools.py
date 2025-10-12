@@ -507,6 +507,7 @@ class HackerMenu:
                 "buscar-navios.py": "olhar localização de navios, porto",
                 "governo-eua.py": "dados do governo dos eus",
                 "address_resolver.py": "dados de endereço",
+                "financeiro.py": "dados financeiros de empresas",
                 
             },
             "malwer": {
