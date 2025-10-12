@@ -502,6 +502,9 @@ class HackerMenu:
                 "ddd-ddi.py": "Buscador de DDD/DDI",
                 "gerador.py": "Gerador de CPF, telefone, placa, cartão e IP ",
                 "gerar-pessoa.py": "gera uma pessoa fake com dados",
+                "name-sweep.py": "faz combinaçoes para achar redes sociais",
+                "virus-total-api.py": "verificar link e apks",
+                
             },
             "malwer": {
                 "c2.py": "Servidor de Comando e Controle",
