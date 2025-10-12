@@ -704,7 +704,7 @@ class HackerMenu:
             },
             "dox": {
                 "dox.py": "Ferramentas de coleta de informações pessoais",
-                "dox-discord.py" "vai mandar os dados coletador para um canal"
+                "dox-discord.py": "vai mandar os dados coletador para um canal"
             },
             "zero-day-leve": {
                 "zero-day.py": "Exploits de dia zero",
