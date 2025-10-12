@@ -633,7 +633,8 @@ class HackerMenu:
                 "termux-payloads.py": "malwares para o termux",
                 "malware-bot-telegram.py": "malwares + bot do telegram",
                 "install-metasploit-termux.py": "abaixar o metasploi no termux", 
-                "listener.py": "se conectar em um malware"
+                "listener.py": "se conectar em um malware",
+                "app-inject.py": "enjetar malwares em app legitimo"
             },
             "scanner": {
                 "scanner.py": "Ferramenta de varredura de portas",
