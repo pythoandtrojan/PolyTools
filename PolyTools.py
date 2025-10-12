@@ -509,6 +509,7 @@ class HackerMenu:
                 "address_resolver.py": "dados de endereço",
                 "financeiro.py": "dados financeiros de empresas",
                 "academico.py": "buscar dados academicos",
+                "news_monitor.py": "jornal nacional",
                 
             },
             "malwer": {
