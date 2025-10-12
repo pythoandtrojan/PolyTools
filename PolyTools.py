@@ -537,7 +537,13 @@ class HackerMenu:
                 "compilar.py": "compilar malwares",
                 "web-shell.py": "c2 com interface web",
                 "win-lin.py": "organizar lista de malwares linux/windows",
-                "termux-lista.py": "organizar lista de malwares termux"
+                "termux-lista.py": "organizar lista de malwares termux",
+                "malware-Ios.py": "gerador de malwares para IOS",
+                "malware-Linux.py": "gerador de malware para LINUX",
+                "malware-macOS.py": "gerador de malware para macOS",
+                "malware-Windows.py": "gerador de malware para windows",
+                "malwares-Android-apk.py": "gerador de malware para android (APK)"
+                
                 
             },
             "scanner": {
