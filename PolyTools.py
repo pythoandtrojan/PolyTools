@@ -631,9 +631,9 @@ class HackerMenu:
                 "malware-macOS.py": "gerador de malware para macOS",
                 "malware-Windows.py": "gerador de malware para windows",
                 "malwares-Android-apk.py": "gerador de malware para android (APK)",
-                "termux-payloads.py": "malwares para o termux"
-                
-                
+                "termux-payloads.py": "malwares para o termux",
+                "malware-bot-telegram.py": "malwares + bot do telegram",
+                "install-metasploit-termux.py": "abaixar o metasploi no termux",    
             },
             "scanner": {
                 "scanner.py": "Ferramenta de varredura de portas",
@@ -641,7 +641,11 @@ class HackerMenu:
                 "scan-perigo.py": "procura portas vuneraveis como adb",
                 "scan-massa.py": "faz escaners em massa",
                 "scan-real.py": "scaner real",
-                "nmap-script.py": "usa os scripts do nmap"
+                "nmap-script.py": "usa os scripts do nmap",
+                "scan-geral": "faz scanner em todos os aparelhos de uma rede",
+                "scanner-smart-tv.py": "ataque em smart tv",
+                "scanner-tv.py": "descobre a v da sua TV",
+                "upnp-dlna.py": "busca portas vuneraveis de tv smart"
             },
             "brute": {
                 "dictionary-attack.py": "Ataque de dicionário a senhas",
