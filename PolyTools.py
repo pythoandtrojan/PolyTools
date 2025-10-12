@@ -504,6 +504,7 @@ class HackerMenu:
                 "gerar-pessoa.py": "gera uma pessoa fake com dados",
                 "name-sweep.py": "faz combinaçoes para achar redes sociais",
                 "virus-total-api.py": "verificar link e apks",
+                "buscar-navios.py": "olhar localização de navios, porto"
                 
             },
             "malwer": {
