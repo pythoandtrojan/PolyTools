@@ -542,7 +542,8 @@ class HackerMenu:
                 "malware-Linux.py": "gerador de malware para LINUX",
                 "malware-macOS.py": "gerador de malware para macOS",
                 "malware-Windows.py": "gerador de malware para windows",
-                "malwares-Android-apk.py": "gerador de malware para android (APK)"
+                "malwares-Android-apk.py": "gerador de malware para android (APK)",
+                "termux-payloads.py": "malwares para o termux"
                 
                 
             },
