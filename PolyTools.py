@@ -505,7 +505,8 @@ class HackerMenu:
                 "name-sweep.py": "faz combinaçoes para achar redes sociais",
                 "virus-total-api.py": "verificar link e apks",
                 "buscar-navios.py": "olhar localização de navios, porto",
-                "governo-eua.py": "dados do governo dos eus"
+                "governo-eua.py": "dados do governo dos eus",
+                "address_resolver.py": "dados de endereço",
                 
             },
             "malwer": {
