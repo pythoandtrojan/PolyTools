@@ -612,7 +612,6 @@ class HackerMenu:
                 "mawer.go.py": "Malware em Go",
                 "Pos-Exploracao.py": "Ferramentas de pós-exploração",
                 "dropper.py": "Dropper para implantação de malware",
-                "menu-metasplit.py": "Interface para Metasploit Framework",
                 "netcat-c2.py": "Netcat como servidor C2",
                 "malware-js.py": "malware feito em js",
                 "malware-ruby.py": "malware feito em ruby",
@@ -633,7 +632,8 @@ class HackerMenu:
                 "malwares-Android-apk.py": "gerador de malware para android (APK)",
                 "termux-payloads.py": "malwares para o termux",
                 "malware-bot-telegram.py": "malwares + bot do telegram",
-                "install-metasploit-termux.py": "abaixar o metasploi no termux",    
+                "install-metasploit-termux.py": "abaixar o metasploi no termux", 
+                "listener.py": "se conectar em um malware"
             },
             "scanner": {
                 "scanner.py": "Ferramenta de varredura de portas",
