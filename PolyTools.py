@@ -577,7 +577,8 @@ class HackerMenu:
                 "trolar-amigo.py": "Ferramenta para trollar amigos",
                 "git.span-menu.py": "varias ferramentas de span",
                 "discord-span.py": "span de discord",
-                "mensagem-sms.py": "span de mensagem de sms"
+                "mensagem-sms.py": "span de mensagem de sms",
+                "bot-span-discord.py": "destruição total de grupos"
             },
             "phishing": {
                 "menu-phishing.py": "Menu completo de ferramentas de phishing",
