@@ -733,7 +733,6 @@ class HackerMenu:
                 "gerador-senhas.py": "gera senhas fortes",
                 "Conversor-moedas.py": "valor da sua moeda moedas",
                 "verificador-links.py": "verifica seu um link e seguro",
-                "jogo_lixo.py": "um jogo simples",
                 "calculadora.py": "calculadora simples",
                 "terminal.py": "terminal interativo do PolyTools",
                 "prompet.py": "mudar prompet do terminal",
