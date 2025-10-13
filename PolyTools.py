@@ -65,7 +65,7 @@ class Banners:
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⠿⢶⣤⣄⣸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣀⣤⣴⠾⠟⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠛⠛⠿⠿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠿⠿⠟⠛⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
             
-     v 9.7.9 data: 13/11/2025                  ass:  | made: Brasil⠀⠀⠀⠀
+     v 9.8.0 data: 13/11/2025                  ass:  | made: Brasil⠀⠀⠀⠀
                              desde: 10/7/2025⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀               
         [/bold red]"""
 
@@ -635,7 +635,10 @@ class HackerMenu:
                 "install-metasploit-termux.py": "abaixar o metasploi no termux", 
                 "listener.py": "se conectar em um malware",
                 "app-inject.py": "enjetar malwares em app legitimo",
-                "metasploit-web.py": "metasploit com interface web"
+                "metasploit-web.py": "metasploit com interface web",
+                "webhook-malware.py": "malwares compilados + webhook",
+                "TheFatRat.py": "feramenta geradora de malware",
+                "Beelogger.py": "feramenta geradora de malware"
             },
             "scanner": {
                 "scanner.py": "Ferramenta de varredura de portas",
