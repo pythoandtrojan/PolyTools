@@ -634,7 +634,8 @@ class HackerMenu:
                 "malware-bot-telegram.py": "malwares + bot do telegram",
                 "install-metasploit-termux.py": "abaixar o metasploi no termux", 
                 "listener.py": "se conectar em um malware",
-                "app-inject.py": "enjetar malwares em app legitimo"
+                "app-inject.py": "enjetar malwares em app legitimo",
+                "metasploit-web.py": "metasploit com interface web"
             },
             "scanner": {
                 "scanner.py": "Ferramenta de varredura de portas",
