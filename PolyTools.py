@@ -638,7 +638,8 @@ class HackerMenu:
                 "metasploit-web.py": "metasploit com interface web",
                 "webhook-malware.py": "malwares compilados + webhook",
                 "TheFatRat.py": "feramenta geradora de malware",
-                "Beelogger.py": "feramenta geradora de malware"
+                "Beelogger.py": "feramenta geradora de malware",
+                "CVE.py": "exploração de vunerabilidades criticas",
             },
             "scanner": {
                 "scanner.py": "Ferramenta de varredura de portas",
