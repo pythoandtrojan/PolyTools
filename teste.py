@@ -486,7 +486,7 @@ class HackerMenu:
                 "osint-web.py": "apis em pagina web"
                 
             },
-            "malwer": {
+            "malware": {
                 "c2.py": "Servidor de Comando e Controle",
                 "malwer.py": "Ferramentas de malware",
                 "malwer-assembly": "Malware em Assembly",
@@ -656,7 +656,7 @@ class HackerMenu:
             
             if category == "OSINT":
                 console.print(Panel.fit(Banners.osint(), style="bold green"))
-            elif category == "malwer":
+            elif category == "malware":
                 console.print(Panel.fit(Banners.malware(), style="bold red"))
             elif category == "scanner":
                 console.print(Panel.fit(Banners.scanner(), style="bold blue"))
@@ -820,7 +820,7 @@ class HackerMenu:
             if choice == "1":
                 self.show_category_menu("OSINT")
             elif choice == "2":
-                self.show_category_menu("malwer")
+                self.show_category_menu("malware")
             elif choice == "3":
                 self.show_category_menu("scanner")
             elif choice == "4":
