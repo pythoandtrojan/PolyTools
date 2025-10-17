@@ -603,22 +603,22 @@ class HackerMenu:
                 "news_monitor.py": "jornal nacional",
                 
             },
-            "malwer": {
+            "malware": {
                 "c2.py": "Servidor de Comando e Controle",
-                "malwer.py": "Ferramentas de malware",
-                "malwer-assembly.py": "Malware em Assembly",
-                "malwer-c.py": "Malware em C",
-                "malwerPowerShell.py": "Malware em PowerShell",
-                "mawer.go.py": "Malware em Go",
+                "malware.py": "Ferramentas de malware",
+                "malware-assembly.py": "Malware em Assembly",
+                "malware-c.py": "Malware em C",
+                "malwarePowerShell.py": "Malware em PowerShell",
+                "malware.go.py": "Malware em Go",
                 "Pos-Exploracao.py": "Ferramentas de pós-exploração",
                 "dropper.py": "Dropper para implantação de malware",
                 "netcat-c2.py": "Netcat como servidor C2",
                 "malware-js.py": "malware feito em js",
                 "malware-ruby.py": "malware feito em ruby",
-                "malwer-java.py": "malware feito em java",
+                "malware-java.py": "malware feito em java",
                 "malware-bash.py": "malwares em bash",
                 "malware-discord.py": "malware pra roubo de token discord",
-                "malwer-troll.py": "nao execulte isso",
+                "malwere-troll.py": "nao execulte isso",
                 "Binary-Padding.py": "depois eu explico",
                 "c2-interativo.py": "c2 com comandos",
                 "compilar.py": "compilar malwares",
@@ -766,7 +766,7 @@ class HackerMenu:
         table.add_column("Descrição", style="yellow")
 
         table.add_row("1", "OSINT", "Ferramentas de coleta de informações")
-        table.add_row("2", "MALWER", "Ferramentas ofensivas")
+        table.add_row("2", "MALWARE", "Ferramentas ofensivas")
         table.add_row("3", "SCANNER", "Ferramentas de varredura")
         table.add_row("4", "FORÇA BRUTA", "Ataques de força bruta")
         table.add_row("5", "SQL INJECTION", "Injeção de SQL em bancos de dados")
@@ -797,7 +797,7 @@ class HackerMenu:
             
             if category == "OSINT":
                 console.print(Panel.fit(Banners.osint(), style="bold green"))
-            elif category == "malwer":
+            elif category == "malware":
                 console.print(Panel.fit(Banners.malware(), style="bold red"))
             elif category == "scanner":
                 console.print(Panel.fit(Banners.scanner(), style="bold blue"))
@@ -961,7 +961,7 @@ class HackerMenu:
             if choice == "1":
                 self.show_category_menu("OSINT")
             elif choice == "2":
-                self.show_category_menu("malwer")
+                self.show_category_menu("malware")
             elif choice == "3":
                 self.show_category_menu("scanner")
             elif choice == "4":
