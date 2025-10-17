@@ -30,13 +30,12 @@ Siga-nos para:
 - Novas atualizações
 - Dicas de segurança
 - Anúncios importantes
-- Comunidade ativa
 
 ---
 
 ## 📌 Sobre o Projeto
 
-O **PolyTools v9.8.2** é uma plataforma abrangente que reúne **113 ferramentas** organizadas em **19 categorias** distintas para:
+O **PolyTools v7.2.0** é uma plataforma abrangente que reúne **113 ferramentas** organizadas em **19 categorias** distintas para:
 
 - **Testes de intrusão** e análise de vulnerabilidades  
 - **Ensino e capacitação** em cibersegurança ofensiva  
