@@ -4,7 +4,7 @@
 > ⚠️ **Proibido o uso fora de ambientes autorizados.**
 
 **Versão: 9.8.2**
-**Data: 14/11/2025**
+**Data: 14/9/2025**
 **Desde: 10/7/2025**
 **Plataformas: Windows | Linux | Termux**
 
