@@ -65,7 +65,7 @@ class Banners:
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⠿⢶⣤⣄⣸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣀⣤⣴⠾⠟⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠛⠛⠿⠿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠿⠿⠟⠛⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
             
-     v 9.8.1 data: 13/11/2025                  ass:  | made: Brasil⠀⠀⠀⠀
+     v 9.8.2 data: 14/11/2025                  ass:  | made: Brasil⠀⠀⠀⠀
                              desde: 10/7/2025⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀               
         [/bold red]"""
 
@@ -603,7 +603,7 @@ class HackerMenu:
                 "news_monitor.py": "jornal nacional",
                 
             },
-            "malware": {
+            "malwer": {
                 "c2.py": "Servidor de Comando e Controle",
                 "malware.py": "Ferramentas de malware",
                 "malware-assembly.py": "Malware em Assembly",
@@ -797,7 +797,7 @@ class HackerMenu:
             
             if category == "OSINT":
                 console.print(Panel.fit(Banners.osint(), style="bold green"))
-            elif category == "malware":
+            elif category == "malwer":
                 console.print(Panel.fit(Banners.malware(), style="bold red"))
             elif category == "scanner":
                 console.print(Panel.fit(Banners.scanner(), style="bold blue"))
@@ -961,7 +961,7 @@ class HackerMenu:
             if choice == "1":
                 self.show_category_menu("OSINT")
             elif choice == "2":
-                self.show_category_menu("malware")
+                self.show_category_menu("malwer")
             elif choice == "3":
                 self.show_category_menu("scanner")
             elif choice == "4":
