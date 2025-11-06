@@ -578,7 +578,9 @@ class HackerMenu:
                 "phishing-apk.py": "cria uma pagina que recomenda um malware para apk",
             },
             "ferramentas": {
-                "Mr.Holmes.py": "Ferramenta de investigação avançada",
+                "Mr.Holmes.py": "Ferramenta de investigação",
+                "BrazilWings.py": "ferramenta brasileira",
+                "Deadpool2000.py": "colocar argumrnato porra",
             },
             "dos": {
                 "dos.py": "Ferramentas de Denial of Service",
