@@ -548,7 +548,9 @@ class HackerMenu:
             "vul-web": {
                 "xss.py": "Ferramenta de ataque XSS",
                 "sql-inject.py": "Ferramenta manual de SQL injection",
-                "sqlmap.py": "Ferramenta automatizada de SQL injection"
+                "sqlmap.py": "Ferramenta automatizada de SQL injection",
+                "git-exposto.py": "busca de vunerabilidade de git",
+                "git-exposto-dump.py": "abaixar git",
             },
             "span": {
                 "fim-link.py": "Ferramenta de spam por links",
